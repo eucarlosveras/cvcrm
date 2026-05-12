@@ -8,7 +8,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
-        /* MANTIDO EXATAMENTE O SEU CSS ORIGINAL */
         :root {
             --sidebar-bg: #1e293b; --sidebar-active: #334155; --sidebar-text: #cbd5e1; --sidebar-text-muted: #94a3b8;
             --brand-blue: #3b82f6; --brand-blue-dark: #2563eb; --brand-blue-glow: rgba(59, 130, 246, 0.4);
@@ -260,7 +259,7 @@
         let currentFilter = 'todos';
         let currentView = 'inicio';
         let previousView = 'inicio';
-        let currentMonth = new Date().getMonth() + 1; // Ajustado para o mês atual dinamicamente
+        let currentMonth = new Date().getMonth() + 1;
         let currentYear = new Date().getFullYear();
         let currentDay = null;
         let currentPage = 1;
@@ -312,7 +311,6 @@
             }
         });
 
-        // NOTIFICAÇÕES (AGORA BUSCANDO DO BANCO, NÃO DO LOCALSTORAGE)
         function buildNotifications() {
             const hoje = new Date().toISOString().split('T')[0];
             const notificacoes = [];
@@ -348,12 +346,18 @@
             const btn = document.getElementById('btnLogin'); if (btn.disabled) return;
             const pin = pinInput.value.trim(); const msg = document.getElementById('loginMsg');
             if (!pin || pin.length < 4) { msg.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> Digite um PIN de 4 dígitos.'; shakePinBalls(); return; }
+            
             btn.classList.add('loading'); btn.disabled = true; msg.innerHTML = '';
+            
             try {
                 const { data: userArray, error } = await db.from('usuarios').select('*').eq('pin_acesso', pin).limit(1);
-                if (error || !userArray || userArray.length === 0) { btn.classList.remove('loading'); btn.disabled = false; msg.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> PIN inválido. Tente novamente.'; shakePinBalls(); resetPinBalls(); return; }
+                
+                if (error) throw new Error(error.message);
+                
+                if (!userArray || userArray.length === 0) { throw new Error('PIN não encontrado no banco de dados.'); }
+                
                 const data = userArray[0];
-                if (data.status === 'Inativo') { btn.classList.remove('loading'); btn.disabled = false; msg.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> Conta desativada. Fale com o Administrador.'; shakePinBalls(); resetPinBalls(); return; }
+                if (data.status === 'Inativo') { throw new Error('Conta desativada. Fale com o Administrador.'); }
 
                 const nomeUsuario = data.nome || 'Usuário'; const perfilUsuario = data.perfil || 'Vendedor';
                 currentUser = { ...data, nome: nomeUsuario, perfil: perfilUsuario };
@@ -378,7 +382,12 @@
                 await carregarDados(); await carregarHistoricoFaturamento();
                 if (isAdministrador) navigateTo('admin_inicio'); else navigateTo('inicio');
 
-            } catch (err) { console.error(err); btn.classList.remove('loading'); btn.disabled = false; msg.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> Ocorreu um erro. Tente novamente.'; shakePinBalls(); resetPinBalls(); }
+            } catch (err) { 
+                console.error("Erro interno no login:", err); 
+                btn.classList.remove('loading'); btn.disabled = false; 
+                msg.innerHTML = `<span style="color: #ef4444; font-size: 13px; font-weight: 600;">${err.message}</span>`; 
+                shakePinBalls(); resetPinBalls(); 
+            }
         }
 
         async function carregarDados() {
@@ -440,7 +449,6 @@
             else if (view === 'detalhes_cliente') renderDetalhesClientePage();
         }
 
-        // METAS AGORA VÊM DO BANCO
         function getMetaVendedor(idVendedor) { 
             const user = (todosUsuarios && todosUsuarios.length > 0 ? todosUsuarios : todosVendedores).find(u => u.id_usuario === idVendedor);
             return user && user.meta_mensal ? parseFloat(user.meta_mensal) : META_PADRAO; 
@@ -469,7 +477,6 @@
             if (!comentarios || comentarios.length === 0) return '<p style="color:var(--text-muted);">Nenhum comentário registrado.</p>';
             const grupos = {}; 
             comentarios.forEach((c) => { 
-                // formata data de timestamp para exibicao local
                 const label = getDateLabel(c.data_criacao); 
                 if (!grupos[label]) grupos[label] = []; 
                 grupos[label].push(c); 
@@ -487,7 +494,6 @@
             return html;
         }
 
-        // EDIÇÃO E EXCLUSÃO DE COMENTÁRIOS NO BANCO
         function editarComentario(id_comentario) { 
             const com = clienteAtualParaDetalhes.comentarios; const index = com.findIndex(c => c.id_comentario === id_comentario); if (index < 0) return; 
             com.forEach(c => delete c._editando); com[index]._editando = true; renderDetalhesClientePage(); 
@@ -501,7 +507,6 @@
             const btn = event.currentTarget; btn.classList.add('saving'); btn.disabled = true;
             try {
                 await db.from('comentarios').update({ texto: novoTexto }).eq('id_comentario', id_comentario);
-                // Atualiza localmente para não precisar dar refetch
                 const index = clienteAtualParaDetalhes.comentarios.findIndex(c => c.id_comentario === id_comentario);
                 if(index > -1) { clienteAtualParaDetalhes.comentarios[index].texto = novoTexto; delete clienteAtualParaDetalhes.comentarios[index]._editando; }
                 renderDetalhesClientePage();
@@ -522,8 +527,6 @@
         function atualizarIndicadorDigitacao() { const texto = document.getElementById('novoComentario')?.value || ''; const indicator = document.getElementById('typingIndicator'); if (indicator) indicator.classList.toggle('visible', texto.length > 0); }
         
         function getMotivoContatoFromComentarios(id) { 
-            // Agora a timeline é em nuvem. Como o render agenda lista sem os comentarios, busca o motivo na hora se for preciso,
-            // mas como otimização, salvamos agora no proprio orçamento em 'observacao_agendamento'
             const orc = allOrcamentos.find(o => o.id_orcamento == id);
             return orc && orc.observacao_agendamento ? orc.observacao_agendamento : '-'; 
         }
@@ -611,7 +614,6 @@
             html += '</tbody></table></div>'; document.getElementById('mainContent').innerHTML = html;
         }
 
-        // TELA DE DETALHES AGORA É ASSÍNCRONA (BUSCA DO SUPABASE)
         async function abrirDetalhesCliente(id) {
             const orc = allOrcamentos.find(o => o.id_orcamento == id); if (!orc) return;
             clienteAtualParaDetalhes = orc; previousView = currentView; currentView = 'detalhes_cliente';
@@ -646,7 +648,6 @@
             const comentariosHtml = renderComentariosHtml(comentarios, id);
             const statusClass = classToFormatStatus(orc.status);
             
-            // Dados vêm do BD agora
             const interesse = orc.interesse || '-'; const interesseColor = interesse === 'Alta' ? '#10b981' : interesse === 'Média' ? '#f59e0b' : interesse === 'Baixa' ? '#ef4444' : '#94a3b8';
             const objecao = (() => { const perda = comentarios.filter(c => c.tipo === 'Perda').pop(); return perda ? perda.texto : 'Nenhuma objeção registrada.'; })();
             const dataCriacao = orc.data_criacao ? new Date(orc.data_criacao).toLocaleDateString('pt-BR') : '-';
@@ -812,7 +813,6 @@
             if (currentUser?.perfil !== 'Vendedor') return; if (salvandoOrcamento) return;
             const nome = document.getElementById('modNome').value.trim(); const whats = document.getElementById('modWhats').value.trim(); const modelo = document.getElementById('modModelo').value.trim(); const valor = parseCurrency(document.getElementById('modValor').value);
             
-            // Novos campos
             const interesse = document.getElementById('modInteresse').value || null;
             const observacoes = document.getElementById('modObservacoes').value.trim() || null;
             const dataContato = document.getElementById('modDataContato').value || null;
@@ -825,11 +825,9 @@
             salvandoOrcamento = true; const btn = document.getElementById('btnSalvarOrcamento'); btn.classList.add('saving'); btn.disabled = true; btn.querySelector('.btn-text').textContent = 'Salvando...'; document.getElementById('modalMsg').textContent = '';
             
             try { 
-                // Inserindo cliente e pegando eventuais erros
                 const { data: cliente, error: erroCliente } = await db.from('clientes').insert([{ nome_cliente: nome, whatsapp: whats }]).select().single(); 
                 if (erroCliente) throw new Error("Erro no Cliente: " + erroCliente.message);
 
-                // Inserindo orçamento e pegando eventuais erros
                 const { data: orc, error: erroOrc } = await db.from('orcamentos').insert([{ 
                     id_cliente: cliente.id_cliente, 
                     id_usuario: currentUser.id_usuario, 
@@ -846,7 +844,6 @@
                 closeModal(); carregarDados(); 
             } catch (error) { 
                 console.error(error); 
-                // Mostra o erro exato retornado pelo Supabase na tela
                 document.getElementById('modalMsg').innerHTML = `<span style="color: #ef4444; font-size: 13px; font-weight: 600;">${error.message}</span>`; 
                 btn.classList.remove('saving'); btn.disabled = false; btn.querySelector('.btn-text').textContent = 'Salvar Orçamento'; salvandoOrcamento = false; 
             }
@@ -866,9 +863,7 @@
             btn.disabled = true;
             
             try {
-                // Atualiza status no orçamento
                 await db.from('orcamentos').update({ status: 'Perdido' }).eq('id_orcamento', idOrcamentoParaPerder); 
-                // Registra o motivo na timeline
                 await db.from('comentarios').insert([{ id_orcamento: idOrcamentoParaPerder, texto: motivo, tipo: 'Perda', autor: currentUser.nome }]);
                 
                 fecharMotivoPerda(); voltarDetalhes(); carregarDados();
@@ -895,18 +890,16 @@
             if (!tipo) { tipoErro.textContent = 'Selecione o tipo de contato.'; document.getElementById('agendarTipo').style.borderColor = '#ef4444'; return; } 
             else { tipoErro.textContent = ''; document.getElementById('agendarTipo').style.borderColor = 'var(--border-light)'; }
             
-            const btn = event.currentTarget;
-            const textoOriginal = btn.innerHTML;
-            btn.innerHTML = 'Agendando...';
+            const btn = document.getElementById('btnConfirmarAgendamento');
+            btn.querySelector('.btn-spinner').style.display = 'inline-block';
+            btn.querySelector('.btn-text').style.opacity = '0.7';
             btn.disabled = true;
 
             try {
-                // Salva o agendamento no orçamento
                 await db.from('orcamentos')
                     .update({ data_contato: data, hora_contato: hora, observacao_agendamento: obs })
                     .eq('id_orcamento', clienteAtualParaDetalhes.id_orcamento);
                 
-                // Registra o agendamento na timeline
                 const dataFormatada = new Date(data + 'T00:00:00').toLocaleDateString('pt-BR'); 
                 let texto = `Retorno agendado para ${dataFormatada}${hora ? ' às ' + hora : ''} • ${tipo}`; 
                 if (obs) texto += `\nLembrete: ${obs}`;
@@ -915,12 +908,13 @@
                 
                 msg.textContent = 'Agendado!'; msg.style.color = 'var(--brand-blue)'; 
                 setTimeout(() => { msg.textContent = ''; }, 2000); 
-                abrirDetalhesCliente(clienteAtualParaDetalhes.id_orcamento); // Atualiza a tela
+                abrirDetalhesCliente(clienteAtualParaDetalhes.id_orcamento); 
             } catch (e) {
                 console.error(e);
                 msg.textContent = 'Erro ao agendar.'; msg.style.color = '#ef4444';
             } finally {
-                btn.innerHTML = textoOriginal;
+                btn.querySelector('.btn-spinner').style.display = 'none';
+                btn.querySelector('.btn-text').style.opacity = '1';
                 btn.disabled = false;
             }
         }
@@ -930,9 +924,9 @@
             const msg = document.getElementById('comentarioMsg'); 
             if (!texto) { msg.textContent = 'Escreva algo.'; return; }
             
-            const btn = event.currentTarget;
-            const textoOriginal = btn.innerHTML;
-            btn.innerHTML = 'Salvando...';
+            const btn = document.getElementById('btnSalvarTimeline');
+            btn.querySelector('.btn-spinner').style.display = 'inline-block';
+            btn.querySelector('.btn-text').style.opacity = '0.7';
             btn.disabled = true;
 
             try {
@@ -941,14 +935,25 @@
                 document.getElementById('novoComentario').value = ''; 
                 msg.textContent = 'Salvo!'; msg.style.color = 'var(--brand-blue)'; 
                 setTimeout(() => { msg.textContent = ''; }, 2000);
-                abrirDetalhesCliente(clienteAtualParaDetalhes.id_orcamento); // Atualiza a tela
+                abrirDetalhesCliente(clienteAtualParaDetalhes.id_orcamento); 
             } catch (e) {
                 console.error(e);
                 msg.textContent = 'Erro ao salvar.'; msg.style.color = '#ef4444';
             } finally {
-                btn.innerHTML = textoOriginal;
+                btn.querySelector('.btn-spinner').style.display = 'none';
+                btn.querySelector('.btn-text').style.opacity = '1';
                 btn.disabled = false;
             }
         }
 
-        function carregarComentarios(id) { try { return JSON.parse(localStorage.getItem('crm_comentarios_' + id) || '[]'); } catch (e) { return []; } }
+        function logout() {
+            currentUser = null; allOrcamentos = []; todosVendedores = []; todosUsuarios = []; selectedVendedor = 'todos'; historicoFaturamento = [];
+            document.getElementById('loginOverlay').classList.remove('hidden'); document.getElementById('sidebar').style.display = 'none';
+            document.getElementById('mainContent').style.display = 'none'; document.getElementById('fabButton').style.display = 'none';
+            document.getElementById('btnLogin').classList.remove('loading'); document.getElementById('btnLogin').disabled = false;
+            document.getElementById('loginMsg').innerHTML = '';
+            resetPinBalls(); pinInput.focus();
+        }
+    </script>
+</body>
+</html>
