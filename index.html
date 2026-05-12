@@ -948,62 +948,137 @@
             } 
         }
 
-        async function salvarComentario() {
-            const texto = document.getElementById('novoComentario').value.trim(); 
-            const msg = document.getElementById('comentarioMsg'); 
-            if (!texto) { msg.textContent = 'Escreva algo.'; return; }
-            
-            const btn = document.getElementById('btnSalvarTimeline');
-            btn.querySelector('.btn-spinner').style.display = 'inline-block';
-            btn.querySelector('.btn-text').style.opacity = '0.7';
-            btn.disabled = true;
-            msg.textContent = '';
+        function fecharModalUsuarioAdmin() { const el = document.getElementById('modalUsuarioAdmin'); if (el) el.classList.remove('open'); idUsuarioEmEdicao = null; }
+        function fecharModalExcluirUsuario() { const el = document.getElementById('modalExcluirUsuarioAdmin'); if (el) el.classList.remove('open'); idUsuarioParaExcluir = null; }
+        
+        let idUsuarioParaExcluir = null;
 
-            try {
-                // Inserindo o tratamento de erro na requisição com o Supabase
-                const { error } = await db.from('comentarios').insert([{ 
-                    id_orcamento: clienteAtualParaDetalhes.id_orcamento, 
-                    texto: texto, 
-                    tipo: 'Comentário', 
-                    autor: currentUser.nome 
-                }]);
-                
-                // Forçando o javascript a interromper caso o DB responda com algum erro de sintaxe/RLS
-                if (error) throw new Error(error.message);
-                
-                document.getElementById('novoComentario').value = ''; 
-                
-                // Usando await garante que a UI não trave o thread antes de concluirmos o status
-                await abrirDetalhesCliente(clienteAtualParaDetalhes.id_orcamento); 
-                
-                // Após o abrirDetalhesCliente renderizar o HTML, os elementos perdem a ref. Buscamos de novo.
-                const finalMsg = document.getElementById('comentarioMsg');
-                if (finalMsg) {
-                    finalMsg.textContent = 'Salvo com sucesso!'; 
-                    finalMsg.style.color = 'var(--brand-blue)'; 
-                    setTimeout(() => { 
-                        const m = document.getElementById('comentarioMsg'); 
-                        if(m) m.textContent = ''; 
-                    }, 2500);
-                }
-            } catch (e) {
-                console.error(e);
-                // Como falhou, a tela não re-renderizou, logo o msg original continua na DOM
-                msg.textContent = 'Erro ao salvar: ' + e.message; 
-                msg.style.color = '#ef4444';
-                
-                btn.querySelector('.btn-spinner').style.display = 'none';
-                btn.querySelector('.btn-text').style.opacity = '1';
-                btn.disabled = false;
-            } 
+        function abrirModalUsuarioAdmin(id = null) {
+            idUsuarioEmEdicao = id;
+            const err = document.getElementById('errAdminUsuario'); if (err) err.textContent = '';
+            const title = document.getElementById('modalUsuarioTitle');
+            const nomeInput = document.getElementById('adminModNome');
+            const pinInput = document.getElementById('adminModPin');
+            const perfilSel = document.getElementById('adminModPerfil');
+            const statusSel = document.getElementById('adminModStatus');
+
+            if (id) {
+                const user = todosUsuarios.find(u => u.id_usuario === id);
+                title.textContent = 'Editar Usuário';
+                nomeInput.value = user.nome || '';
+                pinInput.value = user.pin_acesso || '';
+                perfilSel.value = user.perfil || 'Vendedor';
+                statusSel.value = user.status || 'Ativo';
+            } else {
+                title.textContent = 'Novo Usuário';
+                nomeInput.value = ''; pinInput.value = '';
+                perfilSel.value = 'Vendedor'; statusSel.value = 'Ativo';
+            }
+            document.getElementById('modalUsuarioAdmin').classList.add('open');
         }
 
-        function fecharModalUsuarioAdmin() { const el = document.getElementById('modalUsuarioAdmin'); if (el) el.classList.remove('open'); }
-        function fecharModalExcluirUsuario() { const el = document.getElementById('modalExcluirUsuarioAdmin'); if (el) el.classList.remove('open'); }
-        
-        // Placeholder para não quebrar os onclick caso clique em "Salvar Usuário" sem backend pronto.
-        function salvarUsuarioAdmin() { alert("Função em desenvolvimento"); }
-        function confirmarExclusaoUsuario() { alert("Função em desenvolvimento"); }
+        async function salvarUsuarioAdmin() {
+            const nome = document.getElementById('adminModNome').value.trim();
+            const pin = document.getElementById('adminModPin').value.trim();
+            const perfil = document.getElementById('adminModPerfil').value;
+            const status = document.getElementById('adminModStatus').value;
+            const err = document.getElementById('errAdminUsuario');
+
+            if (!nome || !pin) { err.textContent = 'Preencha todos os campos obrigatórios.'; return; }
+            if (pin.length < 4) { err.textContent = 'O PIN deve ter 4 dígitos.'; return; }
+
+            const btn = document.getElementById('btnSalvarUsuarioAdmin');
+            btn.classList.add('saving'); btn.disabled = true; err.textContent = '';
+
+            try {
+                // Checa se o PIN já existe e não pertence ao usuário que estamos editando agora
+                const { data: pinCheck } = await db.from('usuarios').select('id_usuario').eq('pin_acesso', pin);
+                const isPinTaken = pinCheck && pinCheck.length > 0 && (!idUsuarioEmEdicao || pinCheck.some(p => p.id_usuario !== idUsuarioEmEdicao));
+
+                if (isPinTaken) throw new Error('Este PIN já está em uso por outro usuário.');
+
+                if (idUsuarioEmEdicao) {
+                    const { error } = await db.from('usuarios').update({ nome, pin_acesso: pin, perfil, status }).eq('id_usuario', idUsuarioEmEdicao);
+                    if (error) throw new Error(error.message);
+                } else {
+                    const { error } = await db.from('usuarios').insert([{ nome, pin_acesso: pin, perfil, status, meta_mensal: META_PADRAO }]);
+                    if (error) throw new Error(error.message);
+                }
+
+                // Recarrega os usuários na memória
+                const { data: todos_usr } = await db.from('usuarios').select('*').order('nome');
+                todosUsuarios = todos_usr || []; todosVendedores = todosUsuarios.filter(u => u.perfil === 'Vendedor');
+
+                fecharModalUsuarioAdmin(); renderAdminUsuarios(document.getElementById('mainContent'));
+            } catch (e) {
+                console.error(e); err.textContent = 'Erro: ' + e.message;
+            } finally {
+                btn.classList.remove('saving'); btn.disabled = false;
+            }
+        }
+
+        function abrirModalExcluirUsuarioAdmin(id, nome) {
+            idUsuarioParaExcluir = id;
+            document.getElementById('nomeUsuarioExcluir').textContent = nome;
+            document.getElementById('errExcluirUsuario').textContent = '';
+            document.getElementById('modalExcluirUsuarioAdmin').classList.add('open');
+        }
+
+        async function confirmarExclusaoUsuario() {
+            if (!idUsuarioParaExcluir) return;
+            const err = document.getElementById('errExcluirUsuario');
+            const btn = document.getElementById('btnConfirmarExclusaoUsuario');
+
+            btn.disabled = true; btn.innerHTML = 'Excluindo...';
+
+            try {
+                const { error } = await db.from('usuarios').delete().eq('id_usuario', idUsuarioParaExcluir);
+                if (error) throw new Error('Não é possível excluir. O usuário possui orçamentos atrelados. Recomendamos inativá-lo.');
+
+                const { data: todos_usr } = await db.from('usuarios').select('*').order('nome');
+                todosUsuarios = todos_usr || []; todosVendedores = todosUsuarios.filter(u => u.perfil === 'Vendedor');
+
+                fecharModalExcluirUsuario(); renderAdminUsuarios(document.getElementById('mainContent'));
+            } catch (e) {
+                console.error(e); err.textContent = 'Erro: ' + e.message;
+            } finally {
+                btn.innerHTML = 'Excluir Definitivamente'; btn.disabled = false;
+            }
+        }
+
+        function renderAdminInicio(main) {
+            const isGerente = currentUser.perfil === 'Gerente' || currentUser.perfil === 'Administrador' || currentUser.perfil === 'Admin';
+            if (!isGerente) return;
+            const totalUsuarios = todosUsuarios.length; const ativos = todosUsuarios.filter(u => u.status === 'Ativo').length; const totalVendedores = todosVendedores.length;
+            main.innerHTML = `<header class="dashboard-header"><h1>Painel Administrativo</h1></header>
+            <div class="action-grid" style="margin-bottom: 24px;">
+                <div class="action-btn-card" onclick="navigateTo('admin_usuarios')">
+                    <div class="icon-wrapper"><svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" fill="none" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87m-4-12a4 4 0 010 7.75"/></svg></div>
+                    <h4>Gerenciar Usuários</h4><p>Adicionar, editar ou inativar acessos</p>
+                </div>
+                <div class="action-btn-card" onclick="navigateTo('metas')">
+                    <div class="icon-wrapper"><svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" fill="none" stroke-width="2"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg></div>
+                    <h4>Gestão de Metas</h4><p>Definir metas mensais por vendedor</p>
+                </div>
+            </div>
+            <div class="kpi-row">
+                <div class="kpi-card"><div class="kpi-label-row"><span class="kpi-dot blue"></span><span class="kpi-label">Total de Usuários</span></div><div class="kpi-value">${totalUsuarios}</div></div>
+                <div class="kpi-card"><div class="kpi-label-row"><span class="kpi-dot green"></span><span class="kpi-label">Usuários Ativos</span></div><div class="kpi-value">${ativos}</div></div>
+                <div class="kpi-card"><div class="kpi-label-row"><span class="kpi-dot orange"></span><span class="kpi-label">Vendedores</span></div><div class="kpi-value">${totalVendedores}</div></div>
+            </div>`;
+        }
+
+        function renderAdminUsuarios(main) {
+            let html = `<header class="dashboard-header"><div style="display:flex; align-items:center; gap:16px;"><button class="btn-voltar" onclick="navigateTo('admin_inicio')">← Voltar</button><h1>Gerenciar Usuários</h1></div><button class="btn-primary-action" onclick="abrirModalUsuarioAdmin()"><svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" fill="none" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Novo Usuário</button></header><div class="table-card"><table><thead><tr><th>Nome</th><th>PIN</th><th>Perfil</th><th>Status</th><th>Ações</th></tr></thead><tbody>`;
+            if (todosUsuarios.length === 0) { html += `<tr><td colspan="5" style="text-align:center; padding:24px;">Nenhum usuário encontrado.</td></tr>`; } 
+            else { 
+                todosUsuarios.forEach(u => { 
+                    const statusClass = u.status === 'Ativo' ? 'status-tag vendido' : 'status-tag perdido'; 
+                    html += `<tr><td><strong>${u.nome}</strong></td><td>${u.pin_acesso || '****'}</td><td>${u.perfil}</td><td><span class="${statusClass}">${u.status || 'Ativo'}</span></td><td><div style="display:flex; gap:8px;"><button class="btn-salvar-modal" style="padding:6px 12px; font-size:11px; background:var(--card-bg); border:1px solid var(--border-light); color:var(--text-primary);" onclick="abrirModalUsuarioAdmin(${u.id_usuario})">Editar</button>${u.id_usuario !== currentUser.id_usuario ? `<button class="btn-danger-ghost" style="padding:6px 12px; font-size:11px;" onclick="abrirModalExcluirUsuarioAdmin(${u.id_usuario}, '${u.nome}')">Excluir</button>` : ''}</div></td></tr>`; 
+                }); 
+            }
+            html += `</tbody></table></div>`; main.innerHTML = html;
+        }
 
         function logout() {
             currentUser = null; allOrcamentos = []; todosVendedores = []; todosUsuarios = []; selectedVendedor = 'todos'; historicoFaturamento = [];
