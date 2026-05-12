@@ -48,10 +48,13 @@
         .login-card .login-icon { width: 72px; height: 72px; border-radius: 50%; background: linear-gradient(135deg, var(--brand-blue), #1d4ed8); display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; font-size: 28px; font-weight: 900; letter-spacing: -1px; color: #fff; box-shadow: 0 12px 32px var(--brand-blue-glow); }
         .login-card h2 { font-size: 1.75rem; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 8px; color: var(--text-primary); }
         .login-card .subtitle { font-size: var(--font-base); color: var(--text-secondary); margin-bottom: 32px; font-weight: 500; line-height: 1.4; } .login-card .subtitle-instruction { display: block; margin-top: 4px; font-size: var(--font-sm); color: var(--text-muted); }
-        .pin-container { position: relative; display: flex; flex-direction: column; align-items: center; gap: 16px; margin-bottom: 32px; } .pin-balls { display: flex; gap: 20px; justify-content: center; pointer-events: none; }
-        .pin-ball { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--border-light); background: transparent; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); } .pin-ball.filled { background: var(--brand-blue); border-color: var(--brand-blue); box-shadow: 0 0 16px var(--brand-blue-glow); animation: pop 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55); }
+        .pin-container { position: relative; display: flex; flex-direction: column; align-items: center; gap: 16px; margin-bottom: 32px; } .pin-balls { display: flex; gap: 12px; justify-content: center; pointer-events: none; }
+        .pin-ball { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid var(--border-light); background: transparent; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); } .pin-ball.filled { background: var(--brand-blue); border-color: var(--brand-blue); box-shadow: 0 0 16px var(--brand-blue-glow); animation: pop 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55); }
         @keyframes pop { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.3); } }
-        .pin-input-visible { width: 100%; padding: 16px; border-radius: 12px; border: 1.5px solid var(--border-light); font-size: 1.5rem; text-align: center; letter-spacing: 0.5em; background: var(--card-bg); color: var(--text-primary); font-family: 'Inter', sans-serif; z-index: 3; position: relative; margin-bottom: 4px; }
+        .input-icon-wrapper { position: relative; width: 100%; margin-top: 14px; }
+        .pin-input-visible { width: 100%; padding: 16px 48px 16px 16px; border-radius: 12px; border: 1.5px solid var(--border-light); font-size: 1.5rem; text-align: center; letter-spacing: 0.5em; background: var(--card-bg); color: var(--text-primary); font-family: 'Inter', sans-serif; z-index: 3; position: relative; margin-bottom: 0; }
+        .toggle-password { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--text-muted); display: flex; align-items: center; justify-content: center; padding: 6px; z-index: 4; transition: color 0.2s; }
+        .toggle-password:hover { color: var(--brand-blue); } .toggle-password svg { width: 22px; height: 22px; }
         .pin-balls-wrapper { position: relative; padding: 16px 24px; border-radius: 16px; border: 2px solid var(--border-light); background: var(--card-bg); transition: all 0.3s ease; cursor: text; width: 100%; }
         .pin-balls-wrapper:focus-within { border-color: var(--brand-blue); box-shadow: 0 0 0 4px rgba(59,130,246,0.1), 0 8px 24px rgba(59,130,246,0.08); } .pin-balls-wrapper.shake { animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97); border-color: #ef4444 !important; box-shadow: 0 0 0 4px rgba(239,68,68,0.1), 0 8px 24px rgba(239,68,68,0.1) !important; }
         @keyframes shake { 0%, 100% { transform: translateX(0); } 10%, 50%, 90% { transform: translateX(-6px); } 30%, 70% { transform: translateX(6px); } }
@@ -124,7 +127,7 @@
         .info-card-title { font-size: var(--font-sm); font-weight: 600; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); display: flex; align-items: center; gap: 8px; } .info-card-icon { width: 18px; height: 18px; stroke: var(--text-muted); fill: none; }
         .info-group { display: flex; flex-direction: column; gap: 12px; background: #f8fafc; padding: 16px; border-radius: 12px; margin-bottom: 16px; border: 1px solid #f1f5f9; } body.dark .info-group { background: #0f172a; border-color: #1e293b; } .info-group:last-of-type { margin-bottom: 0; }
         .info-row { display: flex; justify-content: space-between; align-items: center; gap: 16px; } .info-row .info-label { font-size: var(--font-sm); color: var(--text-muted); font-weight: 400; } .info-row .info-value { font-size: var(--font-sm); font-weight: 500; color: var(--text-primary); text-align: right; display: flex; align-items: center; gap: 6px; }
-        .interesse-svg { flex-shrink: 0; } .info-value--objecao { color: var(--text-secondary); font-size: var(--font-sm); font-weight: 400; max-width: 220px; text-align: right; line-height: 1.4; }
+        .interesse-svg { flex-shrink: 0; }
         .btn-whatsapp-full { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; background: #25d366; color: #fff; text-align: center; padding: 14px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: var(--font-sm); margin-top: 20px; transition: all var(--transition); } .btn-whatsapp-full:hover { background: #128c7e; box-shadow: 0 4px 12px rgba(37,211,102,0.3); transform: translateY(-1px); } .btn-whatsapp-icon { width: 18px; height: 18px; fill: currentColor; }
         .schedule-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; } .form-group label { display: block; font-size: var(--font-xs); font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
         .form-input { width: 100%; padding: 14px 16px; border: 1.5px solid var(--border-light); border-radius: 10px; font-family: 'Inter', sans-serif; font-size: var(--font-sm); color: var(--text-primary); background: var(--bg-body); transition: all 0.2s; box-shadow: inset 0 1px 2px rgba(0,0,0,0.02); } .form-input:focus { border-color: var(--brand-blue); outline: none; box-shadow: 0 0 0 3px rgba(59,130,246,0.1), inset 0 1px 2px rgba(0,0,0,0.02); background: var(--card-bg); }
@@ -137,6 +140,8 @@
         .comment-item .comment-body { font-size: var(--font-sm); color: var(--text-secondary); margin-top: 4px; } .comment-item .comment-time { font-size: 10px; color: var(--text-muted); margin-top: 4px; }
         .comment-item .comment-actions { position: absolute; top: 8px; right: 8px; display: none; gap: 6px; } .comment-item:hover .comment-actions { display: flex; }
         .comment-actions button { background: none; border: none; cursor: pointer; padding: 4px; border-radius: 4px; color: var(--text-muted); transition: all 0.15s; } .comment-actions button:hover { background: rgba(0,0,0,0.05); color: var(--text-primary); } .comment-actions .btn-edit:hover { color: var(--brand-blue); } .comment-actions .btn-delete:hover { color: #ef4444; }
+
+        /* === INÍCIO DO BLOCO QUE TINHA SIDO CORTADO === */
         .comment-edit-input { width: 100%; padding: 8px; border-radius: 6px; border: 1.5px solid var(--brand-blue); font-size: var(--font-sm); font-family: 'Inter', sans-serif; margin-top: 4px; background: var(--card-bg); color: var(--text-primary); }
         .comment-edit-actions { display: flex; gap: 8px; margin-top: 6px; justify-content: flex-end; } .comment-edit-actions button { padding: 6px 14px; border-radius: 6px; font-size: var(--font-xs); font-weight: 600; cursor: pointer; border: none; font-family: 'Inter', sans-serif; }
         .comment-edit-actions .btn-save { background: var(--brand-blue); color: #fff; } .comment-edit-actions .btn-cancel { background: #e2e8f0; color: var(--text-secondary); } body.dark .comment-edit-actions .btn-cancel { background: #334155; color: #cbd5e1; }
@@ -145,12 +150,30 @@
         .btn-primary-action { background: var(--brand-blue); color: #fff; border: none; padding: 12px 22px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: var(--font-sm); font-family: 'Inter', sans-serif; transition: all var(--transition); display: inline-flex; align-items: center; gap: 8px; } .btn-primary-action:hover { background: var(--brand-blue-dark); box-shadow: 0 4px 12px rgba(59,130,246,0.3); }
         .btn-danger-ghost { background: var(--danger-light-bg); color: var(--danger-text); border: 1.5px solid var(--danger-border); padding: 12px 22px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: var(--font-sm); font-family: 'Inter', sans-serif; transition: all var(--transition); display: inline-flex; align-items: center; gap: 8px; } .btn-danger-ghost:hover { background: var(--danger-border); }
         .btn-salvar-timeline { background: var(--brand-blue); color: #fff; border: none; padding: 12px 28px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: var(--font-sm); font-family: 'Inter', sans-serif; display: inline-flex; align-items: center; justify-content: center; gap: 10px; transition: all var(--transition); } .btn-salvar-timeline:hover { background: var(--brand-blue-dark); } .btn-salvar-timeline svg { width: 16px; height: 16px; }
+        
         .fab { position: fixed; bottom: 32px; right: 36px; width: 56px; height: 56px; border-radius: 50%; background: var(--brand-blue); color: #fff; font-size: 28px; border: none; cursor: pointer; box-shadow: 0 8px 24px rgba(59,130,246,0.4); display: flex; align-items: center; justify-content: center; z-index: 200; transition: transform 0.2s, background 0.2s; } .fab:hover { background: var(--brand-blue-dark); transform: scale(1.06); }
         .modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.6); backdrop-filter: blur(6px); z-index: 300; display: flex; align-items: center; justify-content: center; opacity: 0; visibility: hidden; transition: all 0.25s ease; } .modal-overlay.open { opacity: 1; visibility: visible; }
         .modal-card { background: var(--card-bg); border-radius: var(--radius-md); padding: 28px 24px; max-width: 500px; width: 90%; max-height: 85vh; overflow-y: auto; border: 1px solid var(--border-light); box-shadow: 0 20px 48px rgba(0,0,0,0.2); transform: translateY(20px); transition: transform 0.25s ease; } .modal-overlay.open .modal-card { transform: translateY(0); }
         .modal-card h3 { font-size: var(--font-lg); font-weight: 700; margin-bottom: 20px; } .modal-card label { display: block; font-size: var(--font-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 4px; margin-top: 12px; }
         .modal-card input, .modal-card textarea, .modal-card select { width: 100%; padding: 12px 14px; border-radius: 8px; border: 1.5px solid var(--border-light); font-size: var(--font-sm); font-family: 'Inter', sans-serif; color: var(--text-primary); background: #fafbfc; margin-bottom: 4px; } .modal-card input:focus, .modal-card textarea:focus, .modal-card select:focus { border-color: var(--brand-blue); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); outline: none; }
-        .modal-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; } .modal-btns { display: flex; gap: 12px; margin-top: 20px; }
+        .modal-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; } 
+        /* === FIM DO BLOCO QUE TINHA SIDO CORTADO === */
+
+        .modal-btns { display: flex; gap: 12px; margin-top: 20px; }
+        
+        /* NOVOS ESTILOS PARA OS ITENS DO ORÇAMENTO */
+        .produtos-list { border: 1px solid var(--border-light); border-radius: 10px; padding: 12px; background: #f8fafc; margin-bottom: 12px; max-height: 250px; overflow-y: auto; }
+        body.dark .produtos-list { background: #0f172a; border-color: #334155; }
+        .produto-row { display: grid; grid-template-columns: 1fr 110px 38px; gap: 8px; align-items: start; margin-bottom: 8px; }
+        .produto-row:last-child { margin-bottom: 0; }
+        .btn-remove-item { width: 38px; height: 44px; border-radius: 8px; background: var(--danger-light-bg); color: var(--danger-text); border: 1px solid var(--danger-border); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; }
+        .btn-remove-item:hover { background: var(--danger-border); }
+        .btn-add-item { width: 100%; padding: 10px; border-radius: 8px; background: transparent; color: var(--brand-blue); border: 1.5px dashed var(--brand-blue-glow); font-weight: 600; font-size: var(--font-sm); cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-add-item:hover { background: rgba(59,130,246,0.05); border-color: var(--brand-blue); }
+        .total-modal-box { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; background: var(--sidebar-bg); color: #fff; border-radius: 10px; margin-top: 8px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        body.dark .total-modal-box { background: #000; border: 1px solid #334155; }
+        .total-modal-box .valor-total { font-size: 1.25rem; font-weight: 800; color: var(--accent-green); }
+
         .btn-salvar-modal { background: var(--brand-blue); color: #fff; border: none; padding: 12px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; flex: 1; font-size: var(--font-sm); font-family: 'Inter', sans-serif; transition: all var(--transition); display: flex; align-items: center; justify-content: center; gap: 8px; } .btn-salvar-modal:hover { background: var(--brand-blue-dark); } .btn-salvar-modal:disabled { opacity: 0.7; cursor: not-allowed; pointer-events: none; }
         .btn-salvar-modal .btn-spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.6s linear infinite; display: none; } .btn-salvar-modal.saving .btn-spinner { display: inline-block; } .btn-salvar-modal.saving .btn-text { opacity: 0.7; }
         .btn-cancelar-modal { background: #f1f5f9; color: var(--text-secondary); border: none; padding: 12px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; flex: 1; font-size: var(--font-sm); font-family: 'Inter', sans-serif; } body.dark .btn-cancelar-modal { background: #334155; color: #cbd5e1; }
@@ -169,7 +192,13 @@
             <div class="pin-container">
                 <div class="pin-balls-wrapper" id="pinBallsWrapper">
                     <div class="pin-balls" id="pinBalls" aria-hidden="true"><div class="pin-ball"></div><div class="pin-ball"></div><div class="pin-ball"></div><div class="pin-ball"></div></div>
-                    <input type="tel" class="pin-input-visible" id="pinInput" maxlength="4" inputmode="numeric" pattern="[0-9]*" autofocus aria-describedby="pinLiveRegion" aria-label="Digite seu PIN de 4 dígitos">
+                    <div class="input-icon-wrapper">
+                        <input type="password" class="pin-input-visible" id="pinInput" maxlength="4" inputmode="numeric" pattern="[0-9]*" autofocus aria-describedby="pinLiveRegion" aria-label="Digite seu PIN de 4 dígitos">
+                        <button type="button" class="toggle-password" onclick="togglePasswordVisibility()" aria-label="Alternar visibilidade da senha" tabindex="-1">
+                            <svg viewBox="0 0 24 24" id="eyeIconShow" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                            <svg viewBox="0 0 24 24" id="eyeIconHide" style="display:none;" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+                        </button>
+                    </div>
                 </div>
                 <span id="pinLiveRegion" class="sr-only" aria-live="polite"></span>
             </div>
@@ -199,9 +228,20 @@
             <h3>Novo Orçamento</h3>
             <label for="modNome">Nome do Cliente *</label><input type="text" id="modNome" placeholder="Nome completo" onblur="validateField('modNome','errNome')"><div class="field-error" id="errNome"></div>
             <label for="modWhats">WhatsApp *</label><input type="tel" id="modWhats" placeholder="(XX) XXXXX-XXXX" onblur="validateField('modWhats','errWhats')"><div class="field-error" id="errWhats"></div>
-            <label for="modModelo">Produto *</label><input type="text" id="modModelo" placeholder="Nome do produto" onblur="validateField('modModelo','errModelo')"><div class="field-error" id="errModelo"></div>
-            <label for="modValor">Valor (R$) *</label><input type="text" id="modValor" placeholder="R$ 0,00" inputmode="decimal" onblur="validateField('modValor','errValor')"><div class="field-error" id="errValor"></div>
-            <label for="modInteresse">Nível de Interesse</label><select id="modInteresse"><option value="">Selecionar...</option><option value="Alta">Alta</option><option value="Média">Média</option><option value="Baixa">Baixa</option></select>
+            
+            <label>Itens do Orçamento *</label>
+            <div class="produtos-list" id="produtosContainer">
+                <!-- Linhas inseridas via JS -->
+            </div>
+            <button type="button" class="btn-add-item" onclick="adicionarProdutoRow()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Adicionar outro produto</button>
+            <div class="field-error" id="errItens"></div>
+
+            <div class="total-modal-box">
+                <span>Total Calculado:</span>
+                <span class="valor-total" id="displayTotalModal">R$ 0,00</span>
+            </div>
+
+            <label for="modInteresse" style="margin-top:16px;">Nível de Interesse</label><select id="modInteresse"><option value="">Selecionar...</option><option value="Alta">Alta</option><option value="Média">Média</option><option value="Baixa">Baixa</option></select>
             <label for="modObservacoes">Observações Iniciais</label><textarea id="modObservacoes" rows="3"></textarea>
             <label>Agendar Primeiro Contato</label><div class="modal-row"><input type="date" id="modDataContato"><input type="time" id="modHoraContato"></div>
             <div class="modal-btns"><button class="btn-cancelar-modal" onclick="closeModal()">Cancelar</button><button class="btn-salvar-modal" id="btnSalvarOrcamento" onclick="salvarOrcamento()"><span class="btn-spinner"></span><span class="btn-text">Salvar Orçamento</span></button></div>
@@ -288,6 +328,22 @@
 
         function resetPinBalls() { pinInput.value = ''; pinBalls.forEach(ball => ball.classList.remove('filled')); pinLive.textContent = ''; pinInput.focus(); }
         function shakePinBalls() { pinBallsWrapper.classList.add('shake'); setTimeout(() => pinBallsWrapper.classList.remove('shake'), 500); }
+        
+        function togglePasswordVisibility() {
+            const input = document.getElementById('pinInput');
+            const iconShow = document.getElementById('eyeIconShow');
+            const iconHide = document.getElementById('eyeIconHide');
+            if (input.type === 'password') {
+                input.type = 'tel';
+                iconShow.style.display = 'none';
+                iconHide.style.display = 'block';
+            } else {
+                input.type = 'password';
+                iconShow.style.display = 'block';
+                iconHide.style.display = 'none';
+            }
+            input.focus();
+        }
 
         function toggleTheme() {
             document.body.classList.toggle('dark'); localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light');
@@ -658,7 +714,6 @@
             const statusClass = classToFormatStatus(orc.status);
             
             const interesse = orc.interesse || '-'; const interesseColor = interesse === 'Alta' ? '#10b981' : interesse === 'Média' ? '#f59e0b' : interesse === 'Baixa' ? '#ef4444' : '#94a3b8';
-            const objecao = (() => { const perda = comentarios.filter(c => c.tipo === 'Perda').pop(); return perda ? perda.texto : 'Nenhuma objeção registrada.'; })();
             const dataCriacao = orc.data_criacao ? new Date(orc.data_criacao).toLocaleDateString('pt-BR') : '-';
             const ultimoContato = comentarios.length > 0 ? new Date(comentarios[comentarios.length - 1].data_criacao).toLocaleDateString('pt-BR') : '-';
             const whats = (orc.clientes?.whatsapp || '').replace(/\D/g, '');
@@ -672,7 +727,6 @@
                     <div class="info-group">
                         <div class="info-row"><span class="info-label">Status</span><span class="info-value"><span class="status-tag ${statusClass}">${orc.status}</span></span></div>
                         <div class="info-row"><span class="info-label">Interesse</span><span class="info-value"><svg class="interesse-svg" width="10" height="10" viewBox="0 0 10 10"><circle cx="5" cy="5" r="5" fill="${interesseColor}"/></svg>${interesse}</span></div>
-                        <div class="info-row" style="align-items:flex-start;"><span class="info-label">Principal Objeção</span><span class="info-value info-value--objecao">${escapeHtml(objecao)}</span></div>
                     </div>
                     
                     <div class="info-group">
@@ -812,25 +866,132 @@
         function formatCurrency(value) { let num = value.replace(/\D/g, ''); num = (parseInt(num) || 0).toString(); return 'R$ ' + parseInt(num.slice(0, -2) || '0').toLocaleString('pt-BR') + ',' + num.slice(-2).padStart(2, '0'); }
         function parseCurrency(value) { return parseFloat(value.replace(/[^\d,]/g, '').replace(',', '.')) || 0; }
 
-        function openModal() { if (currentUser?.perfil !== 'Vendedor') return; document.getElementById('modalOverlay').classList.add('open'); document.getElementById('modNome').focus(); const btn = document.getElementById('btnSalvarOrcamento'); btn.classList.remove('saving'); btn.disabled = false; btn.querySelector('.btn-text').textContent = 'Salvar Orçamento'; salvandoOrcamento = false; }
+        function adicionarProdutoRow() {
+            const container = document.getElementById('produtosContainer');
+            const row = document.createElement('div');
+            row.className = 'produto-row';
+            row.innerHTML = `
+                <input type="text" class="form-input prod-nome" placeholder="Produto (Ex: Colchão)">
+                <input type="text" class="form-input prod-valor" placeholder="R$ 0,00" inputmode="decimal" oninput="this.value = formatCurrency(this.value); calcTotalModal();">
+                <button type="button" class="btn-remove-item" onclick="removerProdutoRow(this)" aria-label="Remover item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button>
+            `;
+            container.appendChild(row);
+            
+            // Focar no novo campo se não for a primeira linha (carregamento inicial)
+            if(container.children.length > 1) {
+                row.querySelector('.prod-nome').focus();
+            }
+            
+            // Impede excluir se houver apenas 1 linha
+            atualizarBotoesLixeira();
+        }
+
+        function removerProdutoRow(btn) {
+            btn.parentElement.remove();
+            calcTotalModal();
+            atualizarBotoesLixeira();
+        }
+
+        function atualizarBotoesLixeira() {
+            const container = document.getElementById('produtosContainer');
+            const btns = container.querySelectorAll('.btn-remove-item');
+            if(btns.length === 1) {
+                btns[0].style.opacity = '0.3';
+                btns[0].style.pointerEvents = 'none';
+            } else {
+                btns.forEach(b => {
+                    b.style.opacity = '1';
+                    b.style.pointerEvents = 'auto';
+                });
+            }
+        }
+
+        function calcTotalModal() {
+            const inputs = document.querySelectorAll('.prod-valor');
+            let total = 0;
+            inputs.forEach(inp => {
+                total += parseCurrency(inp.value);
+            });
+            document.getElementById('displayTotalModal').textContent = 'R$ ' + total.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+            return total;
+        }
+
+        function openModal() { 
+            if (currentUser?.perfil !== 'Vendedor') return; 
+            
+            document.getElementById('modNome').value = '';
+            document.getElementById('modWhats').value = '';
+            document.getElementById('errNome').textContent = '';
+            document.getElementById('errWhats').textContent = '';
+            document.getElementById('errItens').textContent = '';
+            document.getElementById('modNome').style.borderColor = 'var(--border-light)';
+            document.getElementById('modWhats').style.borderColor = 'var(--border-light)';
+            
+            // Reseta a lista de produtos
+            document.getElementById('produtosContainer').innerHTML = '';
+            adicionarProdutoRow();
+            calcTotalModal();
+
+            document.getElementById('modalOverlay').classList.add('open'); 
+            document.getElementById('modNome').focus(); 
+            
+            const btn = document.getElementById('btnSalvarOrcamento'); 
+            btn.classList.remove('saving'); 
+            btn.disabled = false; 
+            btn.querySelector('.btn-text').textContent = 'Salvar Orçamento'; 
+            salvandoOrcamento = false; 
+        }
+
         function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); const btn = document.getElementById('btnSalvarOrcamento'); btn.classList.remove('saving'); btn.disabled = false; btn.querySelector('.btn-text').textContent = 'Salvar Orçamento'; salvandoOrcamento = false; document.getElementById('modalMsg').textContent = ''; }
-        document.getElementById('modValor').addEventListener('input', function(e) { e.target.value = formatCurrency(e.target.value); });
 
         function validateField(idInput, idErro) { const el = document.getElementById(idInput); const err = document.getElementById(idErro); if (!el || !err) return; const val = el.value.trim(); if (!val) { err.textContent = 'Obrigatório'; el.style.borderColor = '#ef4444'; return false; } else { err.textContent = ''; el.style.borderColor = 'var(--border-light)'; return true; } }
 
         async function salvarOrcamento() {
             if (currentUser?.perfil !== 'Vendedor') return; if (salvandoOrcamento) return;
-            const nome = document.getElementById('modNome').value.trim(); const whats = document.getElementById('modWhats').value.trim(); const modelo = document.getElementById('modModelo').value.trim(); const valor = parseCurrency(document.getElementById('modValor').value);
+            const nome = document.getElementById('modNome').value.trim(); const whats = document.getElementById('modWhats').value.trim(); 
+            
+            // Validar itens da nova lista
+            const rows = document.querySelectorAll('.produto-row');
+            let nomesProdutos = [];
+            let valorTotalCalculado = 0;
+            let itensValidosCount = 0;
+
+            rows.forEach(row => {
+                const prodNome = row.querySelector('.prod-nome').value.trim();
+                const prodValor = parseCurrency(row.querySelector('.prod-valor').value);
+                
+                if (prodNome && prodValor > 0) {
+                    nomesProdutos.push(prodNome);
+                    valorTotalCalculado += prodValor;
+                    itensValidosCount++;
+                } else if (prodNome || prodValor > 0) {
+                    // Preencheu só a metade da linha, mas não o outro
+                    row.querySelector('.prod-nome').style.borderColor = !prodNome ? '#ef4444' : 'var(--border-light)';
+                    row.querySelector('.prod-valor').style.borderColor = prodValor <= 0 ? '#ef4444' : 'var(--border-light)';
+                } else {
+                    row.querySelector('.prod-nome').style.borderColor = 'var(--border-light)';
+                    row.querySelector('.prod-valor').style.borderColor = 'var(--border-light)';
+                }
+            });
             
             const interesse = document.getElementById('modInteresse').value || null;
             const observacoes = document.getElementById('modObservacoes').value.trim() || null;
             const dataContato = document.getElementById('modDataContato').value || null;
             const horaContato = document.getElementById('modHoraContato').value || null;
             
-            let valid = true; valid &= validateField('modNome', 'errNome'); valid &= validateField('modWhats', 'errWhats'); valid &= validateField('modModelo', 'errModelo');
-            if (!valor) { document.getElementById('errValor').textContent = 'Valor inválido'; document.getElementById('modValor').style.borderColor = '#ef4444'; valid = false; } else { document.getElementById('errValor').textContent = ''; document.getElementById('modValor').style.borderColor = 'var(--border-light)'; }
+            let valid = true; valid &= validateField('modNome', 'errNome'); valid &= validateField('modWhats', 'errWhats'); 
+            
+            if (itensValidosCount === 0) {
+                document.getElementById('errItens').textContent = 'Preencha o nome e o valor de pelo menos um produto.';
+                valid = false;
+            } else {
+                document.getElementById('errItens').textContent = '';
+            }
+
             if (!valid) return;
             
+            const modeloFinalCombinado = nomesProdutos.join(' + ');
+
             salvandoOrcamento = true; const btn = document.getElementById('btnSalvarOrcamento'); btn.classList.add('saving'); btn.disabled = true; btn.querySelector('.btn-text').textContent = 'Salvando...'; document.getElementById('modalMsg').textContent = '';
             
             try { 
@@ -840,8 +1001,8 @@
                 const { data: orc, error: erroOrc } = await db.from('orcamentos').insert([{ 
                     id_cliente: cliente.id_cliente, 
                     id_usuario: currentUser.id_usuario, 
-                    modelo_colchao: modelo, 
-                    valor_orcado: valor, 
+                    modelo_colchao: modeloFinalCombinado, 
+                    valor_orcado: valorTotalCalculado, 
                     status: 'Contato Inicial',
                     interesse: interesse,
                     observacoes: observacoes,
@@ -991,7 +1152,6 @@
             btn.classList.add('saving'); btn.disabled = true; err.textContent = '';
 
             try {
-                // Checa se o PIN já existe e não pertence ao usuário que estamos editando agora
                 const { data: pinCheck } = await db.from('usuarios').select('id_usuario').eq('pin_acesso', pin);
                 const isPinTaken = pinCheck && pinCheck.length > 0 && (!idUsuarioEmEdicao || pinCheck.some(p => p.id_usuario !== idUsuarioEmEdicao));
 
@@ -1005,7 +1165,6 @@
                     if (error) throw new Error(error.message);
                 }
 
-                // Recarrega os usuários na memória
                 const { data: todos_usr } = await db.from('usuarios').select('*').order('nome');
                 todosUsuarios = todos_usr || []; todosVendedores = todosUsuarios.filter(u => u.perfil === 'Vendedor');
 
