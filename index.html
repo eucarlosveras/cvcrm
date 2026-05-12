@@ -168,6 +168,20 @@
 
         .modal-btns { display: flex; gap: 12px; margin-top: 20px; }
         
+        /* NOVOS ESTILOS PARA OS ITENS DO ORÇAMENTO E AUTOCOMPLETE */
+        .autocomplete-wrapper { position: relative; width: 100%; }
+        .autocomplete-dropdown { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: var(--card-bg); border: 1px solid var(--border-light); border-radius: 8px; box-shadow: var(--shadow-md); z-index: 400; max-height: 220px; overflow-y: auto; display: none; flex-direction: column; }
+        .autocomplete-item { padding: 10px 14px; font-size: var(--font-sm); cursor: pointer; border-bottom: 1px solid var(--border-light); transition: background 0.15s; display: flex; justify-content: space-between; align-items: center; }
+        .autocomplete-item:last-child { border-bottom: none; }
+        .autocomplete-item:hover { background: rgba(59,130,246,0.05); }
+        .autocomplete-item strong { font-weight: 600; color: var(--text-primary); }
+        .autocomplete-item span { color: var(--accent-green-dark); font-weight: 700; font-size: 11px; background: rgba(16,185,129,0.1); padding: 2px 6px; border-radius: 6px; }
+        body.dark .autocomplete-dropdown { background: #1e293b; border-color: #334155; }
+        body.dark .autocomplete-item { border-color: #334155; }
+        body.dark .autocomplete-item:hover { background: rgba(59,130,246,0.15); }
+        body.dark .autocomplete-item strong { color: #f1f5f9; }
+        body.dark .autocomplete-item span { background: rgba(16,185,129,0.2); color: #6ee7b7; }
+
         .produtos-list { border: 1px solid var(--border-light); border-radius: 10px; padding: 12px; background: #f8fafc; margin-bottom: 12px; max-height: none; overflow-y: visible; }
         body.dark .produtos-list { background: #0f172a; border-color: #334155; }
         .produto-row { display: grid; grid-template-columns: 1fr 110px 38px; gap: 8px; align-items: start; margin-bottom: 8px; }
@@ -272,6 +286,7 @@
         let allOrcamentos = [];
         let todosVendedores = [];
         let todosUsuarios = []; 
+        let todosProdutos = []; // Nova lista global para o Autocomplete de Produtos
         let currentFilter = 'todos';
         let currentView = 'inicio';
         let previousView = 'inicio';
@@ -340,6 +355,15 @@
                 const modais = ['modalMotivoPerda', 'modalConfirmaFechamento', 'modalEditarMeta', 'modalExcluirComentario', 'modalUsuarioAdmin', 'modalExcluirUsuarioAdmin'];
                 for (const id of modais) { if (document.getElementById(id) && document.getElementById(id).classList.contains('open')) { window[id === 'modalMotivoPerda' ? 'fecharMotivoPerda' : id === 'modalConfirmaFechamento' ? 'fecharConfirmaFechamento' : id === 'modalEditarMeta' ? 'fecharModalMeta' : id === 'modalExcluirComentario' ? 'fecharModalExcluir' : id === 'modalUsuarioAdmin' ? 'fecharModalUsuarioAdmin' : 'fecharModalExcluirUsuario'](); break; } }
                 document.getElementById('notificationDropdown').classList.remove('open');
+                // Fecha dropdowns de autocomplete caso o usuário aperte ESC
+                document.querySelectorAll('.autocomplete-dropdown').forEach(d => d.style.display = 'none');
+            }
+        });
+
+        // Fechar dropdowns de produto ao clicar fora
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.autocomplete-wrapper')) {
+                document.querySelectorAll('.autocomplete-dropdown').forEach(d => d.style.display = 'none');
             }
         });
 
@@ -409,7 +433,9 @@
                 const hora = new Date().getHours(); let saudacao = hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite';
                 document.getElementById('sidebarGreeting').textContent = saudacao + ', ' + nomeUsuario.split(' ')[0]; document.getElementById('sidebarNome').textContent = nomeUsuario; document.getElementById('sidebarAvatar').textContent = nomeUsuario.charAt(0).toUpperCase(); document.getElementById('sidebarPerfil').textContent = perfilUsuario;
                 
-                await carregarDados(); await carregarHistoricoFaturamento();
+                await carregarProdutos(); // Carrega produtos logo no login
+                await carregarDados(); 
+                await carregarHistoricoFaturamento();
                 if (isAdministrador) navigateTo('admin_inicio'); else navigateTo('inicio');
 
             } catch (err) { 
@@ -447,6 +473,22 @@
             else if (currentView === 'novo_orcamento') renderNovoOrcamentoPage();
             
             hideLoader();
+        }
+
+        async function carregarProdutos() {
+            try {
+                // Tenta puxar da tabela 'produtos'. Ignora falhas caso a tabela não exista ainda.
+                const { data, error } = await db.from('produtos').select('*');
+                if (!error && data) {
+                    todosProdutos = data.sort((a, b) => {
+                        const nomeA = a.nome || a.nome_produto || a.descricao || a.titulo || '';
+                        const nomeB = b.nome || b.nome_produto || b.descricao || b.titulo || '';
+                        return nomeA.localeCompare(nomeB);
+                    });
+                }
+            } catch (e) {
+                console.warn("Aviso: Tabela 'produtos' não encontrada ou sem acesso. Autocomplete manual será usado.", e);
+            }
         }
 
         async function carregarHistoricoFaturamento() {
@@ -855,7 +897,10 @@
             const row = document.createElement('div');
             row.className = 'produto-row';
             row.innerHTML = `
-                <input type="text" class="form-input prod-nome" placeholder="Produto (Ex: Colchão)">
+                <div class="autocomplete-wrapper">
+                    <input type="text" class="form-input prod-nome" placeholder="Buscar produto..." autocomplete="off" oninput="handleBuscaProduto(this)" onfocus="showDropdownProduto(this)">
+                    <div class="autocomplete-dropdown"></div>
+                </div>
                 <input type="text" class="form-input prod-valor" placeholder="R$ 0,00" inputmode="decimal" oninput="this.value = formatCurrency(this.value); calcTotalModal();">
                 <button type="button" class="btn-remove-item" onclick="removerProdutoRow(this)" aria-label="Remover item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button>
             `;
@@ -866,6 +911,62 @@
             }
             
             atualizarBotoesLixeira();
+        }
+
+        function handleBuscaProduto(input) {
+            const wrapper = input.closest('.autocomplete-wrapper');
+            const dropdown = wrapper.querySelector('.autocomplete-dropdown');
+            const term = input.value.toLowerCase().trim();
+
+            if (!term) { renderDropdownProdutos(dropdown, todosProdutos, input); return; }
+
+            const filtrados = todosProdutos.filter(p => {
+                const nome = p.nome || p.nome_produto || p.descricao || p.titulo || '';
+                return nome.toLowerCase().includes(term);
+            });
+            renderDropdownProdutos(dropdown, filtrados, input);
+        }
+
+        function showDropdownProduto(input) {
+            const wrapper = input.closest('.autocomplete-wrapper');
+            const dropdown = wrapper.querySelector('.autocomplete-dropdown');
+            
+            document.querySelectorAll('.autocomplete-dropdown').forEach(d => { if (d !== dropdown) d.style.display = 'none'; });
+            dropdown.style.display = 'flex';
+            handleBuscaProduto(input); 
+        }
+
+        function renderDropdownProdutos(dropdown, lista, input) {
+            dropdown.innerHTML = '';
+            if (lista.length === 0) {
+                dropdown.innerHTML = '<div style="padding:12px 14px; font-size:var(--font-xs); color:var(--text-muted); text-align:center;">Nenhum produto salvo encontrado.<br>Você pode continuar digitando.</div>';
+                return;
+            }
+
+            lista.forEach(p => {
+                // Tenta mapear as chaves prováveis do banco de dados do cliente
+                const nome = p.nome || p.nome_produto || p.descricao || p.titulo || 'Produto sem nome';
+                const valor = p.valor || p.preco || p.valor_base || p.preco_base || 0;
+                
+                const div = document.createElement('div');
+                div.className = 'autocomplete-item';
+                div.innerHTML = `<strong>${escapeHtml(nome)}</strong><span>R$ ${parseFloat(valor).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span>`;
+                
+                div.onclick = () => {
+                    input.value = nome;
+                    dropdown.style.display = 'none';
+                    
+                    // Preenchimento inteligente do valor caso esteja zerado
+                    const row = input.closest('.produto-row');
+                    const valorInput = row.querySelector('.prod-valor');
+                    if (valor > 0 && (!valorInput.value || parseCurrency(valorInput.value) === 0)) {
+                        let strValor = (parseFloat(valor).toFixed(2)).replace('.', '');
+                        valorInput.value = formatCurrency(strValor);
+                        calcTotalModal();
+                    }
+                };
+                dropdown.appendChild(div);
+            });
         }
 
         function removerProdutoRow(btn) {
@@ -1285,7 +1386,7 @@
         }
 
         function logout() {
-            currentUser = null; allOrcamentos = []; todosVendedores = []; todosUsuarios = []; selectedVendedor = 'todos'; historicoFaturamento = [];
+            currentUser = null; allOrcamentos = []; todosVendedores = []; todosUsuarios = []; todosProdutos = []; selectedVendedor = 'todos'; historicoFaturamento = [];
             document.getElementById('loginOverlay').classList.remove('hidden'); document.getElementById('sidebar').style.display = 'none';
             document.getElementById('mainContent').style.display = 'none'; document.getElementById('fabButton').style.display = 'none';
             document.getElementById('btnLogin').classList.remove('loading'); document.getElementById('btnLogin').disabled = false;
