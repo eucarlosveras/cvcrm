@@ -58,16 +58,14 @@
         .login-form select { width: 100%; padding: 14px 16px; border-radius: 12px; border: 1.5px solid var(--border-light); background: var(--card-bg); font-family: 'Inter', sans-serif; font-size: var(--font-base); color: var(--text-primary); transition: border 0.2s; cursor: pointer; }
         .login-form select:focus { border-color: var(--brand-blue); outline: none; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
         
-        /* Estilos do Segment Control de Login */
-        .segment-control { display: flex; background: #e2e8f0; border-radius: 12px; padding: 4px; position: relative; }
+        .segment-control { display: flex; background: #e2e8f0; border-radius: 12px; padding: 4px; position: relative; margin-bottom: 8px; }
         body.dark .segment-control { background: #0f172a; border: 1px solid #334155; }
         .segment-btn { flex: 1; padding: 10px 4px; text-align: center; font-size: 13px; font-weight: 600; color: var(--text-secondary); cursor: pointer; border-radius: 8px; transition: all 0.3s ease; border: none; background: transparent; font-family: 'Inter', sans-serif; }
         .segment-btn.active { background: #fff; color: var(--brand-blue); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
         body.dark .segment-btn.active { background: #1e293b; color: var(--brand-blue); }
 
-        /* Estilos da Transição Suave (Fade/Slide) */
         .user-select-wrapper { opacity: 0; visibility: hidden; max-height: 0; transform: translateY(-10px); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); margin-top: 0; }
-        .user-select-wrapper.visible { opacity: 1; visibility: visible; max-height: 100px; transform: translateY(0); margin-top: 8px; }
+        .user-select-wrapper.visible { opacity: 1; visibility: visible; max-height: 100px; transform: translateY(0); margin-top: 8px; margin-bottom: 12px;}
 
         .login-btn { width: 100%; padding: 16px 20px; border-radius: 12px; background: var(--brand-blue); color: #fff; border: none; font-weight: 700; cursor: pointer; font-size: var(--font-md); font-family: 'Inter', sans-serif; transition: all var(--transition); display: flex; align-items: center; justify-content: center; gap: 10px; }
         .login-btn:hover { background: var(--brand-blue-dark); box-shadow: 0 8px 24px var(--brand-blue-glow); transform: translateY(-2px); } .login-btn:disabled { opacity: 0.7; cursor: not-allowed; pointer-events: none; transform: none; box-shadow: none; }
@@ -131,7 +129,13 @@
         .table-card { background: var(--card-bg); border-radius: var(--radius-md); padding: 20px 24px; box-shadow: var(--shadow-md); border: 1px solid var(--border-light); }
         .table-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 12px; } .table-card-header h3 { font-size: var(--font-md); font-weight: 700; display: flex; align-items: center; gap: 10px; }
         table { width: 100%; border-collapse: collapse; font-size: var(--font-sm); } table thead th { background: #f8fafc; padding: 12px 14px; font-weight: 700; font-size: var(--font-xs); text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); border-bottom: 2px solid #e2e8f0; text-align: left; }
-        table tbody td { padding: 12px 14px; border-bottom: 1px solid var(--border-light); vertical-align: middle; } table tbody tr:hover { background: rgba(0,0,0,0.01); }
+        table tbody td { padding: 12px 14px; border-bottom: 1px solid var(--border-light); vertical-align: middle; } 
+        
+        /* Linhas da tabela clicáveis e Feedback Visual */
+        .table-card tbody tr.clickable-row { cursor: pointer; transition: background 0.2s; }
+        .table-card tbody tr.clickable-row:hover { background: var(--brand-blue-glow); }
+        body.dark .table-card tbody tr.clickable-row:hover { background: rgba(59, 130, 246, 0.15); }
+
         .client-name { font-weight: 600; color: var(--brand-blue-dark); cursor: pointer; } .client-name:hover { text-decoration: underline; }
         .pagination { display: flex; align-items: center; gap: 8px; margin-top: 16px; justify-content: flex-end; font-size: var(--font-sm); } .pagination button { padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border-light); background: var(--card-bg); color: var(--text-primary); cursor: pointer; font-weight: 500; } .pagination button:disabled { opacity: 0.5; cursor: default; }
         
@@ -160,6 +164,9 @@
         .comment-edit-actions .btn-save { background: var(--brand-blue); color: #fff; } .comment-edit-actions .btn-cancel { background: #e2e8f0; color: var(--text-secondary); } body.dark .comment-edit-actions .btn-cancel { background: #334155; color: #cbd5e1; }
         .typing-indicator { font-size: var(--font-xs); color: var(--text-muted); font-style: italic; display: none; margin-top: 8px; } .typing-indicator.visible { display: block; }
         
+        .auto-save-indicator { font-size: 11px; color: var(--accent-green); font-weight: 700; opacity: 0; transition: opacity 0.3s; margin-left: 8px; }
+        .auto-save-indicator.visible { opacity: 1; }
+
         .btn-primary-action { background: var(--brand-blue); color: #fff; border: none; padding: 12px 22px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: var(--font-sm); font-family: 'Inter', sans-serif; transition: all var(--transition); display: inline-flex; align-items: center; gap: 8px; } .btn-primary-action:hover { background: var(--brand-blue-dark); box-shadow: 0 4px 12px rgba(59,130,246,0.3); }
         .btn-danger-ghost { background: var(--danger-light-bg); color: var(--danger-text); border: 1.5px solid var(--danger-border); padding: 12px 22px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: var(--font-sm); font-family: 'Inter', sans-serif; transition: all var(--transition); display: inline-flex; align-items: center; gap: 8px; } .btn-danger-ghost:hover { background: var(--danger-border); }
         .btn-salvar-timeline { background: var(--brand-blue); color: #fff; border: none; padding: 12px 28px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: var(--font-sm); font-family: 'Inter', sans-serif; display: inline-flex; align-items: center; justify-content: center; gap: 10px; transition: all var(--transition); } .btn-salvar-timeline:hover { background: var(--brand-blue-dark); } .btn-salvar-timeline svg { width: 16px; height: 16px; }
@@ -172,19 +179,6 @@
         .modal-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; } 
         .modal-btns { display: flex; gap: 12px; margin-top: 20px; }
         
-        .autocomplete-wrapper { position: relative; width: 100%; }
-        .autocomplete-dropdown { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: var(--card-bg); border: 1px solid var(--border-light); border-radius: 8px; box-shadow: var(--shadow-md); z-index: 400; max-height: 220px; overflow-y: auto; display: none; flex-direction: column; }
-        .autocomplete-item { padding: 10px 14px; font-size: var(--font-sm); cursor: pointer; border-bottom: 1px solid var(--border-light); transition: background 0.15s; display: flex; justify-content: space-between; align-items: center; }
-        .autocomplete-item:last-child { border-bottom: none; }
-        .autocomplete-item:hover { background: rgba(59,130,246,0.05); }
-        .autocomplete-item strong { font-weight: 600; color: var(--text-primary); }
-        .autocomplete-item span { color: var(--accent-green-dark); font-weight: 700; font-size: 11px; background: rgba(16,185,129,0.1); padding: 2px 6px; border-radius: 6px; }
-        body.dark .autocomplete-dropdown { background: #1e293b; border-color: #334155; }
-        body.dark .autocomplete-item { border-color: #334155; }
-        body.dark .autocomplete-item:hover { background: rgba(59,130,246,0.15); }
-        body.dark .autocomplete-item strong { color: #f1f5f9; }
-        body.dark .autocomplete-item span { background: rgba(16,185,129,0.2); color: #6ee7b7; }
-
         .produtos-list { border: 1px solid var(--border-light); border-radius: 10px; padding: 12px; background: #f8fafc; margin-bottom: 12px; max-height: none; overflow-y: visible; }
         body.dark .produtos-list { background: #0f172a; border-color: #334155; }
         .produto-row { display: grid; grid-template-columns: 1fr 110px 38px; gap: 8px; align-items: start; margin-bottom: 8px; }
@@ -749,10 +743,32 @@
                 btn.disabled = false;
             }
         }
+        
+        async function salvarObservacaoFixa(id) {
+            const texto = document.getElementById('obsFixaCliente').value.trim();
+            try {
+                const { error } = await db.from('orcamentos').update({ observacoes: texto }).eq('id_orcamento', id);
+                if(error) throw error;
+                
+                const loader = document.getElementById('obsSalvaLoader');
+                if(loader) {
+                    loader.classList.add('visible');
+                    setTimeout(() => loader.classList.remove('visible'), 2500);
+                }
+                
+                if (clienteAtualParaDetalhes && clienteAtualParaDetalhes.id_orcamento === id) {
+                    clienteAtualParaDetalhes.observacoes = texto;
+                }
+            } catch(e) { 
+                console.error(e); 
+                alert("Erro ao salvar observação.");
+            }
+        }
 
         function buildVendedorOptions() { let opts = '<option value="todos" ' + (selectedVendedor === 'todos' ? 'selected' : '') + '>Todos os vendedores</option>'; todosVendedores.forEach(v => { opts += `<option value="${v.id_usuario}" ${selectedVendedor == v.id_usuario ? 'selected' : ''}>${v.nome}</option>`; }); return opts; }
         function buildMonthOptions() { let opts = ''; for (let i = 0; i < 12; i++) { const d = new Date(currentYear, i, 1); const val = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; const sel = (d.getMonth() + 1 === currentMonth && d.getFullYear() === currentYear && !currentDay) ? 'selected' : ''; opts += `<option value="${val}" ${sel}>${d.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}</option>`; } return opts; }
         function buildDayOptions() { const daysInMonth = new Date(currentYear, currentMonth, 0).getDate(); let opts = `<option value="todos" ${!currentDay ? 'selected' : ''}>Todos os dias</option>`; for (let d = 1; d <= daysInMonth; d++) { const sel = currentDay === d ? 'selected' : ''; opts += `<option value="${d}" ${sel}>Dia ${d}</option>`; } return opts; }
+        function buildProdutosOptions() { let opts = '<option value="">Selecione o produto no sistema...</option>'; todosProdutos.forEach(p => { opts += `<option value="${p.nome}">${p.nome}</option>`; }); return opts; }
 
         function filtrarPorVendedor(val) { selectedVendedor = val; currentPage = 1; carregarDados(); }
         function changeMonth(val) { const [year, month] = val.split('-').map(Number); currentYear = year; currentMonth = month; currentDay = null; carregarDados(); }
@@ -843,7 +859,7 @@
             const isGerente = currentUser.perfil === 'Gerente' || currentUser.perfil === 'Administrador' || currentUser.perfil === 'Admin';
             let html = `<header class="dashboard-header"><h1>Agenda do Dia</h1><div class="header-controls">${isGerente ? `<div class="filter-wrapper"><span class="filter-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></span><select class="vendedor-select" id="vendedorSelectAgenda" onchange="filtrarPorVendedor(this.value)">${buildVendedorOptions()}</select></div>` : ''}<div class="filter-wrapper"><span class="filter-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/></svg></span><select class="month-select" onchange="changeMonth(this.value)">${buildMonthOptions()}</select></div><div class="filter-wrapper"><span class="filter-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg></span><select class="day-select" onchange="changeDay(this.value)">${buildDayOptions()}</select></div><div class="header-notification-area"><button class="btn-notification" id="btnNotification" onclick="event.stopPropagation(); toggleNotifications();" aria-label="Notificações"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg><span class="notification-badge" id="notificationBadgeCount"></span></button></div></div></header>`;
             if (agendados.length === 0) { html += '<div class="chart-card" style="text-align:center; padding:48px; color:var(--text-muted);">Nenhum contato agendado para hoje.</div>'; }
-            else { const colVendedorAgenda = isGerente ? '<th>Vendedor</th>' : ''; html += `<div class="table-card"><table><thead><tr><th>Cliente</th><th>WhatsApp</th><th>Motivo do Contato</th><th>Produto</th>${colVendedorAgenda}<th>Horário</th><th>Ação</th></tr></thead><tbody>`; agendados.forEach(o => { const nome = o.clientes?.nome_cliente || 'Cliente'; const whats = (o.clientes?.whatsapp || '').replace(/\D/g, ''); const motivo = o.observacao_agendamento || '-'; html += `<tr><td><span class="client-name" onclick="abrirDetalhesCliente(${o.id_orcamento})">${nome}</span></td><td>${o.clientes?.whatsapp || '-'}</td><td style="font-size:var(--font-xs); color:var(--text-secondary);">${motivo}</td><td>${o.modelo_colchao || '-'}</td>${isGerente ? `<td>${o.usuarios?.nome || '-'}</td>` : ''}<td>${o.hora_contato || '-'}</td><td><a href="https://wa.me/55${whats}" target="_blank" class="btn-whatsapp-full" style="padding:8px 14px; font-size:12px;">Ligar</a></td></tr>`; }); html += '</tbody></table></div>'; }
+            else { const colVendedorAgenda = isGerente ? '<th>Vendedor</th>' : ''; html += `<div class="table-card"><table><thead><tr><th>Cliente</th><th>WhatsApp</th><th>Motivo do Contato</th><th>Produto</th>${colVendedorAgenda}<th>Horário</th><th>Ação</th></tr></thead><tbody>`; agendados.forEach(o => { const nome = o.clientes?.nome_cliente || 'Cliente'; const whats = (o.clientes?.whatsapp || '').replace(/\D/g, ''); const motivo = o.observacao_agendamento || '-'; html += `<tr class="clickable-row" onclick="abrirDetalhesCliente(${o.id_orcamento})"><td><span class="client-name">${nome}</span></td><td>${o.clientes?.whatsapp || '-'}</td><td style="font-size:var(--font-xs); color:var(--text-secondary);">${motivo}</td><td>${o.modelo_colchao || '-'}</td>${isGerente ? `<td>${o.usuarios?.nome || '-'}</td>` : ''}<td>${o.hora_contato || '-'}</td><td><a href="https://wa.me/55${whats}" target="_blank" class="btn-whatsapp-full" style="padding:8px 14px; font-size:12px;" onclick="event.stopPropagation()">Ligar</a></td></tr>`; }); html += '</tbody></table></div>'; }
             document.getElementById('mainContent').innerHTML = html; setTimeout(() => { const notificacoes = buildNotifications(); const alertCount = notificacoes.filter(n => n.id !== null).length; renderNotificationBadge(alertCount); }, 300);
         }
 
@@ -851,7 +867,7 @@
             const isGerente = currentUser.perfil === 'Gerente' || currentUser.perfil === 'Administrador' || currentUser.perfil === 'Admin'; let html = `<header class="dashboard-header"><h1>Todos os Clientes</h1><div class="header-controls">${isGerente ? `<div class="filter-wrapper"><span class="filter-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></span><select class="vendedor-select" onchange="filtrarPorVendedor(this.value)">${buildVendedorOptions()}</select></div>` : ''}<div class="filter-wrapper"><span class="filter-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/></svg></span><select class="month-select" onchange="changeMonth(this.value)">${buildMonthOptions()}</select></div><div class="filter-wrapper"><span class="filter-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg></span><select class="day-select" onchange="changeDay(this.value)">${buildDayOptions()}</select></div><div class="header-notification-area"><button class="btn-notification" id="btnNotification" onclick="event.stopPropagation(); toggleNotifications();" aria-label="Notificações"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg><span class="notification-badge" id="notificationBadgeCount"></span></button></div></div></header>`;
             html += '<div class="table-card"><div style="margin-bottom:12px;"><input type="text" class="search-input" placeholder="Buscar cliente..." id="searchInputClientes" oninput="handleSearchClientes()" value="' + searchTerm + '"></div><table><thead><tr><th>Cliente</th><th>WhatsApp</th><th>Último Produto</th>' + (isGerente ? '<th>Vendedor</th>' : '') + '<th>Status</th></tr></thead><tbody>';
             const mapa = {}; allOrcamentos.forEach(o => { const nome = o.clientes?.nome_cliente || 'Cliente'; if (!mapa[nome]) mapa[nome] = o; }); let lista = Object.entries(mapa); if (searchTerm) lista = lista.filter(([nome]) => nome.toLowerCase().includes(searchTerm.toLowerCase()));
-            lista.forEach(([nome, o]) => { html += `<tr><td><span class="client-name" onclick="abrirDetalhesCliente(${o.id_orcamento})">${nome}</span></td><td>${o.clientes?.whatsapp || '-'}</td><td>${o.modelo_colchao || '-'}</td>${isGerente ? `<td>${o.usuarios?.nome || '-'}</td>` : ''}<td><span class="status-tag ${classToFormatStatus(o.status)}">${o.status}</span></td></tr>`; });
+            lista.forEach(([nome, o]) => { html += `<tr class="clickable-row" onclick="abrirDetalhesCliente(${o.id_orcamento})"><td><span class="client-name">${nome}</span></td><td>${o.clientes?.whatsapp || '-'}</td><td>${o.modelo_colchao || '-'}</td>${isGerente ? `<td>${o.usuarios?.nome || '-'}</td>` : ''}<td><span class="status-tag ${classToFormatStatus(o.status)}">${o.status}</span></td></tr>`; });
             html += '</tbody></table></div>'; document.getElementById('mainContent').innerHTML = html; setTimeout(() => { const notificacoes = buildNotifications(); const alertCount = notificacoes.filter(n => n.id !== null).length; renderNotificationBadge(alertCount); }, 300);
         }
 
@@ -910,6 +926,13 @@
                         <div class="info-row"><span class="info-label">Criado em</span><span class="info-value">${dataCriacao}</span></div>
                         <div class="info-row"><span class="info-label">Último Contato</span><span class="info-value">${ultimoContato}</span></div>
                         ${isGerente ? `<div class="info-row"><span class="info-label">Vendedor</span><span class="info-value">${orc.usuarios?.nome || '-'}</span></div>` : ''}
+                    </div>
+                    <div class="info-group">
+                        <label style="display:flex; align-items:center; font-size: var(--font-xs); font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">
+                            Observações Fixas 
+                            <span id="obsSalvaLoader" class="auto-save-indicator">✓ Salvo</span>
+                        </label>
+                        <textarea id="obsFixaCliente" class="form-input" rows="3" placeholder="Ex: Cliente prefere contato de manhã..." onblur="salvarObservacaoFixa(${orc.id_orcamento})">${orc.observacoes || ''}</textarea>
                     </div>
                     <a href="https://wa.me/55${whats}" target="_blank" class="btn-whatsapp-full"><svg class="btn-whatsapp-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg> Iniciar Conversa WhatsApp</a>
                 </div>
@@ -971,7 +994,7 @@
             if (searchTerm) dadosBase = dadosBase.filter(o => (o.clientes?.nome_cliente || '').toLowerCase().includes(searchTerm.toLowerCase()));
             const totalPages = Math.ceil(dadosBase.length / ITEMS_PER_PAGE) || 1; if (currentPage > totalPages) currentPage = totalPages; const inicio = (currentPage - 1) * ITEMS_PER_PAGE; const pagina = dadosBase.slice(inicio, inicio + ITEMS_PER_PAGE);
             const isGerente = currentUser.perfil === 'Gerente' || currentUser.perfil === 'Administrador' || currentUser.perfil === 'Admin'; const colVendedorTd = (o) => isGerente ? `<td>${o.usuarios?.nome || '-'}</td>` : '';
-            tbody.innerHTML = pagina.map(o => { const nome = o.clientes?.nome_cliente || 'Cliente'; const dataRelativa = timeAgo(o.data_criacao); const dataCompleta = o.data_criacao ? new Date(o.data_criacao).toLocaleDateString('pt-BR') : '-'; const status = o.status || 'Contato Inicial'; return `<tr><td><span class="client-name" onclick="abrirDetalhesCliente(${o.id_orcamento})">${nome}</span></td><td>${o.modelo_colchao || '-'}</td>${colVendedorTd(o)}<td><span class="status-tag ${classToFormatStatus(status)}">${status}</span></td><td title="${dataCompleta}">${dataRelativa}</td><td style="font-weight:700;">R$ ${parseFloat(o.valor_orcado || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td></tr>`; }).join('') || '<tr><td colspan="' + (isGerente ? '6' : '5') + '" style="text-align:center; padding:24px;">Nenhum registro.</td></tr>';
+            tbody.innerHTML = pagina.map(o => { const nome = o.clientes?.nome_cliente || 'Cliente'; const dataRelativa = timeAgo(o.data_criacao); const dataCompleta = o.data_criacao ? new Date(o.data_criacao).toLocaleDateString('pt-BR') : '-'; const status = o.status || 'Contato Inicial'; return `<tr class="clickable-row" onclick="abrirDetalhesCliente(${o.id_orcamento})"><td><span class="client-name">${nome}</span></td><td>${o.modelo_colchao || '-'}</td>${colVendedorTd(o)}<td><span class="status-tag ${classToFormatStatus(status)}">${status}</span></td><td title="${dataCompleta}">${dataRelativa}</td><td style="font-weight:700;">R$ ${parseFloat(o.valor_orcado || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td></tr>`; }).join('') || '<tr><td colspan="' + (isGerente ? '6' : '5') + '" style="text-align:center; padding:24px;">Nenhum registro.</td></tr>';
             pagination.innerHTML = `<button onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>Anterior</button><span>Página ${currentPage} de ${totalPages}</span><button onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>Próximo</button>`;
         }
         function changePage(page) { currentPage = page; atualizarTabelaPaginada(); }
@@ -983,33 +1006,9 @@
             const container = document.getElementById('produtosContainer');
             const row = document.createElement('div');
             row.className = 'produto-row';
-            row.innerHTML = `<div class="autocomplete-wrapper"><input type="text" class="form-input prod-nome" placeholder="Buscar produto..." autocomplete="off" oninput="handleBuscaProduto(this)" onfocus="showDropdownProduto(this)"><div class="autocomplete-dropdown"></div></div><input type="text" class="form-input prod-valor" placeholder="R$ 0,00" inputmode="decimal" oninput="this.value = formatCurrency(this.value); calcTotalModal();"><button type="button" class="btn-remove-item" onclick="removerProdutoRow(this)" aria-label="Remover item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button>`;
+            row.innerHTML = `<select class="form-input prod-nome" style="cursor: pointer;">${buildProdutosOptions()}</select><input type="text" class="form-input prod-valor" placeholder="R$ 0,00" inputmode="decimal" oninput="this.value = formatCurrency(this.value); calcTotalModal();"><button type="button" class="btn-remove-item" onclick="removerProdutoRow(this)" aria-label="Remover item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button>`;
             container.appendChild(row);
-            if(container.children.length > 1) { row.querySelector('.prod-nome').focus(); }
             atualizarBotoesLixeira();
-        }
-
-        function handleBuscaProduto(input) {
-            const wrapper = input.closest('.autocomplete-wrapper');
-            const dropdown = wrapper.querySelector('.autocomplete-dropdown');
-            const term = input.value.toLowerCase().trim();
-            if (!term) { renderDropdownProdutos(dropdown, todosProdutos, input); return; }
-            const filtrados = todosProdutos.filter(p => p.nome.toLowerCase().includes(term));
-            renderDropdownProdutos(dropdown, filtrados, input);
-        }
-
-        function showDropdownProduto(input) {
-            const wrapper = input.closest('.autocomplete-wrapper');
-            const dropdown = wrapper.querySelector('.autocomplete-dropdown');
-            document.querySelectorAll('.autocomplete-dropdown').forEach(d => { if (d !== dropdown) d.style.display = 'none'; });
-            dropdown.style.display = 'flex';
-            handleBuscaProduto(input); 
-        }
-
-        function renderDropdownProdutos(dropdown, lista, input) {
-            dropdown.innerHTML = '';
-            if (lista.length === 0) { dropdown.innerHTML = '<div style="padding:12px 14px; font-size:var(--font-xs); color:var(--text-muted); text-align:center;">Nenhum produto cadastrado com este nome.<br>Você pode continuar digitando ou adicionar um produto personalizado.</div>'; return; }
-            lista.forEach(p => { const div = document.createElement('div'); div.className = 'autocomplete-item'; div.innerHTML = `<strong>${escapeHtml(p.nome)}</strong>`; div.onclick = () => { input.value = p.nome; dropdown.style.display = 'none'; const row = input.closest('.produto-row'); const valorInput = row.querySelector('.prod-valor'); if (valorInput) valorInput.focus(); }; dropdown.appendChild(div); });
         }
 
         function removerProdutoRow(btn) { btn.parentElement.remove(); calcTotalModal(); atualizarBotoesLixeira(); }
@@ -1211,13 +1210,6 @@
                 const modais = ['modalMotivoPerda', 'modalConfirmaFechamento', 'modalEditarMeta', 'modalExcluirComentario', 'modalUsuarioAdmin', 'modalExcluirUsuarioAdmin'];
                 for (const id of modais) { if (document.getElementById(id) && document.getElementById(id).classList.contains('open')) { window[id === 'modalMotivoPerda' ? 'fecharMotivoPerda' : id === 'modalConfirmaFechamento' ? 'fecharConfirmaFechamento' : id === 'modalEditarMeta' ? 'fecharModalMeta' : id === 'modalExcluirComentario' ? 'fecharModalExcluir' : id === 'modalUsuarioAdmin' ? 'fecharModalUsuarioAdmin' : 'fecharModalExcluirUsuario'](); break; } }
                 document.getElementById('notificationDropdown').classList.remove('open');
-                document.querySelectorAll('.autocomplete-dropdown').forEach(d => d.style.display = 'none');
-            }
-        });
-
-        document.addEventListener('click', function(e) {
-            if (!e.target.closest('.autocomplete-wrapper')) {
-                document.querySelectorAll('.autocomplete-dropdown').forEach(d => d.style.display = 'none');
             }
         });
 
