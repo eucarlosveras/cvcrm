@@ -54,16 +54,20 @@
         .login-card h2 { font-size: 1.75rem; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 8px; color: var(--text-primary); }
         .login-card .subtitle { font-size: var(--font-base); color: var(--text-secondary); margin-bottom: 32px; font-weight: 500; line-height: 1.4; }
         
-        .login-form { display: flex; flex-direction: column; gap: 16px; margin-bottom: 16px; }
+        .login-form { display: flex; flex-direction: column; gap: 8px; margin-bottom: 24px; text-align: left; }
         .login-form select { width: 100%; padding: 14px 16px; border-radius: 12px; border: 1.5px solid var(--border-light); background: var(--card-bg); font-family: 'Inter', sans-serif; font-size: var(--font-base); color: var(--text-primary); transition: border 0.2s; cursor: pointer; }
         .login-form select:focus { border-color: var(--brand-blue); outline: none; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
         
-        /* Novos estilos do Segment Control de Login */
+        /* Estilos do Segment Control de Login */
         .segment-control { display: flex; background: #e2e8f0; border-radius: 12px; padding: 4px; position: relative; }
         body.dark .segment-control { background: #0f172a; border: 1px solid #334155; }
         .segment-btn { flex: 1; padding: 10px 4px; text-align: center; font-size: 13px; font-weight: 600; color: var(--text-secondary); cursor: pointer; border-radius: 8px; transition: all 0.3s ease; border: none; background: transparent; font-family: 'Inter', sans-serif; }
         .segment-btn.active { background: #fff; color: var(--brand-blue); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
         body.dark .segment-btn.active { background: #1e293b; color: var(--brand-blue); }
+
+        /* Estilos da Transição Suave (Fade/Slide) */
+        .user-select-wrapper { opacity: 0; visibility: hidden; max-height: 0; transform: translateY(-10px); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); margin-top: 0; }
+        .user-select-wrapper.visible { opacity: 1; visibility: visible; max-height: 100px; transform: translateY(0); margin-top: 8px; }
 
         .login-btn { width: 100%; padding: 16px 20px; border-radius: 12px; background: var(--brand-blue); color: #fff; border: none; font-weight: 700; cursor: pointer; font-size: var(--font-md); font-family: 'Inter', sans-serif; transition: all var(--transition); display: flex; align-items: center; justify-content: center; gap: 10px; }
         .login-btn:hover { background: var(--brand-blue-dark); box-shadow: 0 8px 24px var(--brand-blue-glow); transform: translateY(-2px); } .login-btn:disabled { opacity: 0.7; cursor: not-allowed; pointer-events: none; transform: none; box-shadow: none; }
@@ -207,20 +211,22 @@
         <div class="login-card">
             <div class="login-icon" aria-hidden="true">CV</div>
             <h2>CV CRM</h2>
-            <p class="subtitle">Sistema de Gestão Comercial</p>
+            <p class="subtitle">Acesso ao Sistema</p>
             
             <div class="login-form">
                 <!-- Passo 1: Botões de Perfil -->
                 <div class="segment-control" id="perfilSegment">
                     <button type="button" class="segment-btn" onclick="selecionarPerfil('Vendedor', this)">Vendedor</button>
                     <button type="button" class="segment-btn" onclick="selecionarPerfil('Gerente', this)">Gerente</button>
-                    <button type="button" class="segment-btn" onclick="selecionarPerfil('Administrador', this)">Admin (TI)</button>
+                    <button type="button" class="segment-btn" onclick="selecionarPerfil('Administrador', this)">Admin</button>
                 </div>
                 
-                <!-- Passo 2: Lista de Nomes Limpos (Oculta por padrão) -->
-                <select id="loginUsuarioSelect" style="display: none;">
-                    <option value="">Primeiro, escolha um perfil acima ⬆️</option>
-                </select>
+                <!-- Passo 2: Lista de Nomes Limpos (Com transição suave) -->
+                <div class="user-select-wrapper" id="usuarioSelectWrapper">
+                    <select id="loginUsuarioSelect">
+                        <option value="">Selecione seu nome...</option>
+                    </select>
+                </div>
             </div>
 
             <button class="login-btn" id="btnLogin" onclick="handleLogin()">
@@ -310,7 +316,7 @@
         let comentarioParaExcluir = null;
         let idUsuarioEmEdicao = null;
         
-        // Novas variáveis globais para a tela de login
+        // Variáveis globais para a tela de login
         let usuariosParaLogin = [];
         let perfilSelecionadoLogin = null;
 
@@ -319,7 +325,6 @@
 
         async function checkSession() {
             document.getElementById('loginOverlay').classList.remove('hidden');
-            document.getElementById('loginUsuarioSelect').style.display = 'none'; // Esconde a lista inicialmente
             
             try {
                 // Ao abrir a tela, o sistema vai no banco em silêncio e baixa TODOS os usuários ativos
@@ -333,7 +338,7 @@
             }
         }
 
-        // Nova função: dispara quando clica no botão do perfil (Vendedor, Gerente, Admin)
+        // Função disparada ao clicar no Segment Control (Vendedor, Gerente, Admin)
         function selecionarPerfil(perfil, btnElement) {
             perfilSelecionadoLogin = perfil;
             
@@ -341,22 +346,26 @@
             document.querySelectorAll('.segment-btn').forEach(b => b.classList.remove('active'));
             btnElement.classList.add('active');
 
-            // Revela a lista de seleção
+            const wrapper = document.getElementById('usuarioSelectWrapper');
             const select = document.getElementById('loginUsuarioSelect');
-            select.style.display = 'block'; 
-            select.innerHTML = '<option value="">2. Selecione seu nome...</option>';
+            
+            select.innerHTML = '<option value="">Selecione seu nome...</option>';
 
-            // Filtra os usuários que já estavam na memória pelo perfil clicado
+            // Filtra os usuários na memória (Admin ou Administrador tratam a mesma regra)
             const filtrados = usuariosParaLogin.filter(u => u.perfil === perfil || (perfil === 'Administrador' && u.perfil === 'Admin'));
 
             if (filtrados.length === 0) {
                 select.innerHTML = `<option value="">Nenhum ${perfil} cadastrado</option>`;
             } else {
-                // Preenche a lista com os nomes limpos, sem o cargo
+                // Preenche a lista com os nomes "limpos", sem expor cargo
                 filtrados.forEach(u => {
                     select.innerHTML += `<option value="${u.id_usuario}">${escapeHtml(u.nome)}</option>`;
                 });
             }
+
+            // Revela a lista com animação suave
+            wrapper.classList.add('visible');
+            document.getElementById('loginMsg').innerHTML = ''; // Limpa alertas anteriores
         }
 
         async function handleLogin() {
@@ -464,10 +473,8 @@
                     }).eq('id_usuario', idUsuarioEmEdicao);
                     if (error) throw new Error(error.message);
                 } else {
-                    // Inserindo novo direto na tabela (gera um UUID falso usando crypto.randomUUID se suportado, senão o supabase gera)
+                    // Inserindo novo direto na tabela
                     const { error } = await db.from('usuarios').insert([{
-                        // Deixa o Supabase gerar o id_usuario se o tipo da coluna for uuid e tiver valor default gen_random_uuid()
-                        // Caso contrário, use: id_usuario: crypto.randomUUID(),
                         nome: nome,
                         email: email,
                         perfil: perfil,
@@ -542,7 +549,6 @@
                 const { data, error } = await query.order('data_criacao', { ascending: false });
                 if (error) {
                     console.error("Erro no carregamento", error);
-                    // Se der erro (provavelmente RLS ativado bloqueando), silencia e deixa array vazio
                     allOrcamentos = [];
                 } else {
                     allOrcamentos = data || [];
