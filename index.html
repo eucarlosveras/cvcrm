@@ -1027,28 +1027,42 @@
             const headerHtml = `<header class="dashboard-header"><h1>${isGerente ? 'Dashboard Vendas' : 'Dashboard do Vendedor'}</h1><div class="header-controls">${renderFiltrosData(isGerente)}<div class="header-notification-area"><button class="btn-notification" id="btnNotification" onclick="event.stopPropagation(); toggleNotifications();" aria-label="Notificações"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg><span class="notification-badge" id="notificationBadgeCount"></span></button></div></div></header>`;
             const progressHtml = `<div class="gamified-progress-card"><div class="progress-icon" style="background:${gamified.iconBg}; box-shadow:${gamified.shadow};">${gamified.iconSvg}</div><div class="progress-info"><h3>Atingimento de Meta</h3><p class="progress-subtitle">R$ ${valorVendido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} / R$ ${metaAtual.toLocaleString('pt-BR')}</p></div><div class="progress-bar-outer"><div class="progress-bar-inner-gamified" style="width:${Math.min(100, percMetaExato)}%; background:${gamified.bg}; box-shadow:${gamified.shadow};"><span class="progress-percent">${percMetaExato > 100 ? '100+' : percMetaExato}%</span></div></div><div class="progress-motive-text" style="color:${gamified.motiveColor};">${gamified.motive}</div></div>`;
             const kpiHtml = `<div class="kpi-card"><div class="kpi-label-row"><span class="kpi-dot blue"></span><span class="kpi-label">Oportunidades Geradas</span></div><div class="kpi-value">${total}</div></div><div class="kpi-card"><div class="kpi-label-row"><span class="kpi-dot orange"></span><span class="kpi-label">Em Tratativa</span></div><div class="kpi-value">${negociacao}</div></div><div class="kpi-card"><div class="kpi-label-row"><span class="kpi-dot green"></span><span class="kpi-label">Taxa de Conversão</span></div><div class="kpi-value">${conversao}%</div></div><div class="kpi-card vendido-highlight"><div class="kpi-label-row"><span class="kpi-dot green"></span><span class="kpi-label">Vendas Fechadas</span></div><div class="kpi-value">R$ ${valorVendido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div></div>`;
-            const donutId = 'donutCanvas';
-            const donutHtml = `<div class="donut-wrapper"><canvas id="${donutId}" width="200" height="200"></canvas></div><div class="donut-legend"><div style="display:flex; align-items:center; gap:8px;"><span class="legend-color orcados"></span> Orçados <strong>${total}</strong></div><div style="display:flex; align-items:center; gap:8px;"><span class="legend-color fechados"></span> Fechados <strong>${fechados}</strong></div></div>`;
 
-            // Evolução mensal (apenas vendedor) ou top vendedores (gerente)
+            // Container do gráfico de rosca (sempre presente)
+            const donutHtml = `<div class="chart-card"><h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Aproveitamento</h3><div class="donut-wrapper"><canvas id="donutCanvas" width="200" height="200"></canvas></div><div class="donut-legend"><div style="display:flex; align-items:center; gap:8px;"><span class="legend-color orcados"></span> Orçados <strong>${total}</strong></div><div style="display:flex; align-items:center; gap:8px;"><span class="legend-color fechados"></span> Fechados <strong>${fechados}</strong></div></div></div>`;
+
+            // Container do gráfico de barras (sempre presente para vendedor, com mensagem se vazio)
             let barChartHtml = '';
-            if (!isGerente && historicoFaturamento.length > 0) {
-                barChartHtml = `<div class="chart-card"><h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg> Evolução Mensal</h3><div class="bar-chart-wrapper"><canvas id="barChartCanvas"></canvas></div></div>`;
+            if (!isGerente) {
+                if (historicoFaturamento.length > 0) {
+                    barChartHtml = `<div class="chart-card"><h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg> Evolução Mensal</h3><div class="bar-chart-wrapper"><canvas id="barChartCanvas"></canvas></div></div>`;
+                } else {
+                    barChartHtml = `<div class="chart-card"><h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg> Evolução Mensal</h3><div style="display:flex; align-items:center; justify-content:center; height:200px; color:var(--text-muted);">Sem dados de faturamento no período.</div></div>`;
+                }
             }
+
+            // Container do ranking (sempre presente para gerente)
             let rankingHtml = '';
-            if (isGerente && todosVendedores.length > 0) {
-                const maxValor = Math.max(1, ...todosVendedores.map(v => dados.filter(o => o.id_usuario === v.id_usuario && (o.status === 'Fechado' || o.status === 'Vendido')).reduce((s, o) => s + parseFloat(o.valor_orcado || 0), 0)));
-                const ranking = todosVendedores.map(v => {
-                    const vendido = dados.filter(o => o.id_usuario === v.id_usuario && (o.status === 'Fechado' || o.status === 'Vendido')).reduce((s, o) => s + parseFloat(o.valor_orcado || 0), 0);
-                    return { nome: v.nome, vendido, pct: maxValor ? (vendido / maxValor) * 100 : 0 };
-                }).sort((a, b) => b.vendido - a.vendido);
-                rankingHtml = `<div class="chart-card"><h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg> Top Vendedores</h3><ul class="ranking-list">${ranking.map((r, i) => `<li class="ranking-item"><span class="ranking-pos">#${i + 1}</span><span class="ranking-nome">${escapeHtml(r.nome)}</span><div class="ranking-bar-outer"><div class="ranking-bar-inner" style="width:${r.pct}%;"><span>${Math.round(r.pct)}%</span></div></div><span class="ranking-valor">R$ ${r.vendido.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}</span></li>`).join('')}</ul></div>`;
+            if (isGerente) {
+                if (todosVendedores.length > 0) {
+                    const maxValor = Math.max(1, ...todosVendedores.map(v => dados.filter(o => o.id_usuario === v.id_usuario && (o.status === 'Fechado' || o.status === 'Vendido')).reduce((s, o) => s + parseFloat(o.valor_orcado || 0), 0)));
+                    const ranking = todosVendedores.map(v => {
+                        const vendido = dados.filter(o => o.id_usuario === v.id_usuario && (o.status === 'Fechado' || o.status === 'Vendido')).reduce((s, o) => s + parseFloat(o.valor_orcado || 0), 0);
+                        return { nome: v.nome, vendido, pct: maxValor ? (vendido / maxValor) * 100 : 0 };
+                    }).sort((a, b) => b.vendido - a.vendido);
+                    rankingHtml = `<div class="chart-card"><h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg> Top Vendedores</h3><ul class="ranking-list">${ranking.map((r, i) => `<li class="ranking-item"><span class="ranking-pos">#${i + 1}</span><span class="ranking-nome">${escapeHtml(r.nome)}</span><div class="ranking-bar-outer"><div class="ranking-bar-inner" style="width:${r.pct}%;"><span>${Math.round(r.pct)}%</span></div></div><span class="ranking-valor">R$ ${r.vendido.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}</span></li>`).join('')}</ul></div>`;
+                } else {
+                    rankingHtml = `<div class="chart-card"><h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg> Top Vendedores</h3><div style="display:flex; align-items:center; justify-content:center; height:200px; color:var(--text-muted);">Nenhum vendedor cadastrado.</div></div>`;
+                }
             }
+
+            // Top 5 produtos (sempre presente)
             const top5 = {};
             fechadosArr.forEach(o => { const m = (o.modelo_colchao || 'Sem modelo').trim(); if (!top5[m]) top5[m] = { nome: m, count: 0 }; top5[m].count++; });
             const top5Ordenado = Object.values(top5).sort((a, b) => b.count - a.count).slice(0, 5);
             const top5Html = top5Ordenado.map((p, i) => `<li><span class="top5-rank">${i + 1}</span><span style="flex:1;">${escapeHtml(p.nome)}</span></li>`).join('') || '<li style="justify-content:center; color:var(--text-muted);">Nenhuma venda fechada</li>';
 
+            // Tabela da carteira
             const colVendedor = isGerente ? '<th>Vendedor</th>' : '';
             const searchTagHtml = searchTerm ? `<span class="search-tag">🔍 "${escapeHtml(searchTerm)}" <span class="remove-search" onclick="clearSearch()" aria-label="Limpar busca">✕</span></span>` : '';
 
@@ -1064,63 +1078,25 @@
             </select>
             </div></div><table><thead><tr><th>Cliente</th><th>Produto</th>${colVendedor}<th>Status</th><th>Data</th><th>Valor</th></tr></thead><tbody id="tableBody"></tbody></table><div class="pagination" id="paginationContainer"></div></div>`;
 
-            const chartsRowClass = isGerente ? 'charts-row' : (!isGerente && barChartHtml ? 'charts-row-triplo' : 'charts-row-duplo');
-            const chartsRowHtml = isGerente ? `<div class="chart-card"><h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Aproveitamento</h3>${donutHtml}</div>${rankingHtml}<div class="chart-card"><h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg> Mais Vendidos</h3><ul class="top5-list">${top5Html}</ul></div>` : `<div class="chart-card"><h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Aproveitamento</h3>${donutHtml}</div>${barChartHtml}<div class="chart-card"><h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg> Mais Vendidos</h3><ul class="top5-list">${top5Html}</ul></div>`;
+            // Montagem da grid de gráficos conforme perfil
+            let chartsRowHtml = '';
+            if (isGerente) {
+                // Gerente: Rosca + Ranking + Top 5
+                chartsRowHtml = `<section class="charts-row">${donutHtml}${rankingHtml}<div class="chart-card"><h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg> Mais Vendidos</h3><ul class="top5-list">${top5Html}</ul></div></section>`;
+            } else {
+                // Vendedor: Rosca + Barras + Top 5
+                const barrasOuVazio = barChartHtml || `<div class="chart-card"><h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg> Evolução Mensal</h3><div style="display:flex; align-items:center; justify-content:center; height:200px; color:var(--text-muted);">Dados insuficientes para o gráfico.</div></div>`;
+                chartsRowHtml = `<section class="charts-row-triplo">${donutHtml}${barrasOuVazio}<div class="chart-card"><h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg> Mais Vendidos</h3><ul class="top5-list">${top5Html}</ul></div></section>`;
+            }
 
-            main.innerHTML = `${headerHtml}${progressHtml}<section class="kpi-row">${kpiHtml}</section><section class="${chartsRowClass}">${chartsRowHtml}</section>${tabelaHtml}`;
+            main.innerHTML = `${headerHtml}${progressHtml}<section class="kpi-row">${kpiHtml}</section>${chartsRowHtml}${tabelaHtml}`;
 
-            // Atualizar gráficos sem destruir (MELHORIA 17)
-            setTimeout(() => {
-                const ctx = document.getElementById('donutCanvas');
-                if (ctx) {
-                    const orcadosCount = total - fechados;
-                    if (donutChartInstance) {
-                        donutChartInstance.data.datasets[0].data = [orcadosCount, fechados];
-                        donutChartInstance.update();
-                    } else {
-                        donutChartInstance = new Chart(ctx, {
-                            type: 'doughnut',
-                            data: {
-                                labels: ['Orçados', 'Fechados'],
-                                datasets: [{
-                                    data: [orcadosCount, fechados],
-                                    backgroundColor: [
-                                        getComputedStyle(document.body).getPropertyValue('--chart-blue').trim() || '#3b82f6',
-                                        getComputedStyle(document.body).getPropertyValue('--chart-green').trim() || '#10b981'
-                                    ],
-                                    borderColor: '#fff',
-                                    borderWidth: 3,
-                                    borderRadius: 6,
-                                    hoverBorderWidth: 4
-                                }]
-                            },
-                            options: {
-                                responsive: true,
-                                maintainAspectRatio: true,
-                                cutout: '65%',
-                                plugins: { legend: { display: false }, tooltip: { backgroundColor: 'var(--tooltip-bg)', titleColor: 'var(--tooltip-text)', bodyColor: 'var(--tooltip-body)', padding: 12, cornerRadius: 8, callbacks: { label: function(ctx) { const total = ctx.dataset.data.reduce((a, b) => a + b, 0); const pct = total ? Math.round((ctx.raw / total) * 100) : 0; return ctx.label + ': ' + ctx.raw + ' (' + pct + '%)'; } } } }
-                            }
-                        });
-                    }
-                }
-
-                const barCtx = document.getElementById('barChartCanvas');
-                if (barCtx && historicoFaturamento.length > 0) {
-                    if (barChartInstance) {
-                        barChartInstance.data.datasets[0].data = historicoFaturamento.map(h => h.valor);
-                        barChartInstance.update();
-                    } else {
-                        barChartInstance = new Chart(barCtx, {
-                            type: 'bar',
-                            data: {
-                                labels: historicoFaturamento.map(h => h.mes),
-                                datasets: [{ label: 'Vendido', data: historicoFaturamento.map(h => h.valor), backgroundColor: getComputedStyle(document.body).getPropertyValue('--chart-green').trim() || '#10b981', borderRadius: 6, borderSkipped: false, maxBarThickness: 40 }]
-                            },
-                            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { backgroundColor: 'var(--tooltip-bg)', titleColor: 'var(--tooltip-text)', bodyColor: 'var(--tooltip-body)', padding: 10, cornerRadius: 6, callbacks: { label: function(ctx) { return 'R$ ' + ctx.raw.toLocaleString('pt-BR', { minimumFractionDigits: 2 }); } } } }, scales: { y: { beginAtZero: true, ticks: { callback: function(value) { return value >= 1000 ? 'R$ ' + (value / 1000).toFixed(0) + 'k' : 'R$ ' + value; }, font: { size: 10, family: 'Inter' }, maxTicksLimit: 5 }, grid: { color: '#e2e8f0' } }, x: { grid: { display: false }, ticks: { font: { size: 10, family: 'Inter' }, maxRotation: 45, minRotation: 0 } } } }
-                        });
-                    }
-                }
-            }, 200);
+            // Renderizar gráficos após o DOM estar pronto (usando requestAnimationFrame para garantir)
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    renderizarGraficos(total, fechados);
+                });
+            });
 
             atualizarTabelaPaginada();
             setTimeout(() => {
@@ -1128,6 +1104,119 @@
                 const alertCount = notificacoes.filter(n => n.id !== null).length;
                 renderNotificationBadge(alertCount);
             }, 300);
+        }
+
+        // Nova função separada para renderizar os gráficos
+        function renderizarGraficos(total, fechados) {
+            // Gráfico de rosca
+            const ctx = document.getElementById('donutCanvas');
+            if (ctx) {
+                const orcadosCount = total - fechados;
+                if (donutChartInstance) {
+                    donutChartInstance.data.datasets[0].data = [orcadosCount, fechados];
+                    donutChartInstance.update();
+                } else {
+                    donutChartInstance = new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Orçados', 'Fechados'],
+                            datasets: [{
+                                data: [orcadosCount, fechados],
+                                backgroundColor: [
+                                    getComputedStyle(document.body).getPropertyValue('--chart-blue').trim() || '#3b82f6',
+                                    getComputedStyle(document.body).getPropertyValue('--chart-green').trim() || '#10b981'
+                                ],
+                                borderColor: '#fff',
+                                borderWidth: 3,
+                                borderRadius: 6,
+                                hoverBorderWidth: 4
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: true,
+                            cutout: '65%',
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    backgroundColor: getComputedStyle(document.body).getPropertyValue('--tooltip-bg').trim() || '#1e293b',
+                                    titleColor: getComputedStyle(document.body).getPropertyValue('--tooltip-text').trim() || '#f1f5f9',
+                                    bodyColor: getComputedStyle(document.body).getPropertyValue('--tooltip-body').trim() || '#cbd5e1',
+                                    padding: 12,
+                                    cornerRadius: 8,
+                                    callbacks: {
+                                        label: function(ctx) {
+                                            const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                                            const pct = total ? Math.round((ctx.raw / total) * 100) : 0;
+                                            return ctx.label + ': ' + ctx.raw + ' (' + pct + '%)';
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+
+            // Gráfico de barras (evolução mensal) - apenas para vendedor
+            const barCtx = document.getElementById('barChartCanvas');
+            if (barCtx && historicoFaturamento.length > 0) {
+                if (barChartInstance) {
+                    barChartInstance.data.datasets[0].data = historicoFaturamento.map(h => h.valor);
+                    barChartInstance.update();
+                } else {
+                    barChartInstance = new Chart(barCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: historicoFaturamento.map(h => h.mes),
+                            datasets: [{
+                                label: 'Vendido',
+                                data: historicoFaturamento.map(h => h.valor),
+                                backgroundColor: getComputedStyle(document.body).getPropertyValue('--chart-green').trim() || '#10b981',
+                                borderRadius: 6,
+                                borderSkipped: false,
+                                maxBarThickness: 40
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    backgroundColor: getComputedStyle(document.body).getPropertyValue('--tooltip-bg').trim() || '#1e293b',
+                                    titleColor: getComputedStyle(document.body).getPropertyValue('--tooltip-text').trim() || '#f1f5f9',
+                                    bodyColor: getComputedStyle(document.body).getPropertyValue('--tooltip-body').trim() || '#cbd5e1',
+                                    padding: 10,
+                                    cornerRadius: 6,
+                                    callbacks: {
+                                        label: function(ctx) {
+                                            return 'R$ ' + ctx.raw.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        callback: function(value) {
+                                            return value >= 1000 ? 'R$ ' + (value / 1000).toFixed(0) + 'k' : 'R$ ' + value;
+                                        },
+                                        font: { size: 10, family: 'Inter' },
+                                        maxTicksLimit: 5
+                                    },
+                                    grid: { color: '#e2e8f0' }
+                                },
+                                x: {
+                                    grid: { display: false },
+                                    ticks: { font: { size: 10, family: 'Inter' }, maxRotation: 45, minRotation: 0 }
+                                }
+                            }
+                        }
+                    });
+                }
+            }
         }
 
         // ==================== DEMAIS VIEWS (mantidas com escape adicional) ====================
@@ -1144,11 +1233,18 @@
                     const nome = escapeHtml(o.clientes?.nome_cliente || 'Cliente');
                     const whats = (o.clientes?.whatsapp || '').replace(/\D/g, '');
                     const motivo = escapeHtml(o.observacao_agendamento || '-');
-                    html += `<tr class="clickable-row" onclick="abrirDetalhesCliente(${o.id_orcamento})"><td><span class="client-name">${nome}</span></td><td>${escapeHtml(o.clientes?.whatsapp || '-')}</td><td style="font-size:var(--font-xs); color:var(--text-secondary);">${motivo}</td><td>${escapeHtml(o.modelo_colchao || '-')}</td>${isGerente ? `<td>${escapeHtml(o.usuarios?.nome || '-')}</td>` : ''}<td>${escapeHtml(o.hora_contato || '-')}</td><td><a href="https://wa.me/55${whats}" target="_blank" class="btn-whatsapp-full" style="padding:8px 14px; font-size:12px;" onclick="event.stopPropagation()">Ligar</a></td></tr>`;
+                    html += `<tr class="clickable-row" data-id="${o.id_orcamento}"><td><span class="client-name">${nome}</span></td><td>${escapeHtml(o.clientes?.whatsapp || '-')}</td><td style="font-size:var(--font-xs); color:var(--text-secondary);">${motivo}</td><td>${escapeHtml(o.modelo_colchao || '-')}</td>${isGerente ? `<td>${escapeHtml(o.usuarios?.nome || '-')}</td>` : ''}<td>${escapeHtml(o.hora_contato || '-')}</td><td><a href="https://wa.me/55${whats}" target="_blank" class="btn-whatsapp-full" style="padding:8px 14px; font-size:12px;" onclick="event.stopPropagation()">Ligar</a></td></tr>`;
                 });
                 html += '</tbody></table></div>';
             }
             document.getElementById('mainContent').innerHTML = html;
+            // Adiciona listeners de clique para as linhas da agenda
+            document.querySelectorAll('.table-card tbody tr.clickable-row').forEach(row => {
+                row.addEventListener('click', function() {
+                    const id = this.getAttribute('data-id');
+                    if (id) abrirDetalhesCliente(id);
+                });
+            });
             setTimeout(() => { const notificacoes = buildNotifications(); const alertCount = notificacoes.filter(n => n.id !== null).length; renderNotificationBadge(alertCount); }, 300);
         }
 
@@ -1161,10 +1257,17 @@
             let lista = Object.entries(mapa);
             if (searchTerm) lista = lista.filter(([nome]) => nome.toLowerCase().includes(searchTerm.toLowerCase()));
             lista.forEach(([nome, o]) => {
-                html += `<tr class="clickable-row" onclick="abrirDetalhesCliente(${o.id_orcamento})"><td><span class="client-name">${escapeHtml(nome)}</span></td><td>${escapeHtml(o.clientes?.whatsapp || '-')}</td><td>${escapeHtml(o.modelo_colchao || '-')}</td>${isGerente ? `<td>${escapeHtml(o.usuarios?.nome || '-')}</td>` : ''}<td><span class="status-tag ${classToFormatStatus(o.status)}">${escapeHtml(o.status)}</span></td></tr>`;
+                html += `<tr class="clickable-row" data-id="${o.id_orcamento}"><td><span class="client-name">${escapeHtml(nome)}</span></td><td>${escapeHtml(o.clientes?.whatsapp || '-')}</td><td>${escapeHtml(o.modelo_colchao || '-')}</td>${isGerente ? `<td>${escapeHtml(o.usuarios?.nome || '-')}</td>` : ''}<td><span class="status-tag ${classToFormatStatus(o.status)}">${escapeHtml(o.status)}</span></td></tr>`;
             });
             html += '</tbody></table></div>';
             document.getElementById('mainContent').innerHTML = html;
+            // Adiciona listeners de clique para as linhas da lista de clientes
+            document.querySelectorAll('.table-card tbody tr.clickable-row').forEach(row => {
+                row.addEventListener('click', function() {
+                    const id = this.getAttribute('data-id');
+                    if (id) abrirDetalhesCliente(id);
+                });
+            });
             setTimeout(() => { const notificacoes = buildNotifications(); const alertCount = notificacoes.filter(n => n.id !== null).length; renderNotificationBadge(alertCount); }, 300);
         }
 
@@ -1180,11 +1283,21 @@
 
         // ==================== DETALHES DO CLIENTE (MELHORIA 4, 6 e 14) ====================
         async function abrirDetalhesCliente(id) {
+            console.log('abrirDetalhesCliente chamado com id:', id);
+            if (!id) {
+                console.error('ID do orçamento inválido:', id);
+                alert('Erro: identificador do cliente não encontrado.');
+                return;
+            }
+
             let orc = allOrcamentos.find(o => o.id_orcamento == id);
             if (!orc) {
                 console.warn('Orçamento não encontrado em allOrcamentos, buscando diretamente do banco...');
                 try {
-                    const { data, error } = await db.from('orcamentos').select('*, clientes(nome_cliente, whatsapp), usuarios(nome)').eq('id_orcamento', id).single();
+                    const { data, error } = await db.from('orcamentos')
+                        .select('*, clientes(nome_cliente, whatsapp), usuarios(nome)')
+                        .eq('id_orcamento', id)
+                        .single();
                     if (error || !data) throw new Error('Orçamento não encontrado.');
                     orc = data;
                     if (!allOrcamentos.find(o => o.id_orcamento == id)) allOrcamentos.unshift(orc);
@@ -1194,16 +1307,20 @@
                     return;
                 }
             }
+
             clienteAtualParaDetalhes = orc;
             previousView = currentView;
             currentView = 'detalhes_cliente';
             showLoader();
             try {
-                const { data: comentarios, error } = await db.from('comentarios').select('*').eq('id_orcamento', id).order('data_criacao', { ascending: true });
-                if (error) throw new Error(error.message);
+                const { data: comentarios, error } = await db.from('comentarios')
+                    .select('*')
+                    .eq('id_orcamento', id)
+                    .order('data_criacao', { ascending: true });
+                if (error) throw error;
                 clienteAtualParaDetalhes.comentarios = comentarios || [];
             } catch (e) {
-                console.error("Erro ao buscar comentarios", e);
+                console.error('Erro ao buscar comentários:', e);
                 clienteAtualParaDetalhes.comentarios = [];
             }
             setUltimaVisita(id);
@@ -1535,23 +1652,88 @@
             html += `</tbody></table></div>`; main.innerHTML = html;
         }
 
-        // ==================== TABELA PAGINADA ====================
+        // ==================== TABELA PAGINADA (REFATORADA COM DELEGAÇÃO DE EVENTOS) ====================
         function atualizarTabelaPaginada() {
-            const tbody = document.getElementById('tableBody'); const pagination = document.getElementById('paginationContainer'); if (!tbody || !pagination) return;
+            const tbody = document.getElementById('tableBody');
+            const pagination = document.getElementById('paginationContainer');
+            if (!tbody || !pagination) return;
+
             let dadosBase = [...allOrcamentos];
-            if (currentFilter !== 'todos') { dadosBase = dadosBase.filter(o => { const s = o.status; if (currentFilter === 'Vendido' || currentFilter === 'Pós-Venda') return s === 'Fechado' || s === 'Vendido' || s === 'Pós-Venda'; if (currentFilter === 'Perdido') return s === 'Declinado' || s === 'Perdido'; if (['Contato Inicial', 'Negociação de Valores', 'Aguardando Decisão'].includes(currentFilter)) return s === currentFilter || s === 'Em Negociação'; return s === currentFilter; }); }
+            if (currentFilter !== 'todos') {
+                dadosBase = dadosBase.filter(o => {
+                    const s = o.status;
+                    if (currentFilter === 'Vendido' || currentFilter === 'Pós-Venda') return s === 'Fechado' || s === 'Vendido' || s === 'Pós-Venda';
+                    if (currentFilter === 'Perdido') return s === 'Declinado' || s === 'Perdido';
+                    if (['Contato Inicial', 'Negociação de Valores', 'Aguardando Decisão'].includes(currentFilter)) return s === currentFilter || s === 'Em Negociação';
+                    return s === currentFilter;
+                });
+            }
             if (searchTerm) dadosBase = dadosBase.filter(o => (o.clientes?.nome_cliente || '').toLowerCase().includes(searchTerm.toLowerCase()));
-            const totalPages = Math.ceil(dadosBase.length / ITEMS_PER_PAGE) || 1; if (currentPage > totalPages) currentPage = totalPages; const inicio = (currentPage - 1) * ITEMS_PER_PAGE; const pagina = dadosBase.slice(inicio, inicio + ITEMS_PER_PAGE);
-            const isGerente = currentUser.perfil === 'Gerente' || currentUser.perfil === 'Administrador' || currentUser.perfil === 'Admin'; const colVendedorTd = (o) => isGerente ? `<td>${escapeHtml(o.usuarios?.nome || '-')}</td>` : '';
-            tbody.innerHTML = pagina.map(o => { const nome = o.clientes?.nome_cliente || 'Cliente'; const dataRelativa = timeAgo(o.data_criacao); const dataCompleta = o.data_criacao ? new Date(o.data_criacao).toLocaleDateString('pt-BR') : '-'; const status = o.status || 'Contato Inicial'; return `<tr class="clickable-row" onclick="abrirDetalhesCliente(${o.id_orcamento})"><td><span class="client-name">${escapeHtml(nome)}</span></td><td>${escapeHtml(o.modelo_colchao || '-')}</td>${colVendedorTd(o)}<td><span class="status-tag ${classToFormatStatus(status)}">${escapeHtml(status)}</span></td><td title="${dataCompleta}">${dataRelativa}</td><td style="font-weight:700;">R$ ${parseFloat(o.valor_orcado || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td></tr>`; }).join('') || '<tr><td colspan="' + (isGerente ? '6' : '5') + '" style="text-align:center; padding:24px;">Nenhum registro.</td></tr>';
-            pagination.innerHTML = `<button onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>Anterior</button><span>Página ${currentPage} de ${totalPages}</span><button onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>Próximo</button>`;
+
+            const totalPages = Math.ceil(dadosBase.length / ITEMS_PER_PAGE) || 1;
+            if (currentPage > totalPages) currentPage = totalPages;
+            const inicio = (currentPage - 1) * ITEMS_PER_PAGE;
+            const pagina = dadosBase.slice(inicio, inicio + ITEMS_PER_PAGE);
+
+            const isGerente = currentUser.perfil === 'Gerente' || currentUser.perfil === 'Administrador' || currentUser.perfil === 'Admin';
+
+            // Limpa o tbody e adiciona linhas com data-id e listeners
+            tbody.innerHTML = '';
+            if (pagina.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="${isGerente ? '6' : '5'}" style="text-align:center; padding:24px;">Nenhum registro.</td></tr>`;
+            } else {
+                pagina.forEach(o => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'clickable-row';
+                    tr.setAttribute('data-id', o.id_orcamento);
+                    tr.style.cursor = 'pointer';
+                    tr.addEventListener('click', function() {
+                        abrirDetalhesCliente(o.id_orcamento);
+                    });
+
+                    const nome = o.clientes?.nome_cliente || 'Cliente';
+                    const dataRelativa = timeAgo(o.data_criacao);
+                    const dataCompleta = o.data_criacao ? new Date(o.data_criacao).toLocaleDateString('pt-BR') : '-';
+                    const status = o.status || 'Contato Inicial';
+
+                    tr.innerHTML = `
+                        <td><span class="client-name">${escapeHtml(nome)}</span></td>
+                        <td>${escapeHtml(o.modelo_colchao || '-')}</td>
+                        ${isGerente ? `<td>${escapeHtml(o.usuarios?.nome || '-')}</td>` : ''}
+                        <td><span class="status-tag ${classToFormatStatus(status)}">${escapeHtml(status)}</span></td>
+                        <td title="${dataCompleta}">${dataRelativa}</td>
+                        <td style="font-weight:700;">R$ ${parseFloat(o.valor_orcado || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            // Paginação
+            pagination.innerHTML = `
+                <button onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>Anterior</button>
+                <span>Página ${currentPage} de ${totalPages}</span>
+                <button onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>Próximo</button>
+            `;
         }
+
         function changePage(page) { currentPage = page; atualizarTabelaPaginada(); }
 
         // ==================== TEMA E INICIALIZAÇÃO ====================
         function toggleTheme() {
-            document.body.classList.toggle('dark'); localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light');
-            // Gráficos são atualizados no próximo render
+            document.body.classList.toggle('dark');
+            localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light');
+            
+            // Destruir gráficos existentes para forçar recriação com novas cores
+            if (donutChartInstance) {
+                donutChartInstance.destroy();
+                donutChartInstance = null;
+            }
+            if (barChartInstance) {
+                barChartInstance.destroy();
+                barChartInstance = null;
+            }
+            
+            // Recarregar a view atual para aplicar as novas cores
             if (currentView === 'inicio') renderInicio();
             else if (currentView === 'admin_inicio') renderAdminInicio(document.getElementById('mainContent'));
             else if (currentView === 'admin_usuarios') renderAdminUsuarios(document.getElementById('mainContent'));
