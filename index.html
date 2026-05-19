@@ -261,7 +261,29 @@
     <button class="fab" id="fabButton" style="display:none;" onclick="abrirNovoOrcamento()" aria-label="Novo orçamento" title="Novo orçamento">+</button>
 
     <!-- MODAIS (nomes de funções de fechamento já ajustados para usar openModal/closeModal) -->
-    <div class="modal-overlay" id="modalMotivoPerda" onclick="if(event.target === this) closeModal('modalMotivoPerda')"><div class="modal-card" style="max-width:420px;"><h3>Motivo da Perda</h3><textarea id="motivoPerda" rows="3" placeholder="Descreva o motivo..."></textarea><div class="field-error" id="errMotivo"></div><div class="modal-btns"><button class="btn-cancelar-modal" onclick="closeModal('modalMotivoPerda')">Cancelar</button><button class="btn-salvar-modal" onclick="confirmarPerda(event)">Confirmar Perda</button></div></div></div>
+    <div class="modal-overlay" id="modalMotivoPerda" onclick="if(event.target === this) closeModal('modalMotivoPerda')">
+        <div class="modal-card" style="max-width:420px;">
+            <h3>Motivo da Perda</h3>
+            <label for="motivoPerdaSelect">Selecione o motivo principal *</label>
+            <select id="motivoPerdaSelect" class="form-input" style="margin-bottom: 12px;">
+                <option value="">Selecione...</option>
+                <option value="Achou caro">Achou caro</option>
+                <option value="Comprou no concorrente">Comprou no concorrente</option>
+                <option value="Desistiu da compra">Desistiu da compra</option>
+                <option value="Falta de limite/crédito">Falta de limite/crédito</option>
+                <option value="Outros">Outros</option>
+            </select>
+            
+            <label for="motivoPerda">Detalhes adicionais</label>
+            <textarea id="motivoPerda" rows="3" class="form-input" placeholder="Detalhe um pouco mais (opcional)..."></textarea>
+            
+            <div class="field-error" id="errMotivo"></div>
+            <div class="modal-btns">
+                <button class="btn-cancelar-modal" onclick="closeModal('modalMotivoPerda')">Cancelar</button>
+                <button class="btn-salvar-modal" onclick="confirmarPerda(event)">Confirmar Perda</button>
+            </div>
+        </div>
+    </div>
     <div class="modal-overlay" id="modalConfirmaFechamento" onclick="if(event.target === this) closeModal('modalConfirmaFechamento')"><div class="modal-card" style="max-width:420px;"><h3>Confirmar Fechamento</h3><p style="margin-bottom:16px;">Deseja realmente fechar esta venda?</p><div class="modal-btns"><button class="btn-cancelar-modal" onclick="closeModal('modalConfirmaFechamento')">Cancelar</button><button class="btn-salvar-modal" id="btnConfirmaFechar">Confirmar</button></div></div></div>
     <div class="modal-overlay" id="modalEditarMeta" onclick="if(event.target === this) closeModal('modalEditarMeta')"><div class="modal-card" style="max-width:420px;"><h3>Editar Meta</h3><label for="inputMetaValor">Nova meta (R$)</label><input type="text" id="inputMetaValor" placeholder="R$ 50.000,00" inputmode="decimal"><div class="field-error" id="errMeta"></div><div class="modal-btns"><button class="btn-cancelar-modal" onclick="closeModal('modalEditarMeta')">Cancelar</button><button class="btn-salvar-modal" id="btnSalvarMeta" onclick="salvarNovaMeta()"><span class="btn-spinner"></span><span class="btn-text">Salvar</span></button></div></div></div>
     <div class="modal-overlay" id="modalExcluirComentario" onclick="if(event.target === this) closeModal('modalExcluirComentario')"><div class="modal-card" style="max-width:420px;"><h3>Excluir comentário</h3><p style="margin-bottom:16px;">Tem certeza que deseja excluir este comentário?</p><div class="modal-btns"><button class="btn-cancelar-modal" onclick="closeModal('modalExcluirComentario')">Cancelar</button><button class="btn-salvar-modal" id="btnConfirmarExclusao" style="background:#ef4444;" onclick="confirmarExclusaoComentario()"><span class="btn-spinner"></span><span class="btn-text">Excluir</span></button></div></div></div>
@@ -1259,7 +1281,7 @@
                 <option value="Perdido" ${currentFilter === 'Perdido' ? 'selected' : ''}>Perdido</option>
                 <option value="Pós-Venda" ${currentFilter === 'Pós-Venda' ? 'selected' : ''}>Pós-Venda</option>
             </select>
-            </div></div><table><thead><tr><th>Cliente</th><th>Produto</th>${colVendedor}<th>Status</th><th>Data</th><th>Valor</th></tr></thead><tbody id="tableBody"></tbody>赶</div><div class="pagination" id="paginationContainer"></div></div>`;
+            </div></div><table><thead><tr><th>Cliente</th><th>Produto</th>${colVendedor}<th>Status</th><th>Data</th><th>Valor</th></tr></thead><tbody id="tableBody"></tbody></table><div class="pagination" id="paginationContainer"></div></div>`;
 
             let chartsRowHtml = '';
             if (isGerente) {
@@ -1547,6 +1569,20 @@
                 <div class="novo-orcamento-section"><h4 class="novo-orcamento-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg> Dados do Cliente</h4>
                     <div class="form-group" style="margin-bottom: 16px;"><label for="modNome">Nome do Cliente *</label><input type="text" id="modNome" class="form-input" placeholder="Nome completo" onblur="validateField('modNome','errNome')"><div class="field-error" id="errNome"></div></div>
                     <div class="form-group" style="margin-bottom: 16px;"><label for="modWhats">WhatsApp *</label><input type="tel" id="modWhats" class="form-input" placeholder="(XX) XXXXX-XXXX" onblur="validateField('modWhats','errWhats')"><div class="field-error" id="errWhats"></div></div>
+                    
+                    <div class="form-group" style="margin-bottom: 16px;">
+                        <label for="modOrigem">Origem do Lead</label>
+                        <select id="modOrigem" class="form-input">
+                            <option value="">Selecionar...</option>
+                            <option value="Instagram">Instagram / Redes Sociais</option>
+                            <option value="WhatsApp">WhatsApp (Busca Orgânica)</option>
+                            <option value="Indicação">Indicação</option>
+                            <option value="Passou na Loja">Passou na Loja Física</option>
+                            <option value="Panfleto">Panfleto / Ação Externa</option>
+                            <option value="Outros">Outros</option>
+                        </select>
+                    </div>
+
                     <div class="form-group" style="margin-bottom: 16px;"><label for="modInteresse">Nível de Interesse</label><select id="modInteresse" class="form-input"><option value="">Selecionar...</option><option value="Alta">Alta</option><option value="Média">Média</option><option value="Baixa">Baixa</option></select></div>
                     <div class="form-group"><label for="modObservacoes">Observações Iniciais</label><textarea id="modObservacoes" class="form-input" rows="4" style="resize:vertical;"></textarea></div>
                 </div>
@@ -1558,8 +1594,21 @@
                         <div class="field-error" id="errItens"></div>
                         <div class="total-modal-box" style="margin-top: 16px; display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border-light);"><span style="font-weight: 600; color: var(--text-secondary);">Total Calculado:</span><span class="valor-total" id="displayTotalModal" style="font-size: 1.25rem; font-weight: 800; color: var(--accent-green-dark);">R$ 0,00</span></div>
                     </div>
-                    <div class="novo-orcamento-section"><h4 class="novo-orcamento-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg> Agendar Primeiro Contato</h4>
-                        <div class="schedule-form-grid"><div class="form-group"><label>Data</label><input type="date" id="modDataContato" class="form-input"></div><div class="form-group"><label>Horário</label><input type="time" id="modHoraContato" class="form-input"></div></div>
+                    
+                    <div class="novo-orcamento-section">
+                        <h4 class="novo-orcamento-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg> Agendar Próximo Passo *</h4>
+                        <div class="schedule-form-grid">
+                            <div class="form-group">
+                                <label>Data *</label>
+                                <input type="date" id="modDataContato" class="form-input" onblur="validateField('modDataContato','errDataContato')">
+                                <div class="field-error" id="errDataContato"></div>
+                            </div>
+                            <div class="form-group">
+                                <label>Horário *</label>
+                                <input type="time" id="modHoraContato" class="form-input" onblur="validateField('modHoraContato','errHoraContato')">
+                                <div class="field-error" id="errHoraContato"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1576,23 +1625,90 @@
 
         async function salvarOrcamento() {
             if (currentUser?.perfil !== 'Vendedor') return; if (salvandoOrcamento) return;
-            const nome = document.getElementById('modNome').value.trim(); const whats = document.getElementById('modWhats').value.trim();
+            
+            const nome = document.getElementById('modNome').value.trim(); 
+            const whats = document.getElementById('modWhats').value.trim();
+            const origem = document.getElementById('modOrigem').value || null;
+            
             const rows = document.querySelectorAll('.produto-row');
             let nomesProdutos = []; let valorTotalCalculado = 0; let itensValidosCount = 0;
             rows.forEach(row => { const prodNome = row.querySelector('.prod-nome').value.trim(); const prodValor = parseCurrency(row.querySelector('.prod-valor').value); if (prodNome && prodValor > 0) { nomesProdutos.push(prodNome); valorTotalCalculado += prodValor; itensValidosCount++; } else if (prodNome || prodValor > 0) { row.querySelector('.prod-nome').style.borderColor = !prodNome ? '#ef4444' : 'var(--border-light)'; row.querySelector('.prod-valor').style.borderColor = prodValor <= 0 ? '#ef4444' : 'var(--border-light)'; } else { row.querySelector('.prod-nome').style.borderColor = 'var(--border-light)'; row.querySelector('.prod-valor').style.borderColor = 'var(--border-light)'; } });
-            const interesse = document.getElementById('modInteresse').value || null; const observacoes = document.getElementById('modObservacoes').value.trim() || null; const dataContato = document.getElementById('modDataContato').value || null; const horaContato = document.getElementById('modHoraContato').value || null;
-            let valid = true; valid &= validateField('modNome', 'errNome'); valid &= validateField('modWhats', 'errWhats');
+            
+            const interesse = document.getElementById('modInteresse').value || null; 
+            const observacoes = document.getElementById('modObservacoes').value.trim() || null; 
+            const dataContato = document.getElementById('modDataContato').value || null; 
+            const horaContato = document.getElementById('modHoraContato').value || null;
+            
+            let valid = true; 
+            valid &= validateField('modNome', 'errNome'); 
+            valid &= validateField('modWhats', 'errWhats');
+            valid &= validateField('modDataContato', 'errDataContato');
+            valid &= validateField('modHoraContato', 'errHoraContato');
+
             if (itensValidosCount === 0) { document.getElementById('errItens').textContent = 'Preencha o nome e o valor de pelo menos um produto.'; valid = false; } else { document.getElementById('errItens').textContent = ''; }
+            
             if (!valid) return;
+            
             const modeloFinalCombinado = nomesProdutos.join(' + ');
-            salvandoOrcamento = true; const btn = document.getElementById('btnSalvarOrcamento'); btn.classList.add('saving'); btn.disabled = true; btn.querySelector('.btn-text').textContent = 'Salvando...'; document.getElementById('modalMsg').textContent = '';
+            salvandoOrcamento = true; 
+            const btn = document.getElementById('btnSalvarOrcamento'); 
+            btn.classList.add('saving'); btn.disabled = true; btn.querySelector('.btn-text').textContent = 'Salvando...'; document.getElementById('modalMsg').textContent = '';
+            
             try {
-                const { data: cliente, error: erroCliente } = await db.from('clientes').insert([{ nome_cliente: nome, whatsapp: whats }]).select().single();
-                if (erroCliente) throw new Error("Erro no Cliente: " + erroCliente.message);
-                const { data: orc, error: erroOrc } = await db.from('orcamentos').insert([{ id_cliente: cliente.id_cliente, id_usuario: currentUser.id_usuario, modelo_colchao: modeloFinalCombinado, valor_orcado: valorTotalCalculado, status: 'Contato Inicial', interesse: interesse, observacoes: observacoes, data_contato: dataContato, hora_contato: horaContato }]).select().single();
+                // Prevenção de Duplicidade: Verifica se o WhatsApp já existe
+                let idClienteSalvo;
+                const { data: clienteExistente, error: erroBusca } = await db.from('clientes')
+                    .select('id_cliente')
+                    .eq('whatsapp', whats)
+                    .maybeSingle();
+
+                if (erroBusca) throw new Error("Erro ao buscar cliente: " + erroBusca.message);
+
+                if (clienteExistente) {
+                    idClienteSalvo = clienteExistente.id_cliente;
+                } else {
+                    const { data: novoCliente, error: erroCliente } = await db.from('clientes')
+                        .insert([{ nome_cliente: nome, whatsapp: whats }])
+                        .select()
+                        .single();
+                    if (erroCliente) throw new Error("Erro no Cadastro do Cliente: " + erroCliente.message);
+                    idClienteSalvo = novoCliente.id_cliente;
+                }
+
+                // Gravar Origem: Caso você já tenha a coluna 'origem' no banco, descomente a linha abaixo no insert. 
+                // Por segurança e compatibilidade, estamos salvando no topo da observação também.
+                let obsFinal = observacoes || '';
+                if (origem) {
+                    obsFinal = `[Origem: ${origem}]\n${obsFinal}`;
+                }
+
+                const { data: orc, error: erroOrc } = await db.from('orcamentos')
+                    .insert([{ 
+                        id_cliente: idClienteSalvo, 
+                        id_usuario: currentUser.id_usuario, 
+                        modelo_colchao: modeloFinalCombinado, 
+                        valor_orcado: valorTotalCalculado, 
+                        status: 'Contato Inicial', 
+                        interesse: interesse, 
+                        observacoes: obsFinal.trim() || null, 
+                        data_contato: dataContato, 
+                        hora_contato: horaContato 
+                        // origem: origem  <-- Descomente se tiver criado a coluna 'origem' na tabela orcamentos
+                    }])
+                    .select()
+                    .single();
+                
                 if (erroOrc) throw new Error("Erro no Orçamento: " + erroOrc.message);
+                
                 carregarDados(true).then(() => { abrirDetalhesCliente(orc.id_orcamento); });
-            } catch (error) { console.error(error); document.getElementById('modalMsg').innerHTML = `<span style="color: #ef4444; font-size: 13px; font-weight: 600;">${escapeHtml(error.message)}</span>`; btn.classList.remove('saving'); btn.disabled = false; btn.querySelector('.btn-text').textContent = 'Salvar Orçamento'; salvandoOrcamento = false; }
+            } catch (error) { 
+                console.error(error); 
+                document.getElementById('modalMsg').innerHTML = `<span style="color: #ef4444; font-size: 13px; font-weight: 600;">${escapeHtml(error.message)}</span>`; 
+                btn.classList.remove('saving'); 
+                btn.disabled = false; 
+                btn.querySelector('.btn-text').textContent = 'Salvar Orçamento'; 
+                salvandoOrcamento = false; 
+            }
         }
 
         // ==================== AÇÕES: PERDA E FECHAMENTO (COM LOGS) ====================
@@ -1600,6 +1716,7 @@
             console.log('abrirMotivoPerda chamado para id:', id);
             idOrcamentoParaPerder = id; 
             openModal('modalMotivoPerda'); 
+            document.getElementById('motivoPerdaSelect').value = ''; 
             document.getElementById('motivoPerda').value = ''; 
         }
 
@@ -1617,17 +1734,24 @@
         async function confirmarPerda(event) {
             event.preventDefault();
             if (isConfirmingPerda) return;
-            const motivo = document.getElementById('motivoPerda').value.trim();
+            
+            const motivoSelect = document.getElementById('motivoPerdaSelect').value;
+            const motivoTexto = document.getElementById('motivoPerda').value.trim();
             const errMotivo = document.getElementById('errMotivo');
-            if (!motivo) { errMotivo.textContent = 'Descreva o motivo.'; return; }
+            
+            if (!motivoSelect) { errMotivo.textContent = 'Selecione o motivo principal.'; return; }
+            
             isConfirmingPerda = true;
             const btn = event.currentTarget;
             btn.innerHTML = 'Salvando...';
             btn.disabled = true;
+            
+            const motivoFinal = motivoTexto ? `${motivoSelect} - ${motivoTexto}` : motivoSelect;
+
             try {
                 const { error: err1 } = await db.from('orcamentos').update({ status: 'Perdido' }).eq('id_orcamento', idOrcamentoParaPerder);
                 if (err1) throw new Error(err1.message);
-                const { error: err2 } = await db.from('comentarios').insert([{ id_orcamento: idOrcamentoParaPerder, texto: motivo, tipo: 'Perda', autor: currentUser.nome }]);
+                const { error: err2 } = await db.from('comentarios').insert([{ id_orcamento: idOrcamentoParaPerder, texto: motivoFinal, tipo: 'Perda', autor: currentUser.nome }]);
                 if (err2) throw new Error(err2.message);
                 closeModal('modalMotivoPerda');
                 // Garantir que clienteAtualParaDetalhes esteja definido antes de usar
@@ -1636,7 +1760,7 @@
                 await abrirDetalhesCliente(idCliente);
                 carregarDados(true);
             } catch (e) { console.error(e); errMotivo.textContent = 'Erro ao salvar: ' + e.message; }
-            finally { isConfirmingPerda = false; }
+            finally { isConfirmingPerda = false; btn.innerHTML = 'Confirmar Perda'; btn.disabled = false;}
         }
 
         async function acaoDetalhes(id, status) {
