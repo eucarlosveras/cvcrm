@@ -572,6 +572,16 @@
                     if(uuidsPermitidos.length > 0) query = query.in('id_status', uuidsPermitidos);
                 }
 
+                if (currentDay) {
+                    const start = new Date(currentYear, currentMonth - 1, currentDay).toISOString();
+                    const end = new Date(currentYear, currentMonth - 1, currentDay, 23, 59, 59).toISOString();
+                    query = query.gte('data_criacao', start).lte('data_criacao', end);
+                } else if (currentMonth && currentYear) {
+                    const startDate = new Date(currentYear, currentMonth - 1, 1).toISOString();
+                    const endDate = new Date(currentYear, currentMonth, 0, 23, 59, 59).toISOString();
+                    query = query.gte('data_criacao', startDate).lte('data_criacao', endDate);
+                }
+
                 const from = (currentPage - 1) * ITEMS_PER_PAGE;
                 const to = from + ITEMS_PER_PAGE - 1;
                 query = query.range(from, to).order('data_criacao', { ascending: false });
@@ -1485,11 +1495,13 @@
         async function gerarProtocoloOrcamento() {
             const { data, error } = await db.from('orcamentos')
                 .select('protocolo')
-                .order('id_orcamento', { ascending: false })
+                .order('data_criacao', { ascending: false })
                 .limit(1);
             if (error || !data || data.length === 0) return 'ORC-1000';
             const ultimo = data[0].protocolo;
-            const num = parseInt(ultimo.split('-')[1]) || 1000;
+            if (!ultimo || !ultimo.includes('-')) return `ORC-${Math.floor(Math.random() * 9000) + 1000}`;
+            const num = parseInt(ultimo.split('-')[1]);
+            if (isNaN(num)) return `ORC-${Math.floor(Math.random() * 9000) + 1000}`;
             return `ORC-${num + 1}`;
         }
 
@@ -1602,103 +1614,121 @@
         }
 
         async function salvarOrcamento() {
-            const btn = document.getElementById('btnSalvarOrcamento');
             if (salvandoOrcamento) return;
-            
-            const nome = document.getElementById('modNome').value.trim();
-            const cpf = document.getElementById('modCpf').value.replace(/\D/g, '');
-            const whats = document.getElementById('modWhats').value.trim();
-            const origem = document.getElementById('modOrigem').value;
-            const interesse = document.getElementById('modInteresse').value;
-            const observacoes = document.getElementById('modObservacoes').value;
-            const dataOrcamento = document.getElementById('modDataOrcamento').value;
-            const dataContato = document.getElementById('modDataContato').value;
-            const horaContato = document.getElementById('modHoraContato').value;
-            
-            let valid = true;
-            if (!nome) { document.getElementById('errNome').textContent = 'Obrigatório'; valid = false; }
-            if (!cpf || cpf.length !== 11) { document.getElementById('errCpf').textContent = 'CPF inválido'; valid = false; }
-            if (!whats) { document.getElementById('errWhats').textContent = 'Obrigatório'; valid = false; }
-            if (!dataOrcamento) { document.getElementById('errDataOrc').textContent = 'Obrigatório'; valid = false; }
-            if (!dataContato) { document.getElementById('errDataContato').textContent = 'Obrigatório'; valid = false; }
-            if (!horaContato) { document.getElementById('errHoraContato').textContent = 'Obrigatório'; valid = false; }
-            
-            const produtoRows = document.querySelectorAll('.produto-row');
-            if (produtoRows.length === 0) {
-                document.getElementById('errItens').textContent = 'Adicione pelo menos um produto';
-                valid = false;
-            } else {
-                let hasEmpty = false;
-                produtoRows.forEach(row => {
-                    const nomeProd = row.querySelector('.prod-nome').value.trim();
-                    const valorProd = row.querySelector('.prod-valor').value;
-                    if (!nomeProd || !valorProd) hasEmpty = true;
-                });
-                if (hasEmpty) {
-                    document.getElementById('errItens').textContent = 'Preencha nome e valor de todos os produtos';
-                    valid = false;
-                }
-            }
-            
-            if (!valid) { showToast('Preencha todos os campos obrigatórios', 'error'); return; }
-            
-            const { existe, cliente, avisoTelefone } = await verificarClientePorCpf(cpf, whats);
-            let idCliente = null;
-            
-            if (existe) {
-                idCliente = cliente.id_cliente;
-                showToast(`Cliente já existe: ${cliente.nome_cliente}. Orçamento será vinculado.`, 'info');
-            } else {
-                if (avisoTelefone) {
-                    const continuar = confirm(avisoTelefone + '\nDeseja continuar com o novo cadastro?');
-                    if (!continuar) return;
-                }
-                const { data: newCliente, error: errClient } = await db.from('clientes')
-                    .insert([{ nome_cliente: nome, whatsapp: whats, cpf: cpf }])
-                    .select('id_cliente')
-                    .single();
-                if (errClient) { showToast('Erro ao criar cliente: ' + errClient.message, 'error'); return; }
-                idCliente = newCliente.id_cliente;
-            }
-            
-            const produtosList = [];
-            let valorTotal = 0;
-            produtoRows.forEach(row => {
-                const nomeProd = row.querySelector('.prod-nome').value.trim();
-                const valorProd = parseCurrency(row.querySelector('.prod-valor').value);
-                produtosList.push({ nome: nomeProd, valor: valorProd });
-                valorTotal += valorProd;
-            });
-            
-            const protocolo = await gerarProtocoloOrcamento();
-            const statusInicial = mapStatusUUID.find(s => s.nome === STATUS.CONTATO_INICIAL);
-            const idStatus = statusInicial ? statusInicial.id_status : null;
-            let idInteresse = null;
-            if (interesse) {
-                const nivel = mapInteresseUUID.find(n => n.nome === interesse);
-                idInteresse = nivel ? nivel.id_nivel : null;
-            }
-            
-            const payload = {
-                id_cliente: idCliente,
-                id_usuario: currentUser.id_usuario,
-                id_status: idStatus,
-                id_nivel_interesse: idInteresse,
-                valor_orcado: valorTotal,
-                modelo_colchao: produtosList.map(p => p.nome).join(', '),
-                data_criacao: dataOrcamento,
-                data_contato: dataContato,
-                hora_contato: horaContato,
-                observacoes: observacoes,
-                origem: origem,
-                protocolo: protocolo,
-            };
-            
+            salvandoOrcamento = true;
+            const btn = document.getElementById('btnSalvarOrcamento');
             btn.classList.add('saving');
             btn.disabled = true;
-            salvandoOrcamento = true;
             
             try {
+                const nome = document.getElementById('modNome').value.trim();
+                const cpf = document.getElementById('modCpf').value.replace(/\D/g, '');
+                const whats = document.getElementById('modWhats').value.trim();
+                const origem = document.getElementById('modOrigem').value;
+                const interesse = document.getElementById('modInteresse').value;
+                const observacoes = document.getElementById('modObservacoes').value;
+                const dataOrcamento = document.getElementById('modDataOrcamento').value;
+                const dataContato = document.getElementById('modDataContato').value;
+                const horaContato = document.getElementById('modHoraContato').value;
+                
+                let valid = true;
+                if (!nome) { document.getElementById('errNome').textContent = 'Obrigatório'; valid = false; }
+                if (!cpf || cpf.length !== 11) { document.getElementById('errCpf').textContent = 'CPF inválido'; valid = false; }
+                if (!whats) { document.getElementById('errWhats').textContent = 'Obrigatório'; valid = false; }
+                if (!dataOrcamento) { document.getElementById('errDataOrc').textContent = 'Obrigatório'; valid = false; }
+                if (!dataContato) { document.getElementById('errDataContato').textContent = 'Obrigatório'; valid = false; }
+                if (!horaContato) { document.getElementById('errHoraContato').textContent = 'Obrigatório'; valid = false; }
+                
+                const produtoRows = document.querySelectorAll('.produto-row');
+                if (produtoRows.length === 0) {
+                    document.getElementById('errItens').textContent = 'Adicione pelo menos um produto';
+                    valid = false;
+                } else {
+                    let hasEmpty = false;
+                    produtoRows.forEach(row => {
+                        const nomeProd = row.querySelector('.prod-nome').value.trim();
+                        const valorProd = parseCurrency(row.querySelector('.prod-valor').value);
+                        if (!nomeProd || valorProd <= 0) hasEmpty = true;
+                    });
+                    if (hasEmpty) {
+                        document.getElementById('errItens').textContent = 'Preencha nome e valor de todos os produtos';
+                        valid = false;
+                    }
+                }
+                
+                if (!valid) { 
+                    showToast('Preencha todos os campos obrigatórios', 'error'); 
+                    salvandoOrcamento = false;
+                    btn.classList.remove('saving');
+                    btn.disabled = false;
+                    return; 
+                }
+                
+                const { existe, cliente, avisoTelefone } = await verificarClientePorCpf(cpf, whats);
+                let idCliente = null;
+                
+                if (existe) {
+                    idCliente = cliente.id_cliente;
+                    showToast(`Cliente já existe: ${cliente.nome_cliente}. Orçamento será vinculado.`, 'info');
+                } else {
+                    if (avisoTelefone) {
+                        const continuar = confirm(avisoTelefone + '\nDeseja continuar com o novo cadastro?');
+                        if (!continuar) {
+                            salvandoOrcamento = false;
+                            btn.classList.remove('saving');
+                            btn.disabled = false;
+                            return;
+                        }
+                    }
+                    const { data: newCliente, error: errClient } = await db.from('clientes')
+                        .insert([{ nome_cliente: nome, whatsapp: whats, cpf: cpf }])
+                        .select('id_cliente')
+                        .single();
+                    if (errClient) throw new Error('Erro ao criar cliente: ' + errClient.message);
+                    idCliente = newCliente.id_cliente;
+                }
+                
+                const produtosList = [];
+                let valorTotal = 0;
+                produtoRows.forEach(row => {
+                    const nomeProd = row.querySelector('.prod-nome').value.trim();
+                    const valorProd = parseCurrency(row.querySelector('.prod-valor').value);
+                    produtosList.push({ nome: nomeProd, valor: valorProd });
+                    valorTotal += valorProd;
+                });
+                
+                const protocolo = await gerarProtocoloOrcamento();
+                const statusInicial = mapStatusUUID.find(s => s.nome === STATUS.CONTATO_INICIAL);
+                const idStatus = statusInicial ? statusInicial.id_status : null;
+                let idInteresse = null;
+                if (interesse) {
+                    const nivel = mapInteresseUUID.find(n => n.nome === interesse);
+                    idInteresse = nivel ? nivel.id_nivel : null;
+                }
+                
+                let dataCriacaoFinal = dataOrcamento;
+                const hojeData = new Date().toISOString().split('T')[0];
+                if (dataOrcamento === hojeData) {
+                    dataCriacaoFinal = new Date().toISOString(); 
+                } else {
+                    dataCriacaoFinal = `${dataOrcamento}T12:00:00.000Z`; 
+                }
+                
+                const payload = {
+                    id_cliente: idCliente,
+                    id_usuario: currentUser.id_usuario,
+                    id_status: idStatus,
+                    id_nivel_interesse: idInteresse,
+                    valor_orcado: valorTotal,
+                    modelo_colchao: produtosList.map(p => p.nome).join(', '),
+                    data_criacao: dataCriacaoFinal,
+                    data_contato: dataContato,
+                    hora_contato: horaContato,
+                    observacoes: observacoes,
+                    origem: origem,
+                    protocolo: protocolo,
+                };
+                
                 const { data: newOrc, error: errOrc } = await db.from('orcamentos')
                     .insert(payload)
                     .select('id_orcamento')
@@ -1716,7 +1746,11 @@
                 navigateTo(previousView);
             } catch (error) {
                 console.error(error);
-                showToast('Erro ao salvar orçamento: ' + error.message, 'error');
+                let errMsg = error.message;
+                if (errMsg && (errMsg.includes('duplicate key') || errMsg.includes('unique constraint'))) {
+                    errMsg = 'Conflito na geração do protocolo. Por favor, tente clicar em salvar novamente.';
+                }
+                showToast('Erro ao salvar orçamento: ' + errMsg, 'error');
             } finally {
                 btn.classList.remove('saving');
                 btn.disabled = false;
