@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CV CRM · Gestão Comercial</title>
-    <!-- ⚠️ ATENÇÃO: EM PRODUÇÃO, ATIVE O RLS E CONFIGURE AS POLÍTICAS DE ACESSO -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -191,7 +190,7 @@
 
         .produtos-list { border: 1px solid var(--border-light); border-radius: 10px; padding: 12px; background: #f8fafc; margin-bottom: 12px; max-height: 220px; overflow-y: auto; }
         body.dark .produtos-list { background: #0f172a; border-color: #334155; }
-        .produto-row { display: grid; grid-template-columns: 1fr 110px 38px; gap: 8px; align-items: start; margin-bottom: 8px; }
+        .produto-row { display: grid; grid-template-columns: 1fr 110px 38px 20px; gap: 8px; align-items: start; margin-bottom: 8px; }
         .produto-row:last-child { margin-bottom: 0; }
         .btn-remove-item { width: 38px; height: 44px; border-radius: 8px; background: var(--danger-light-bg); color: var(--danger-text); border: 1px solid var(--danger-border); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; }
         .btn-remove-item:hover { background: var(--danger-border); }
@@ -651,14 +650,13 @@
             } catch(e) { showToast('Erro ao exportar relatório.', 'error'); }
         }
 
-        // NOVA FUNÇÃO salvarUsuarioAdmin
         async function salvarUsuarioAdmin() {
             const nome = document.getElementById('adminModNome').value.trim();
             const email = document.getElementById('adminModEmail').value.trim();
             const loja = document.getElementById('adminModLoja').value;
             const perfil = document.getElementById('adminModPerfil').value;
             const status = document.getElementById('adminModStatus').value;
-            const senha = document.getElementById('adminModSenha').value; // Novo campo
+            const senha = document.getElementById('adminModSenha').value;
             const err = document.getElementById('errAdminUsuario');
 
             if (!nome || !email || !senha) {
@@ -670,7 +668,6 @@
             btn.classList.add('saving'); btn.disabled = true; err.textContent = '';
 
             try {
-                // Chamada para a sua Edge Function
                 const { data, error } = await db.functions.invoke('criar-usuario', {
                     body: { nome, email, loja, perfil, status, senha }
                 });
@@ -680,7 +677,6 @@
                 showToast('Usuário criado com sucesso!', 'success');
                 closeModal('modalUsuarioAdmin');
                 
-                // Atualiza a lista
                 const { data: usuarios } = await db.from('usuarios').select('*').order('nome');
                 todosUsuarios = usuarios || [];
                 renderAdminUsuarios(document.getElementById('mainContent'));
@@ -712,7 +708,7 @@
                 title.textContent = 'Editar Usuário';
                 nomeInput.value = user.nome || ''; emailInput.value = user.email || '';
                 lojaSel.value = user.id_loja || ''; perfilSel.value = user.perfil || 'Vendedor'; statusSel.value = user.status || 'Ativo';
-                senhaInput.value = ''; // não exibir senha ao editar
+                senhaInput.value = '';
             } else {
                 title.textContent = 'Novo Usuário';
                 nomeInput.value = ''; emailInput.value = ''; lojaSel.value = ''; perfilSel.value = 'Vendedor'; statusSel.value = 'Ativo';
@@ -1345,7 +1341,7 @@
             try {
                 showLoader();
                 const { data, error } = await db.from('orcamentos')
-                    .select('*, clientes(nome_cliente, whatsapp), usuarios(nome), status_orcamento(nome), niveis_interesse(nome)')
+                    .select('*, clientes(nome_cliente, whatsapp, cpf), usuarios(nome), status_orcamento(nome), niveis_interesse(nome)')
                     .eq('id_orcamento', id).single();
                     
                 if (error || !data) throw new Error('Orçamento não encontrado.');
@@ -1392,6 +1388,7 @@
                     <div class="info-group">
                         <div class="info-row"><span class="info-label">Status</span><span class="info-value"><span class="status-tag ${statusClass}">${escapeHtml(orc.status)}</span></span></div>
                         <div class="info-row"><span class="info-label">Interesse</span><span class="info-value"><svg class="interesse-svg" width="10" height="10" viewBox="0 0 10 10"><circle cx="5" cy="5" r="5" fill="${interesseColor}"/></svg>${interesse}</span></div>
+                        <div class="info-row"><span class="info-label">CPF</span><span class="info-value">${escapeHtml(orc.clientes?.cpf || '-')}</span></div>
                     </div>
                     <div class="info-group">
                         <div class="info-row"><span class="info-label">Produto</span><span class="info-value">${escapeHtml(orc.modelo_colchao || '-')}</span></div>
@@ -1462,8 +1459,21 @@
         function adicionarProdutoRow() {
             const container = document.getElementById('produtosContainer'); const datalistHtml = `<datalist id="produtosList">${buildProdutosOptionsDatalist()}</datalist>`;
             const row = document.createElement('div'); row.className = 'produto-row';
-            row.innerHTML = `<input type="text" class="form-input prod-nome" list="produtosList" placeholder="Nome do produto" style="cursor: pointer;">${datalistHtml}<input type="text" class="form-input prod-valor" placeholder="R$ 0,00" inputmode="decimal" oninput="this.value = formatCurrency(this.value); calcTotalModal();"><button type="button" class="btn-remove-item" onclick="removerProdutoRow(this)" aria-label="Remover item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button>`;
+            row.innerHTML = `<input type="text" class="form-input prod-nome" list="produtosList" placeholder="Nome do produto" style="cursor: pointer;" onchange="validarProdutoSelecionado(this)">${datalistHtml}<input type="text" class="form-input prod-valor" placeholder="R$ 0,00" inputmode="decimal" oninput="this.value = formatCurrency(this.value); calcTotalModal();"><button type="button" class="btn-remove-item" onclick="removerProdutoRow(this)" aria-label="Remover item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button><span class="prod-check" style="display:none; color:green; margin-left:4px;">✓</span>`;
             container.appendChild(row); atualizarBotoesLixeira();
+        }
+
+        function validarProdutoSelecionado(input) {
+            const checkSpan = input.parentElement.querySelector('.prod-check');
+            const produtoDigitado = input.value.trim();
+            const produtoExiste = todosProdutos.some(p => p.nome.toLowerCase() === produtoDigitado.toLowerCase());
+            if (produtoExiste && produtoDigitado !== '') {
+                checkSpan.style.display = 'inline';
+                input.style.borderColor = '#10b981';
+            } else {
+                checkSpan.style.display = 'none';
+                input.style.borderColor = 'var(--border-light)';
+            }
         }
 
         function removerProdutoRow(btn) { btn.parentElement.remove(); calcTotalModal(); atualizarBotoesLixeira(); }
@@ -1472,69 +1482,284 @@
 
         function abrirNovoOrcamento() { if (currentUser?.perfil !== 'Vendedor') return; navigateTo('novo_orcamento'); }
 
+        async function gerarProtocoloOrcamento() {
+            const { data, error } = await db.from('orcamentos')
+                .select('protocolo')
+                .order('id_orcamento', { ascending: false })
+                .limit(1);
+            if (error || !data || data.length === 0) return 'ORC-1000';
+            const ultimo = data[0].protocolo;
+            const num = parseInt(ultimo.split('-')[1]) || 1000;
+            return `ORC-${num + 1}`;
+        }
+
+        async function verificarClientePorCpf(cpf, telefone) {
+            if (!cpf) return { existe: false, cliente: null, avisoTelefone: null };
+            const { data: clientePorCpf } = await db.from('clientes')
+                .select('id_cliente, nome_cliente, whatsapp, cpf')
+                .eq('cpf', cpf)
+                .maybeSingle();
+            if (clientePorCpf) return { existe: true, cliente: clientePorCpf, avisoTelefone: null };
+            if (telefone) {
+                const { data: clientePorTel } = await db.from('clientes')
+                    .select('id_cliente, nome_cliente, whatsapp, cpf')
+                    .eq('whatsapp', telefone)
+                    .not('cpf', 'eq', cpf || '')
+                    .maybeSingle();
+                if (clientePorTel) return { existe: false, cliente: null, avisoTelefone: `Atenção: o telefone ${telefone} pertence a ${clientePorTel.nome_cliente} (CPF diferente). Deseja continuar?` };
+            }
+            return { existe: false, cliente: null, avisoTelefone: null };
+        }
+
+        async function validarCPF() {
+            const cpfInput = document.getElementById('modCpf');
+            const errSpan = document.getElementById('errCpf');
+            let cpf = cpfInput.value.replace(/\D/g, '');
+            if (cpf.length !== 11) { errSpan.textContent = 'CPF deve ter 11 dígitos'; return false; }
+            errSpan.textContent = '';
+            const { data: existing } = await db.from('clientes')
+                .select('id_cliente, nome_cliente')
+                .eq('cpf', cpf)
+                .maybeSingle();
+            if (existing) {
+                errSpan.textContent = `⚠️ CPF já pertence a ${existing.nome_cliente}. O orçamento será vinculado a este cliente.`;
+                return false;
+            }
+            return true;
+        }
+
         function renderNovoOrcamentoPage() {
             const main = document.getElementById('mainContent');
             carregarProdutos();
+            const hoje = new Date().toISOString().split('T')[0];
 
-            main.innerHTML = `<header class="dashboard-header"><div style="display:flex; align-items:center; gap:16px;"><button class="btn-voltar" onclick="navigateTo(previousView)">← Voltar</button><h1>Novo Orçamento</h1></div></header>
-            <div class="novo-orcamento-grid">
-                <div class="novo-orcamento-section"><h4 class="novo-orcamento-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg> Dados do Cliente</h4>
-                    <div class="form-group" style="margin-bottom: 16px;"><label for="modNome">Nome do Cliente *</label><input type="text" id="modNome" class="form-input" placeholder="Nome completo" onblur="validateField('modNome','errNome')"><div class="field-error" id="errNome"></div></div>
-                    <div class="form-group" style="margin-bottom: 16px;"><label for="modWhats">WhatsApp *</label><input type="tel" id="modWhats" class="form-input" placeholder="(XX) XXXXX-XXXX" onblur="validateField('modWhats','errWhats')"><div class="field-error" id="errWhats"></div></div>
-                    <div class="form-group" style="margin-bottom: 16px;"><label for="modOrigem">Origem do Lead</label><select id="modOrigem" class="form-input"><option value="">Selecionar...</option><option value="Instagram">Instagram / Redes Sociais</option><option value="WhatsApp">WhatsApp (Busca Orgânica)</option><option value="Indicação">Indicação</option><option value="Passou na Loja">Passou na Loja Física</option><option value="Panfleto">Panfleto / Ação Externa</option><option value="Outros">Outros</option></select></div>
-                    <div class="form-group" style="margin-bottom: 16px;"><label for="modInteresse">Nível de Interesse</label><select id="modInteresse" class="form-input"><option value="">Selecionar...</option><option value="Alta">Alta</option><option value="Média">Média</option><option value="Baixa">Baixa</option></select></div>
-                    <div class="form-group"><label for="modObservacoes">Observações Iniciais</label><textarea id="modObservacoes" class="form-input" rows="4" style="resize:vertical;"></textarea></div>
-                </div>
-                <div style="display:flex; flex-direction: column; gap: 24px;">
-                    <div class="novo-orcamento-section"><h4 class="novo-orcamento-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg> Itens do Orçamento *</h4>
-                        <p style="font-size:var(--font-xs); color:var(--text-muted); margin-bottom:8px;">Digite o nome do produto ou selecione da lista.</p>
-                        <div class="produtos-list" id="produtosContainer"></div>
-                        <button type="button" class="btn-add-item" onclick="adicionarProdutoRow()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Adicionar outro produto</button>
-                        <div class="field-error" id="errItens"></div>
-                        <div class="total-modal-box" style="margin-top: 16px; display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border-light);"><span style="font-weight: 600; color: var(--text-secondary);">Total Calculado:</span><span class="valor-total" id="displayTotalModal" style="font-size: 1.25rem; font-weight: 800; color: var(--accent-green-dark);">R$ 0,00</span></div>
+            main.innerHTML = `
+                <header class="dashboard-header">
+                    <div style="display:flex; align-items:center; gap:16px;">
+                        <button class="btn-voltar" onclick="navigateTo(previousView)">← Voltar</button>
+                        <h1>Novo Orçamento</h1>
                     </div>
-                    <div class="novo-orcamento-section"><h4 class="novo-orcamento-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg> Agendar Próximo Passo *</h4>
-                        <div class="schedule-form-grid">
-                            <div class="form-group"><label>Data *</label><input type="date" id="modDataContato" class="form-input" onblur="validateField('modDataContato','errDataContato')"><div class="field-error" id="errDataContato"></div></div>
-                            <div class="form-group"><label>Horário *</label><input type="time" id="modHoraContato" class="form-input" onblur="validateField('modHoraContato','errHoraContato')"><div class="field-error" id="errHoraContato"></div></div>
+                </header>
+                <div class="novo-orcamento-grid">
+                    <div class="novo-orcamento-section">
+                        <h4 class="novo-orcamento-title">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                            Dados do Cliente
+                        </h4>
+                        <div class="form-group" style="margin-bottom: 16px;"><label for="modNome">Nome do Cliente *</label><input type="text" id="modNome" class="form-input" placeholder="Nome completo" onblur="validateField('modNome','errNome')"><div class="field-error" id="errNome"></div></div>
+                        <div class="form-group" style="margin-bottom: 16px;"><label for="modCpf">CPF *</label><input type="text" id="modCpf" class="form-input" placeholder="000.000.000-00" onblur="validarCPF()"><div class="field-error" id="errCpf"></div></div>
+                        <div class="form-group" style="margin-bottom: 16px;"><label for="modWhats">WhatsApp *</label><input type="tel" id="modWhats" class="form-input" placeholder="(XX) XXXXX-XXXX" onblur="validateField('modWhats','errWhats')"><div class="field-error" id="errWhats"></div></div>
+                        <div class="form-group" style="margin-bottom: 16px;"><label for="modOrigem">Origem do Lead</label><select id="modOrigem" class="form-input"><option value="">Selecionar...</option><option value="Instagram">Instagram / Redes Sociais</option><option value="WhatsApp">WhatsApp (Busca Orgânica)</option><option value="Indicação">Indicação</option><option value="Passou na Loja">Passou na Loja Física</option><option value="Panfleto">Panfleto / Ação Externa</option><option value="Outros">Outros</option></select></div>
+                        <div class="form-group" style="margin-bottom: 16px;"><label for="modInteresse">Nível de Interesse</label><select id="modInteresse" class="form-input"><option value="">Selecionar...</option><option value="Alta">Alta</option><option value="Média">Média</option><option value="Baixa">Baixa</option></select></div>
+                        <div class="form-group"><label for="modObservacoes">Observações Iniciais</label><textarea id="modObservacoes" class="form-input" rows="4" style="resize:vertical;"></textarea></div>
+                    </div>
+                    <div style="display:flex; flex-direction: column; gap: 24px;">
+                        <div class="novo-orcamento-section">
+                            <h4 class="novo-orcamento-title">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+                                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                                    <path d="M16 10a4 4 0 0 1-8 0"></path>
+                                </svg>
+                                Itens do Orçamento *
+                            </h4>
+                            <p style="font-size:var(--font-xs); color:var(--text-muted); margin-bottom:8px;">Digite o nome do produto e o valor. Clique no ícone de check para confirmar.</p>
+                            <div class="produtos-list" id="produtosContainer"></div>
+                            <button type="button" class="btn-add-item" onclick="adicionarProdutoRow()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Adicionar outro produto</button>
+                            <div class="field-error" id="errItens"></div>
+                            <div class="total-modal-box" style="margin-top: 16px; display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border-light);"><span style="font-weight: 600; color: var(--text-secondary);">Total Calculado:</span><span class="valor-total" id="displayTotalModal" style="font-size: 1.25rem; font-weight: 800; color: var(--accent-green-dark);">R$ 0,00</span></div>
+                        </div>
+                        <div class="novo-orcamento-section">
+                            <h4 class="novo-orcamento-title">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                                </svg>
+                                Data do Orçamento e Agendamento
+                            </h4>
+                            <div class="schedule-form-grid">
+                                <div class="form-group"><label>Data do Orçamento *</label><input type="date" id="modDataOrcamento" class="form-input" value="${hoje}" onblur="validateField('modDataOrcamento','errDataOrc')"><div class="field-error" id="errDataOrc"></div></div>
+                                <div class="form-group"><label>Data do Próximo Contato *</label><input type="date" id="modDataContato" class="form-input" onblur="validateField('modDataContato','errDataContato')"><div class="field-error" id="errDataContato"></div></div>
+                                <div class="form-group"><label>Horário do Contato *</label><input type="time" id="modHoraContato" class="form-input" onblur="validateField('modHoraContato','errHoraContato')"><div class="field-error" id="errHoraContato"></div></div>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            <div style="display:flex; justify-content: flex-end; gap: 16px; margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--border-light);"><button class="btn-cancelar-modal" style="flex:none; width: auto;" onclick="navigateTo(previousView)">Cancelar</button><button class="btn-salvar-modal" id="btnSalvarOrcamento" style="flex:none; width: auto; min-width: 200px;" onclick="salvarOrcamento()"><span class="btn-spinner"></span><span class="btn-text">Salvar Orçamento</span></button></div>
-            <p class="msg" id="modalMsg" style="text-align: right; margin-top:12px;"></p>`;
-
-            adicionarProdutoRow(); calcTotalModal(); salvandoOrcamento = false; document.getElementById('modNome').focus();
+                <div style="display:flex; justify-content: flex-end; gap: 16px; margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--border-light);">
+                    <button class="btn-cancelar-modal" style="flex:none; width: auto;" onclick="navigateTo(previousView)">Cancelar</button>
+                    <button class="btn-salvar-modal" id="btnSalvarOrcamento" style="flex:none; width: auto; min-width: 200px;" onclick="salvarOrcamento()"><span class="btn-spinner"></span><span class="btn-text">Salvar Orçamento</span></button>
+                </div>
+                <p class="msg" id="modalMsg" style="text-align: right; margin-top:12px;"></p>
+            `;
+            adicionarProdutoRow();
+            calcTotalModal();
+            document.getElementById('modNome').focus();
         }
 
-        function validateField(idInput, idErro) { const el = document.getElementById(idInput); const err = document.getElementById(idErro); if (!el || !err) return; const val = el.value.trim(); if (!val) { err.textContent = 'Obrigatório'; el.style.borderColor = '#ef4444'; return false; } else { err.textContent = ''; el.style.borderColor = 'var(--border-light)'; return true; } }
-
-        function renderAdminInicio(main) {
-            const isGerente = currentUser.perfil === 'Gerente' || currentUser.perfil === 'Administrador' || currentUser.perfil === 'Admin';
-            if (!isGerente) return;
-            const totalUsuarios = todosUsuarios.length; const ativos = todosUsuarios.filter(u => u.status === 'Ativo').length; const totalVendedores = todosVendedores.length;
-            main.innerHTML = `<header class="dashboard-header"><h1>Painel Administrativo</h1></header>
-            <div class="action-grid" style="margin-bottom: 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                <div class="action-btn-card" onclick="navigateTo('admin_usuarios')" style="background: var(--card-bg); border: 1px solid var(--border-light); padding: 24px; border-radius: var(--radius-md); cursor: pointer; transition: all 0.2s;"><div class="icon-wrapper" style="color: var(--brand-blue); margin-bottom: 12px;"><svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" fill="none" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87m-4-12a4 4 0 010 7.75"/></svg></div><h4 style="font-weight: 700; margin-bottom: 4px;">Gerenciar Usuários</h4><p style="font-size: var(--font-sm); color: var(--text-muted);">Adicionar, editar ou inativar acessos</p></div>
-                <div class="action-btn-card" onclick="navigateTo('metas')" style="background: var(--card-bg); border: 1px solid var(--border-light); padding: 24px; border-radius: var(--radius-md); cursor: pointer; transition: all 0.2s;"><div class="icon-wrapper" style="color: var(--brand-blue); margin-bottom: 12px;"><svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" fill="none" stroke-width="2"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg></div><h4 style="font-weight: 700; margin-bottom: 4px;">Gestão de Metas</h4><p style="font-size: var(--font-sm); color: var(--text-muted);">Definir metas mensais por vendedor</p></div>
-            </div>
-            <div class="kpi-row">
-                <div class="kpi-card"><div class="kpi-label-row"><span class="kpi-dot blue"></span><span class="kpi-label">Total de Usuários</span></div><div class="kpi-value">${totalUsuarios}</div></div>
-                <div class="kpi-card"><div class="kpi-label-row"><span class="kpi-dot green"></span><span class="kpi-label">Usuários Ativos</span></div><div class="kpi-value">${ativos}</div></div>
-                <div class="kpi-card"><div class="kpi-label-row"><span class="kpi-dot orange"></span><span class="kpi-label">Vendedores</span></div><div class="kpi-value">${totalVendedores}</div></div>
-            </div>`;
-        }
-
-        function renderAdminUsuarios(main) {
-            let html = `<header class="dashboard-header"><div style="display:flex; align-items:center; gap:16px;"><button class="btn-voltar" onclick="navigateTo('admin_inicio')">← Voltar</button><h1>Gerenciar Usuários</h1></div><button class="btn-primary-action" onclick="abrirModalUsuarioAdmin()"><svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" fill="none" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Novo Usuário</button></header><div class="table-card"><table><thead><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Status</th><th>Ações</th></tr></thead><tbody>`;
-            if (todosUsuarios.length === 0) { html += `<tr><td colspan="5" style="text-align:center; padding:24px;">Nenhum usuário encontrado.</td></tr>`; }
-            else {
-                todosUsuarios.forEach(u => {
-                    const statusClass = u.status === 'Ativo' ? 'status-tag vendido' : 'status-tag perdido';
-                    html += `<tr><td><strong>${escapeHtml(u.nome)}</strong></td><td>${escapeHtml(u.email || '-')}</td><td>${escapeHtml(u.perfil)}</td><td><span class="${statusClass}">${escapeHtml(u.status || 'Ativo')}</span></td><td><div style="display:flex; gap:8px;"><button class="btn-salvar-modal" style="padding:6px 12px; font-size:11px; background:var(--card-bg); border:1px solid var(--border-light); color:var(--text-primary);" onclick="abrirModalUsuarioAdmin('${u.id_usuario}')">Editar</button>${u.id_usuario !== currentUser.id_usuario ? `<button class="btn-danger-ghost" style="padding:6px 12px; font-size:11px;" onclick="abrirModalExcluirUsuarioAdmin('${u.id_usuario}', '${escapeHtml(u.nome)}')">Excluir</button>` : ''}</div></td></tr>`;
+        async function salvarOrcamento() {
+            const btn = document.getElementById('btnSalvarOrcamento');
+            if (salvandoOrcamento) return;
+            
+            const nome = document.getElementById('modNome').value.trim();
+            const cpf = document.getElementById('modCpf').value.replace(/\D/g, '');
+            const whats = document.getElementById('modWhats').value.trim();
+            const origem = document.getElementById('modOrigem').value;
+            const interesse = document.getElementById('modInteresse').value;
+            const observacoes = document.getElementById('modObservacoes').value;
+            const dataOrcamento = document.getElementById('modDataOrcamento').value;
+            const dataContato = document.getElementById('modDataContato').value;
+            const horaContato = document.getElementById('modHoraContato').value;
+            
+            let valid = true;
+            if (!nome) { document.getElementById('errNome').textContent = 'Obrigatório'; valid = false; }
+            if (!cpf || cpf.length !== 11) { document.getElementById('errCpf').textContent = 'CPF inválido'; valid = false; }
+            if (!whats) { document.getElementById('errWhats').textContent = 'Obrigatório'; valid = false; }
+            if (!dataOrcamento) { document.getElementById('errDataOrc').textContent = 'Obrigatório'; valid = false; }
+            if (!dataContato) { document.getElementById('errDataContato').textContent = 'Obrigatório'; valid = false; }
+            if (!horaContato) { document.getElementById('errHoraContato').textContent = 'Obrigatório'; valid = false; }
+            
+            const produtoRows = document.querySelectorAll('.produto-row');
+            if (produtoRows.length === 0) {
+                document.getElementById('errItens').textContent = 'Adicione pelo menos um produto';
+                valid = false;
+            } else {
+                let hasEmpty = false;
+                produtoRows.forEach(row => {
+                    const nomeProd = row.querySelector('.prod-nome').value.trim();
+                    const valorProd = row.querySelector('.prod-valor').value;
+                    if (!nomeProd || !valorProd) hasEmpty = true;
                 });
+                if (hasEmpty) {
+                    document.getElementById('errItens').textContent = 'Preencha nome e valor de todos os produtos';
+                    valid = false;
+                }
             }
-            html += `</tbody></table></div>`; main.innerHTML = html;
+            
+            if (!valid) { showToast('Preencha todos os campos obrigatórios', 'error'); return; }
+            
+            const { existe, cliente, avisoTelefone } = await verificarClientePorCpf(cpf, whats);
+            let idCliente = null;
+            
+            if (existe) {
+                idCliente = cliente.id_cliente;
+                showToast(`Cliente já existe: ${cliente.nome_cliente}. Orçamento será vinculado.`, 'info');
+            } else {
+                if (avisoTelefone) {
+                    const continuar = confirm(avisoTelefone + '\nDeseja continuar com o novo cadastro?');
+                    if (!continuar) return;
+                }
+                const { data: newCliente, error: errClient } = await db.from('clientes')
+                    .insert([{ nome_cliente: nome, whatsapp: whats, cpf: cpf }])
+                    .select('id_cliente')
+                    .single();
+                if (errClient) { showToast('Erro ao criar cliente: ' + errClient.message, 'error'); return; }
+                idCliente = newCliente.id_cliente;
+            }
+            
+            const produtosList = [];
+            let valorTotal = 0;
+            produtoRows.forEach(row => {
+                const nomeProd = row.querySelector('.prod-nome').value.trim();
+                const valorProd = parseCurrency(row.querySelector('.prod-valor').value);
+                produtosList.push({ nome: nomeProd, valor: valorProd });
+                valorTotal += valorProd;
+            });
+            
+            const protocolo = await gerarProtocoloOrcamento();
+            const statusInicial = mapStatusUUID.find(s => s.nome === STATUS.CONTATO_INICIAL);
+            const idStatus = statusInicial ? statusInicial.id_status : null;
+            let idInteresse = null;
+            if (interesse) {
+                const nivel = mapInteresseUUID.find(n => n.nome === interesse);
+                idInteresse = nivel ? nivel.id_nivel : null;
+            }
+            
+            const payload = {
+                id_cliente: idCliente,
+                id_usuario: currentUser.id_usuario,
+                id_status: idStatus,
+                id_nivel_interesse: idInteresse,
+                valor_orcado: valorTotal,
+                modelo_colchao: produtosList.map(p => p.nome).join(', '),
+                data_criacao: dataOrcamento,
+                data_contato: dataContato,
+                hora_contato: horaContato,
+                observacoes: observacoes,
+                origem: origem,
+                protocolo: protocolo,
+            };
+            
+            btn.classList.add('saving');
+            btn.disabled = true;
+            salvandoOrcamento = true;
+            
+            try {
+                const { data: newOrc, error: errOrc } = await db.from('orcamentos')
+                    .insert(payload)
+                    .select('id_orcamento')
+                    .single();
+                if (errOrc) throw errOrc;
+                
+                await db.from('comentarios').insert([{
+                    id_orcamento: newOrc.id_orcamento,
+                    texto: `Orçamento criado via sistema. Produtos: ${produtosList.map(p => p.nome).join(', ')}. Valor total: R$ ${valorTotal.toFixed(2)}. Próximo contato agendado para ${dataContato} às ${horaContato}.`,
+                    tipo: 'Sistema',
+                    autor: currentUser.nome
+                }]);
+                
+                showToast(`Orçamento ${protocolo} salvo com sucesso!`, 'success');
+                navigateTo(previousView);
+            } catch (error) {
+                console.error(error);
+                showToast('Erro ao salvar orçamento: ' + error.message, 'error');
+            } finally {
+                btn.classList.remove('saving');
+                btn.disabled = false;
+                salvandoOrcamento = false;
+            }
+        }
+
+        function abrirMotivoPerda(id) { idOrcamentoParaPerder = id; openModal('modalMotivoPerda'); }
+        async function confirmarPerda(event) {
+            if (isConfirmingPerda) return;
+            const motivoSelect = document.getElementById('motivoPerdaSelect');
+            const motivoDetalhes = document.getElementById('motivoPerda').value.trim();
+            const motivo = motivoSelect.value;
+            if (!motivo) { document.getElementById('errMotivo').textContent = 'Selecione o motivo principal.'; return; }
+            const btn = event.currentTarget;
+            btn.classList.add('saving'); btn.disabled = true; isConfirmingPerda = true;
+            try {
+                const statusPerdido = mapStatusUUID.find(s => s.nome === STATUS.PERDIDO);
+                if (!statusPerdido) throw new Error('Status "Perdido" não encontrado');
+                const { error } = await db.from('orcamentos').update({ id_status: statusPerdido.id_status }).eq('id_orcamento', idOrcamentoParaPerder);
+                if (error) throw error;
+                const comentario = `Venda perdida. Motivo: ${motivo}${motivoDetalhes ? ' - Detalhes: ' + motivoDetalhes : ''}`;
+                await db.from('comentarios').insert([{ id_orcamento: idOrcamentoParaPerder, texto: comentario, tipo: 'Perda', autor: currentUser.nome }]);
+                showToast('Venda registrada como perdida.', 'success');
+                closeModal('modalMotivoPerda');
+                if (currentView === 'detalhes_cliente') await abrirDetalhesCliente(idOrcamentoParaPerder);
+                else navigateTo(currentView);
+            } catch (e) { showToast('Erro ao registrar perda: ' + e.message, 'error'); }
+            finally { btn.classList.remove('saving'); btn.disabled = false; isConfirmingPerda = false; }
+        }
+
+        function abrirConfirmaFechamento(id) { idOrcamentoParaPerder = id; openModal('modalConfirmaFechamento'); document.getElementById('btnConfirmaFechar').onclick = async () => { await confirmarFechamento(id); closeModal('modalConfirmaFechamento'); }; }
+        async function confirmarFechamento(id) {
+            try {
+                const statusFechado = mapStatusUUID.find(s => s.nome === STATUS.FECHADO);
+                if (!statusFechado) throw new Error('Status "Fechado" não encontrado');
+                const { error } = await db.from('orcamentos').update({ id_status: statusFechado.id_status }).eq('id_orcamento', id);
+                if (error) throw error;
+                await db.from('comentarios').insert([{ id_orcamento: id, texto: 'Venda fechada com sucesso!', tipo: 'Sistema', autor: currentUser.nome }]);
+                showToast('Venda fechada com sucesso!', 'success');
+                if (currentView === 'detalhes_cliente') await abrirDetalhesCliente(id);
+                else navigateTo(currentView);
+            } catch (e) { showToast('Erro ao fechar venda: ' + e.message, 'error'); }
         }
 
         async function agendarContato() {
@@ -1569,8 +1794,94 @@
         function voltarDetalhes() { currentView = previousView; navigateTo(currentView); }
         function changePage(page) { currentPage = page; atualizarTabelaPaginadaServer(); }
 
+        function validateField(idInput, idErro) { const el = document.getElementById(idInput); const err = document.getElementById(idErro); if (!el || !err) return; const val = el.value.trim(); if (!val) { err.textContent = 'Obrigatório'; el.style.borderColor = '#ef4444'; return false; } else { err.textContent = ''; el.style.borderColor = 'var(--border-light)'; return true; } }
+
+        function renderAdminInicio(main) {
+            const isGerente = currentUser.perfil === 'Gerente' || currentUser.perfil === 'Administrador' || currentUser.perfil === 'Admin';
+            if (!isGerente) return;
+            const totalUsuarios = todosUsuarios.length; const ativos = todosUsuarios.filter(u => u.status === 'Ativo').length; const totalVendedores = todosVendedores.length;
+            main.innerHTML = `<header class="dashboard-header"><h1>Painel Administrativo</h1></header>
+            <div class="action-grid" style="margin-bottom: 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="action-btn-card" onclick="navigateTo('admin_usuarios')" style="background: var(--card-bg); border: 1px solid var(--border-light); padding: 24px; border-radius: var(--radius-md); cursor: pointer; transition: all 0.2s;"><div class="icon-wrapper" style="color: var(--brand-blue); margin-bottom: 12px;"><svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" fill="none" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87m-4-12a4 4 0 010 7.75"/></svg></div><h4 style="font-weight: 700; margin-bottom: 4px;">Gerenciar Usuários</h4><p style="font-size: var(--font-sm); color: var(--text-muted);">Adicionar, editar ou inativar acessos</p></div>
+                <div class="action-btn-card" onclick="navigateTo('metas')" style="background: var(--card-bg); border: 1px solid var(--border-light); padding: 24px; border-radius: var(--radius-md); cursor: pointer; transition: all 0.2s;"><div class="icon-wrapper" style="color: var(--brand-blue); margin-bottom: 12px;"><svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" fill="none" stroke-width="2"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg></div><h4 style="font-weight: 700; margin-bottom: 4px;">Gestão de Metas</h4><p style="font-size: var(--font-sm); color: var(--text-muted);">Definir metas mensais por vendedor</p></div>
+            </div>
+            <div class="kpi-row">
+                <div class="kpi-card"><div class="kpi-label-row"><span class="kpi-dot blue"></span><span class="kpi-label">Total de Usuários</span></div><div class="kpi-value">${totalUsuarios}</div></div>
+                <div class="kpi-card"><div class="kpi-label-row"><span class="kpi-dot green"></span><span class="kpi-label">Usuários Ativos</span></div><div class="kpi-value">${ativos}</div></div>
+                <div class="kpi-card"><div class="kpi-label-row"><span class="kpi-dot orange"></span><span class="kpi-label">Vendedores</span></div><div class="kpi-value">${totalVendedores}</div></div>
+            </div>`;
+        }
+
+        function renderAdminUsuarios(main) {
+            let html = `<header class="dashboard-header"><div style="display:flex; align-items:center; gap:16px;"><button class="btn-voltar" onclick="navigateTo('admin_inicio')">← Voltar</button><h1>Gerenciar Usuários</h1></div><button class="btn-primary-action" onclick="abrirModalUsuarioAdmin()"><svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" fill="none" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Novo Usuário</button></header><div class="table-card"><table><thead><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Status</th><th>Ações</th></tr></thead><tbody>`;
+            if (todosUsuarios.length === 0) {
+                html += `<tr><td colspan="5" style="text-align:center; padding:24px;">Nenhum usuário encontrado.</td></tr>`;
+            } else {
+                todosUsuarios.forEach(u => {
+                    const statusClass = u.status === 'Ativo' ? 'status-tag vendido' : 'status-tag perdido';
+                    html += `<tr>
+                        <td><strong>${escapeHtml(u.nome)}</strong></td>
+                        <td>${escapeHtml(u.email || '-')}</td>
+                        <td>${escapeHtml(u.perfil)}</td>
+                        <td><span class="${statusClass}">${escapeHtml(u.status || 'Ativo')}</span></td>
+                        <td><div style="display:flex; gap:8px;">
+                            <button class="btn-salvar-modal" style="padding:6px 12px; font-size:11px; background:var(--card-bg); border:1px solid var(--border-light); color:var(--text-primary);" onclick="abrirModalUsuarioAdmin('${u.id_usuario}')">Editar</button>
+                            ${u.id_usuario !== currentUser.id_usuario ? `<button class="btn-danger-ghost" style="padding:6px 12px; font-size:11px;" onclick="abrirModalExcluirUsuarioAdmin('${u.id_usuario}', '${escapeHtml(u.nome)}')">Excluir</button>` : ''}
+                        </div></td>
+                    </tr>`;
+                });
+            }
+            html += `</tbody></table></div>`;
+            main.innerHTML = html;
+        }
+
+        function abrirModalExcluirUsuarioAdmin(id, nome) {
+            idUsuarioEmEdicao = id;
+            document.getElementById('nomeUsuarioExcluir').innerText = nome;
+            openModal('modalExcluirUsuarioAdmin');
+        }
+
+        async function confirmarExclusaoUsuario() {
+            if (!idUsuarioEmEdicao) return;
+            const btn = document.getElementById('btnConfirmarExclusaoUsuario');
+            btn.classList.add('saving'); btn.disabled = true;
+            try {
+                const { count, error: countError } = await db.from('orcamentos')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('id_usuario', idUsuarioEmEdicao);
+                if (countError) throw countError;
+                if (count > 0) {
+                    showToast(`Não é possível excluir: usuário possui ${count} orçamento(s). Inative-o em vez disso.`, 'error');
+                    closeModal('modalExcluirUsuarioAdmin');
+                    return;
+                }
+                const { error } = await db.from('usuarios').delete().eq('id_usuario', idUsuarioEmEdicao);
+                if (error) throw error;
+                showToast('Usuário excluído com sucesso.', 'success');
+                closeModal('modalExcluirUsuarioAdmin');
+                const { data: usuarios } = await db.from('usuarios').select('*').order('nome');
+                todosUsuarios = usuarios || [];
+                todosVendedores = todosUsuarios.filter(u => u.perfil === 'Vendedor');
+                renderAdminUsuarios(document.getElementById('mainContent'));
+            } catch (e) {
+                showToast('Erro ao excluir: ' + e.message, 'error');
+            } finally {
+                btn.classList.remove('saving'); btn.disabled = false;
+                idUsuarioEmEdicao = null;
+            }
+        }
+
+        function marcarNotificacaoLida(id) {
+            if (id && !notificacoesLidas.has(id)) {
+                notificacoesLidas.add(id);
+                salvarNotificacoesLidas();
+                renderNotificationBadge(buildNotifications().filter(n => n.id !== null).length);
+            }
+        }
+
         function toggleTheme() {
-            document.body.classList.toggle('dark'); localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light');
+            document.body.classList.toggle('dark');
+            localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light');
             if (donutChartInstance) { donutChartInstance.destroy(); donutChartInstance = null; }
             if (barChartInstance) { barChartInstance.destroy(); barChartInstance = null; }
             if (currentView === 'inicio') renderInicio();
@@ -1580,29 +1891,42 @@
             else if (currentView === 'novo_orcamento') renderNovoOrcamentoPage();
         }
 
-        (function() { if (localStorage.getItem('theme') === 'dark') document.body.classList.add('dark'); })();
+        (function() {
+            if (localStorage.getItem('theme') === 'dark') document.body.classList.add('dark');
+        })();
 
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 const modais = ['modalMotivoPerda', 'modalConfirmaFechamento', 'modalEditarMeta', 'modalExcluirComentario', 'modalUsuarioAdmin', 'modalExcluirUsuarioAdmin'];
-                for (const id of modais) { if (document.getElementById(id) && document.getElementById(id).classList.contains('open')) { closeModal(id); break; } }
+                for (const id of modais) {
+                    if (document.getElementById(id) && document.getElementById(id).classList.contains('open')) {
+                        closeModal(id);
+                        break;
+                    }
+                }
                 document.getElementById('notificationDropdown').classList.remove('open');
             }
         });
 
         document.getElementById('hamburgerBtn').addEventListener('click', () => {
-            const sidebar = document.getElementById('sidebar'); const overlay = document.getElementById('sidebarOverlay');
-            sidebar.classList.toggle('open'); overlay.classList.toggle('open');
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('open');
             if (sidebar.classList.contains('open')) sidebar.querySelector('.nav-item.active')?.focus();
         });
 
         document.getElementById('sidebarOverlay').addEventListener('click', () => {
-            document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebarOverlay').classList.remove('open');
+            document.getElementById('sidebar').classList.remove('open');
+            document.getElementById('sidebarOverlay').classList.remove('open');
         });
 
         document.querySelectorAll('.nav-item').forEach(item => {
             item.addEventListener('click', () => {
-                if (window.innerWidth <= 768) { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebarOverlay').classList.remove('open'); }
+                if (window.innerWidth <= 768) {
+                    document.getElementById('sidebar').classList.remove('open');
+                    document.getElementById('sidebarOverlay').classList.remove('open');
+                }
             });
         });
 
