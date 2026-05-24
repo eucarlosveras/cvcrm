@@ -319,35 +319,7 @@
             <h3>&#x1F389; Confirmar Fechamento de Venda</h3>
             <p style="margin-bottom:20px; color:var(--text-secondary); font-size:var(--font-sm);">Preencha os detalhes finais para registrar a venda.</p>
             
-            <label for="fechamentoFormaPagamento">Forma de Pagamento *</label>
-            <select id="fechamentoFormaPagamento" class="form-input" style="margin-bottom:4px;">
-                <option value="">Selecione a forma de pagamento...</option>
-                <optgroup label="A Vista">
-                    <option value="Dinheiro">Dinheiro</option>
-                    <option value="PIX">PIX</option>
-                    <option value="Cartao de Debito">Cartao de Debito</option>
-                </optgroup>
-                <optgroup label="A Prazo">
-                    <option value="Cartao de Credito 1x">Cartao de Credito 1x</option>
-                    <option value="Cartao de Credito 2x">Cartao de Credito 2x</option>
-                    <option value="Cartao de Credito 3x">Cartao de Credito 3x</option>
-                    <option value="Cartao de Credito 4x">Cartao de Credito 4x</option>
-                    <option value="Cartao de Credito 5x">Cartao de Credito 5x</option>
-                    <option value="Cartao de Credito 6x">Cartao de Credito 6x</option>
-                    <option value="Cartao de Credito 7x a 12x">Cartao de Credito 7x a 12x</option>
-                    <option value="Boleto Bancario">Boleto Bancario</option>
-                    <option value="Crediario Proprio">Crediario Proprio</option>
-                    <option value="Financiamento">Financiamento</option>
-                </optgroup>
-                <optgroup label="Outros">
-                    <option value="Cheque">Cheque</option>
-                    <option value="Permuta / Troca">Permuta / Troca</option>
-                    <option value="Outro">Outro</option>
-                </optgroup>
-            </select>
-            <div class="field-error" id="errFormaPagamento"></div>
-
-            <label for="fechamentoDataEntrega" style="margin-top:12px;">Data de Entrega *</label>
+            <label for="fechamentoDataEntrega">Data de Entrega *</label>
             <input type="date" id="fechamentoDataEntrega" class="form-input" style="margin-bottom:4px;">
             <div class="field-error" id="errDataEntrega"></div>
 
@@ -2294,14 +2266,9 @@
 
         function abrirConfirmaFechamento(id) {
             idOrcamentoParaPerder = id;
-            // Reset modal fields
-            const formaPag = document.getElementById('fechamentoFormaPagamento');
             const dataEntrega = document.getElementById('fechamentoDataEntrega');
-            const errPag = document.getElementById('errFormaPagamento');
             const errData = document.getElementById('errDataEntrega');
-            if (formaPag) formaPag.value = '';
             if (dataEntrega) dataEntrega.value = '';
-            if (errPag) errPag.textContent = '';
             if (errData) errData.textContent = '';
             openModal('modalConfirmaFechamento');
             const btn = document.getElementById('btnConfirmaFechar');
@@ -2311,16 +2278,10 @@
             btn.onclick = async () => { await confirmarFechamento(id); };
         }
         async function confirmarFechamento(id) {
-            const formaPagamento = document.getElementById('fechamentoFormaPagamento').value;
             const dataEntrega = document.getElementById('fechamentoDataEntrega').value;
-            const errPag = document.getElementById('errFormaPagamento');
             const errData = document.getElementById('errDataEntrega');
-            let valid = true;
-            errPag.textContent = '';
             errData.textContent = '';
-            if (!formaPagamento) { errPag.textContent = 'Selecione a forma de pagamento.'; valid = false; }
-            if (!dataEntrega) { errData.textContent = 'Selecione a data de entrega.'; valid = false; }
-            if (!valid) return;
+            if (!dataEntrega) { errData.textContent = 'Selecione a data de entrega.'; return; }
 
             const btn = document.getElementById('btnConfirmaFechar');
             btn.querySelector('.btn-spinner').style.display = 'inline-block';
@@ -2332,20 +2293,18 @@
                 if (!statusFechado) throw new Error('Status "Fechado" não encontrado');
                 const { error } = await db.from('orcamentos').update({
                     id_status: statusFechado.id_status,
-                    forma_pagamento: formaPagamento,
                     data_entrega: dataEntrega
                 }).eq('id_orcamento', id);
                 if (error) throw error;
 
-                // Calcular data de confirmação de recebimento (dia da entrega ou +1 dia)
                 const dataEntregaObj = new Date(dataEntrega + 'T00:00:00');
-                const dataConfirmacao = dataEntrega; // contato no dia da entrega
+                const dataConfirmacao = dataEntrega;
                 const dataEntregaFormatada = dataEntregaObj.toLocaleDateString('pt-BR');
 
                 // Registrar comentário de fechamento
                 await db.from('comentarios').insert([{
                     id_orcamento: id,
-                    texto: `Venda fechada com sucesso! Forma de pagamento: ${formaPagamento}. Entrega prevista para: ${dataEntregaFormatada}.`,
+                    texto: `Venda fechada com sucesso! Entrega prevista para: ${dataEntregaFormatada}.`,
                     tipo: 'Sistema',
                     autor: currentUser.nome
                 }]);
