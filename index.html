@@ -1869,7 +1869,7 @@
             const comentarios = clienteAtualParaDetalhes.comentarios || []; const comentariosHtml = renderComentariosHtml(comentarios, id);
             const statusClass = classToFormatStatus(orc.status);
             const interesse = escapeHtml(orc.interesse || '-');
-            const interesseColor = orc.interesse === 'Alta' ? '#10b981' : orc.interesse === 'Média' ? '#f59e0b' : orc.interesse === 'Baixa' ? '#ef4444' : '#94a3b8';
+            const interesseColor = orc.interesse === 'Alto' ? '#10b981' : orc.interesse === 'Médio' ? '#f59e0b' : orc.interesse === 'Baixo' ? '#ef4444' : '#94a3b8';
             const dataCriacao = orc.data_criacao ? new Date(orc.data_criacao).toLocaleDateString('pt-BR') : '-';
             const ultimoContato = comentarios.length > 0 ? new Date(comentarios[comentarios.length - 1].data_criacao).toLocaleDateString('pt-BR') : '-';
             const whats = (orc.clientes?.whatsapp || '').replace(/\D/g, '');
