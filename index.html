@@ -61,6 +61,10 @@
         .login-form { display: flex; flex-direction: column; gap: 8px; margin-bottom: 24px; text-align: left; }
         .login-form select { width: 100%; padding: 14px 16px; border-radius: 12px; border: 1.5px solid var(--border-light); background: var(--card-bg); font-family: 'Inter', sans-serif; font-size: var(--font-base); color: var(--text-primary); transition: border 0.2s; cursor: pointer; }
         .login-form select:focus { border-color: var(--brand-blue); outline: none; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+        .login-form input[type="email"], .login-form input[type="password"] { width: 100%; padding: 14px 16px; border-radius: 12px; border: 1.5px solid var(--border-light); background: var(--card-bg); font-family: 'Inter', sans-serif; font-size: var(--font-base); color: var(--text-primary); transition: border 0.2s; }
+        .login-form input[type="email"]:focus, .login-form input[type="password"]:focus { border-color: var(--brand-blue); outline: none; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+        .login-form input::placeholder { color: var(--text-muted); }
+        body.dark .login-form input[type="email"], body.dark .login-form input[type="password"] { background: #0f172a; border-color: #334155; color: #f1f5f9; }
 
         .segment-control { display: flex; background: #e2e8f0; border-radius: 12px; padding: 4px; position: relative; margin-bottom: 8px; }
         body.dark .segment-control { background: #0f172a; border: 1px solid #334155; }
@@ -261,16 +265,8 @@
             <h2>CV CRM</h2>
             <p class="subtitle">Acesso ao Sistema</p>
             <div class="login-form">
-                <div class="segment-control" id="perfilSegment">
-                    <button type="button" class="segment-btn" onclick="selecionarPerfil('Vendedor', this)">Vendedor</button>
-                    <button type="button" class="segment-btn" onclick="selecionarPerfil('Gerente', this)">Gerente</button>
-                    <button type="button" class="segment-btn" onclick="selecionarPerfil('Administrador', this)">Admin</button>
-                </div>
-                <div class="user-select-wrapper" id="usuarioSelectWrapper">
-                    <select id="loginUsuarioSelect">
-                        <option value="">Selecione seu nome...</option>
-                    </select>
-                </div>
+                <input type="email" id="loginEmail" placeholder="Seu e-mail">
+                <input type="password" id="loginSenha" placeholder="Sua senha">
             </div>
             <button class="login-btn" id="btnLogin" onclick="handleLogin()">
                 <span class="spinner"></span>
@@ -463,7 +459,6 @@
         let idUsuarioEmEdicao = null;
 
         let usuariosParaLogin = [];
-        let perfilSelecionadoLogin = null;
         let isSavingComment = false;
         let isConfirmingPerda = false;
         let notificacoesLidas = new Set();
@@ -499,43 +494,77 @@
         function closeModal(modalId) { const modal = document.getElementById(modalId); if (!modal) return; modal.classList.remove('open'); if (lastFocusedElement && document.body.contains(lastFocusedElement)) { lastFocusedElement.focus(); } }
 
         async function checkSession() {
-            document.getElementById('loginOverlay').classList.remove('hidden');
             carregarNotificacoesLidas();
             try {
-                const { data, error } = await db.from('usuarios').select('*').order('nome');
-                if (error) throw error;
-                usuariosParaLogin = (data || []).filter(u => (u.status || '').toLowerCase() === 'ativo');
-            } catch (e) { document.getElementById('loginMsg').innerHTML = 'Erro de conexão com o banco de dados.'; }
-        }
-
-        function selecionarPerfil(perfil, btnElement) {
-            perfilSelecionadoLogin = perfil;
-            document.querySelectorAll('.segment-btn').forEach(b => b.classList.remove('active')); btnElement.classList.add('active');
-            const wrapper = document.getElementById('usuarioSelectWrapper'); const select = document.getElementById('loginUsuarioSelect');
-            select.innerHTML = '<option value="">Selecione seu nome...</option>';
-            const filtrados = usuariosParaLogin.filter(u => u.perfil === perfil || (perfil === 'Administrador' && u.perfil === 'Admin'));
-            if (filtrados.length === 0) { select.innerHTML = `<option value="">Nenhum ${perfil} cadastrado</option>`; } 
-            else { filtrados.forEach(u => { select.innerHTML += `<option value="${u.id_usuario}">${escapeHtml(u.nome)}</option>`; }); }
-            wrapper.classList.add('visible'); document.getElementById('loginMsg').innerHTML = '';
+                // 1. Verifica se já existe um passe (token) seguro no navegador
+                const { data: { session }, error: sessionError } = await db.auth.getSession();
+                if (sessionError) throw sessionError;
+                if (session && session.user) {
+                    // 2. Se o passe for válido, vamos buscar o perfil correspondente
+                    const { data: userProfile, error: profileError } = await db
+                        .from('usuarios')
+                        .select('*')
+                        .eq('email', session.user.email)
+                        .single();
+                    if (profileError || !userProfile || userProfile.status?.toLowerCase() !== 'ativo') {
+                        // Se a conta foi desativada ou não existe mais na tabela, forçamos a saída
+                        await logout();
+                        return;
+                    }
+                    // 3. Tudo em ordem: esconde o ecrã de login e arranca com a dashboard
+                    currentUser = userProfile;
+                    document.getElementById('loginOverlay').classList.add('hidden');
+                    initAppAfterLogin();
+                } else {
+                    // Se não houver sessão, garante que o ecrã de login fica visível
+                    document.getElementById('loginOverlay').classList.remove('hidden');
+                }
+            } catch (e) {
+                console.error("Erro na verificação de segurança:", e);
+                document.getElementById('loginMsg').innerHTML = 'Falha ao verificar o acesso seguro.';
+                document.getElementById('loginOverlay').classList.remove('hidden');
+            }
         }
 
         async function handleLogin() {
             const btn = document.getElementById('btnLogin');
             if (btn.disabled) return;
-            const idSelecionado = document.getElementById('loginUsuarioSelect').value;
+            // 1. Captura os valores dos novos campos
+            const email = document.getElementById('loginEmail').value.trim();
+            const senha = document.getElementById('loginSenha').value;
             const msg = document.getElementById('loginMsg');
-            if (!perfilSelecionadoLogin) { msg.textContent = 'Passo 1: Escolha um perfil acima.'; return; }
-            if (!idSelecionado) { msg.textContent = 'Passo 2: Selecione o seu nome na lista.'; return; }
-            btn.classList.add('loading'); btn.disabled = true; msg.innerHTML = '';
-
+            if (!email || !senha) {
+                msg.textContent = 'Preencha seu e-mail e senha.';
+                return;
+            }
+            btn.classList.add('loading');
+            btn.disabled = true;
+            msg.innerHTML = '';
             try {
-                const userFound = usuariosParaLogin.find(u => u.id_usuario === idSelecionado);
-                if (!userFound) throw new Error("Usuário inválido.");
-                currentUser = userFound;
+                // 2. Validação real de identidade com o Supabase
+                const { data: authData, error: authError } = await db.auth.signInWithPassword({
+                    email: email,
+                    password: senha
+                });
+                if (authError) throw new Error("E-mail ou senha incorretos.");
+                // 3. Busca o papel (perfil) do usuário na tabela do banco
+                const { data: userProfile, error: profileError } = await db
+                    .from('usuarios')
+                    .select('*')
+                    .eq('email', authData.user.email)
+                    .single();
+                if (profileError || !userProfile) throw new Error("Perfil não encontrado no sistema.");
+                if (userProfile.status?.toLowerCase() !== 'ativo') throw new Error("Usuário inativo.");
+                // 4. Libera o acesso e inicia a dashboard
+                currentUser = userProfile;
                 document.getElementById('loginOverlay').classList.add('hidden');
                 initAppAfterLogin();
-            } catch (err) { msg.innerHTML = `<span style="color: #ef4444; font-size: 13px; font-weight: 600;">Erro ao entrar no sistema.</span>`; } 
-            finally { btn.classList.remove('loading'); btn.disabled = false; }
+            } catch (err) {
+                msg.innerHTML = `<span style="color: #ef4444; font-size: 13px; font-weight: 600;">${err.message}</span>`;
+            } finally {
+                btn.classList.remove('loading');
+                btn.disabled = false;
+            }
         }
 
         function initAppAfterLogin() {
@@ -587,7 +616,12 @@
             hideLoader();
         }
 
-        async function logout() { currentUser = null; location.reload(); }
+        async function logout() {
+            // Destrói a sessão real no Supabase antes de limpar a tela
+            await db.auth.signOut();
+            currentUser = null;
+            location.reload();
+        }
 
         async function carregarKpisEDashboard() {
             if (!currentUser) return;
