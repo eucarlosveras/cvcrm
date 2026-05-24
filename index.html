@@ -2006,20 +2006,7 @@
 
         function abrirNovoOrcamento() { if (currentUser?.perfil !== 'Vendedor') return; navigateTo('novo_orcamento'); }
 
-        async function gerarProtocoloOrcamento() {
-            const { data, error } = await db.from('orcamentos')
-                .select('protocolo')
-                .order('data_criacao', { ascending: false })
-                .limit(1);
-            if (error || !data || data.length === 0) return '1000';
-            const ultimo = data[0].protocolo;
-            if (!ultimo) return `${Math.floor(Math.random() * 9000) + 1000}`;
-            // Suporta tanto formato antigo "ORC-XXXX" quanto novo "XXXX"
-            const numStr = ultimo.includes('-') ? ultimo.split('-')[1] : ultimo;
-            const num = parseInt(numStr);
-            if (isNaN(num)) return `${Math.floor(Math.random() * 9000) + 1000}`;
-            return `${num + 1}`;
-        }
+        // Protocolo gerado automaticamente pelo banco via nextval('protocolo_seq')
 
         async function verificarClientePorCpf(cpf, telefone) {
             if (!cpf) return { existe: false, cliente: null, avisoTelefone: null };
@@ -2223,7 +2210,6 @@
                     valorTotal += valorProd;
                 });
                 
-                const protocolo = await gerarProtocoloOrcamento();
                 const statusInicial = mapStatusUUID.find(s => s.nome === STATUS.CONTATO_INICIAL);
                 const idStatus = statusInicial ? statusInicial.id_status : null;
                 let idInteresse = null;
@@ -2231,15 +2217,14 @@
                     const nivel = mapInteresseUUID.find(n => n.nome === interesse);
                     idInteresse = nivel ? nivel.id_nivel : null;
                 }
-                
                 let dataCriacaoFinal = dataOrcamento;
                 const hojeData = new Date().toISOString().split('T')[0];
                 if (dataOrcamento === hojeData) {
-                    dataCriacaoFinal = new Date().toISOString(); 
+                    dataCriacaoFinal = new Date().toISOString();
                 } else {
-                    dataCriacaoFinal = `${dataOrcamento}T12:00:00.000Z`; 
+                    dataCriacaoFinal = `${dataOrcamento}T12:00:00.000Z`;
                 }
-                
+                // 1. Montamos o payload SEM o protocolo ainda
                 const payload = {
                     id_cliente: idCliente,
                     id_usuario: currentUser.id_usuario,
@@ -2251,13 +2236,12 @@
                     data_contato: dataContato,
                     hora_contato: horaContato,
                     observacoes: observacoes,
-                    origem: origem,
-                    protocolo: protocolo,
+                    origem: origem
                 };
-                
+                // 2. INSERT simples — o banco gera o protocolo via nextval()
                 const { data: newOrc, error: errOrc } = await db.from('orcamentos')
                     .insert(payload)
-                    .select('id_orcamento')
+                    .select('id_orcamento, protocolo')
                     .single();
                 if (errOrc) throw errOrc;
                 
@@ -2268,7 +2252,7 @@
                     autor: currentUser.nome
                 }]);
                 
-                showToast(`Orçamento ${protocolo} salvo com sucesso!`, 'success');
+                showToast(`Orçamento ${newOrc.protocolo} salvo com sucesso!`, 'success');
                 navigateTo(previousView);
             } catch (error) {
                 console.error(error);
