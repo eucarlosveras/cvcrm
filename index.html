@@ -357,7 +357,14 @@
 
             <div style="margin-top: 12px;">
                 <label for="adminModSenha">Definir Senha Inicial</label>
-                <input type="password" id="adminModSenha" placeholder="********">
+                <div style="position:relative; display:flex; align-items:center;">
+                    <input type="password" id="adminModSenha" placeholder="********" style="padding-right:44px; width:100%;">
+                    <button type="button" onclick="toggleSenhaAdmin()" title="Mostrar/ocultar senha" style="position:absolute; right:12px; background:none; border:none; cursor:pointer; color:var(--text-muted); padding:0; display:flex; align-items:center;">
+                        <svg id="eyeIconAdmin" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                        </svg>
+                    </button>
+                </div>
             </div>
 
             <div class="field-error" id="errAdminUsuario"></div>
@@ -417,6 +424,7 @@
         let searchTerm = '';
         let searchProtocolo = '';
         let selectedVendedor = 'todos';
+        let selectedLoja = 'todas';
         
         let clienteAtualParaDetalhes = null;
         let clienteSelecionadoParaAcao = null;
@@ -597,11 +605,13 @@
 
         async function carregarKpisEDashboard() {
             if (!currentUser) return;
+            const isAdmin = currentUser.perfil === 'Administrador' || currentUser.perfil === 'Admin';
             try {
                 let query = db.from('orcamentos').select('id_orcamento, valor_orcado, id_usuario, data_contato, hora_contato, clientes(nome_cliente, whatsapp), status_orcamento(nome)');
 
                 if (currentUser.perfil === 'Vendedor') query = query.eq('id_usuario', currentUser.id_usuario);
-                else if (selectedVendedor !== 'todos') query = query.eq('id_usuario', selectedVendedor);
+                else if (!isAdmin && selectedVendedor !== 'todos') query = query.eq('id_usuario', selectedVendedor);
+                else if (isAdmin && selectedVendedor !== 'todos') query = query.eq('id_usuario', selectedVendedor);
 
                 if (currentDay) {
                     const start = new Date(currentYear, currentMonth - 1, currentDay).toISOString();
@@ -621,7 +631,7 @@
                     }));
                 }
             } catch(e) { kpisMensais = []; }
-            
+
             atualizarBadge();
             const notificacoes = buildNotifications();
             renderNotificationBadge(notificacoes.filter(n => n.id !== null).length);
@@ -640,6 +650,10 @@
 
                 if (currentUser.perfil === 'Vendedor') query = query.eq('id_usuario', currentUser.id_usuario);
                 else if (selectedVendedor !== 'todos') query = query.eq('id_usuario', selectedVendedor);
+                else if (selectedLoja !== 'todas') {
+                    const idsLoja = todosVendedores.filter(v => v.id_loja === selectedLoja).map(v => v.id_usuario);
+                    if (idsLoja.length > 0) query = query.in('id_usuario', idsLoja);
+                }
 
                 if (searchTerm) query = query.ilike('clientes.nome_cliente', `%${searchTerm}%`);
                 if (searchProtocolo) query = query.ilike('protocolo', `%${searchProtocolo}%`);
@@ -756,6 +770,10 @@
 
             if (!nome || !email || !senha) {
                 err.textContent = 'Preencha Nome, E-mail e Senha.';
+                return;
+            }
+            if (!loja) {
+                err.textContent = 'Selecione a Loja Base do usuário.';
                 return;
             }
 
@@ -1088,9 +1106,18 @@
             }
         }
 
+        function buildLojaOptions() {
+            let opts = `<option value="todas">Todas as lojas</option>`;
+            listaLojas.slice().sort((a,b) => a.nome_loja.localeCompare(b.nome_loja)).forEach(l => {
+                opts += `<option value="${l.id_loja}" ${selectedLoja === l.id_loja ? 'selected' : ''}>${escapeHtml(l.nome_loja)}</option>`;
+            });
+            return opts;
+        }
+
         function buildVendedorOptions() {
+            const filtrados = selectedLoja === 'todas' ? todosVendedores : todosVendedores.filter(v => v.id_loja === selectedLoja);
             let opts = '<option value="todos" ' + (selectedVendedor === 'todos' ? 'selected' : '') + '>Todos os vendedores</option>';
-            todosVendedores.forEach(v => { opts += `<option value="${v.id_usuario}" ${selectedVendedor == v.id_usuario ? 'selected' : ''}>${escapeHtml(v.nome)}</option>`; });
+            filtrados.forEach(v => { opts += `<option value="${v.id_usuario}" ${selectedVendedor == v.id_usuario ? 'selected' : ''}>${escapeHtml(v.nome)}</option>`; });
             return opts;
         }
         function buildMonthOptions() {
@@ -1114,13 +1141,16 @@
         }
 
         function renderFiltrosData(isGerente) {
+            const isAdmin = currentUser.perfil === 'Administrador' || currentUser.perfil === 'Admin';
             return `<div class="filter-group">
+                ${isAdmin ? `<div class="filter-wrapper"><span class="filter-icon"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span><select class="vendedor-select" id="lojaSelect" onchange="filtrarPorLoja(this.value)" aria-label="Filtrar por loja">${buildLojaOptions()}</select></div>` : ''}
                 ${isGerente ? `<div class="filter-wrapper"><span class="filter-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></span><select class="vendedor-select" id="vendedorSelect" onchange="filtrarPorVendedor(this.value)" aria-label="Filtrar por vendedor">${buildVendedorOptions()}</select></div>` : ''}
                 <div class="filter-wrapper"><span class="filter-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/></svg></span><select class="month-select" id="monthSelect" onchange="changeMonth(this.value)" aria-label="Selecionar mês">${buildMonthOptions()}</select></div>
                 <div class="filter-wrapper"><span class="filter-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg></span><select class="day-select" id="daySelect" onchange="changeDay(this.value)" aria-label="Selecionar dia">${buildDayOptions()}</select></div>
             </div>`;
         }
 
+        async function filtrarPorLoja(val) { selectedLoja = val; selectedVendedor = 'todos'; currentPage = 1; await carregarKpisEDashboard(); atualizarTabelaPaginadaServer(); renderInicio(); }
         async function filtrarPorVendedor(val) { selectedVendedor = val; currentPage = 1; await carregarKpisEDashboard(); atualizarTabelaPaginadaServer(); renderInicio(); }
         async function changeMonth(val) { const [year, month] = val.split('-').map(Number); currentYear = year; currentMonth = month; currentDay = null; await carregarKpisEDashboard(); atualizarTabelaPaginadaServer(); renderInicio(); }
         async function changeDay(val) { currentDay = val === 'todos' ? null : parseInt(val); await carregarKpisEDashboard(); atualizarTabelaPaginadaServer(); renderInicio(); }
@@ -1821,12 +1851,152 @@
         }
 
         function renderMetas() {
-            let html = '<header class="dashboard-header"><div style="display:flex; align-items:center; gap:16px;"><button class="btn-voltar" onclick="navigateTo(\'admin_inicio\')">← Voltar</button><h1>Gestão de Metas</h1></div></header><div class="table-card"><table><thead><tr><th>Vendedor</th><th>Meta Atual (R$)</th><th>Ações</th></tr></thead><tbody>';
-            todosVendedores.forEach(v => {
-                const meta = getMetaVendedor(v.id_usuario);
-                html += `<tr><td><strong>${escapeHtml(v.nome)}</strong></td><td>R$ ${meta.toLocaleString('pt-BR')}</td><td><button class="btn-salvar-modal" style="padding:6px 12px; font-size:11px; background:var(--card-bg); border:1px solid var(--border-light); color:var(--text-primary);" onclick="abrirModalMeta('${v.id_usuario}', '${escapeHtml(v.nome)}', ${meta})">Editar Meta</button></td></tr>`;
+            // Cruza vendedores com lojas via id_loja (FK correcta)
+            const lojaMap = {};
+            listaLojas.forEach(l => { lojaMap[l.id_loja] = l; });
+
+            // Calcula realizado por vendedor a partir de kpisMensais
+            const realizadoPorVendedor = {};
+            kpisMensais.forEach(o => {
+                if (o.status === STATUS.FECHADO || o.status === STATUS.VENDIDO) {
+                    realizadoPorVendedor[o.id_usuario] = (realizadoPorVendedor[o.id_usuario] || 0) + parseFloat(o.valor_orcado || 0);
+                }
             });
-            html += '</tbody></table></div>'; document.getElementById('mainContent').innerHTML = html;
+
+            // Agrupa vendedores por id_loja
+            const porLoja = {};
+            todosVendedores.forEach(v => {
+                const idL = v.id_loja || '__sem_loja__';
+                if (!porLoja[idL]) porLoja[idL] = [];
+                porLoja[idL].push(v);
+            });
+
+            const fmt = (n) => n.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+            const pct = (real, meta) => meta > 0 ? Math.min(Math.round((real / meta) * 100), 100) : 0;
+            const barColor = (p) => p >= 100 ? '#10b981' : p >= 80 ? '#10b981' : p >= 50 ? '#f59e0b' : '#ef4444';
+
+            function progressBar(real, meta) {
+                const p = pct(real, meta);
+                return `<div style="margin-top:6px;">
+                    <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-muted); margin-bottom:3px;">
+                        <span>Realizado: <strong style="color:var(--text-primary);">R$ ${fmt(real)}</strong></span>
+                        <span style="font-weight:700; color:${barColor(p)}">${p}%</span>
+                    </div>
+                    <div style="background:var(--border-light); border-radius:99px; height:6px; overflow:hidden;">
+                        <div style="width:${p}%; height:100%; background:${barColor(p)}; border-radius:99px; transition:width 0.4s ease;"></div>
+                    </div>
+                </div>`;
+            }
+
+            let sections = '';
+            const lojaIds = Object.keys(porLoja).sort((a, b) => {
+                const nA = lojaMap[a]?.nome_loja || 'Sem Loja';
+                const nB = lojaMap[b]?.nome_loja || 'Sem Loja';
+                return nA.localeCompare(nB);
+            });
+
+            lojaIds.forEach(idL => {
+                const vendedores = porLoja[idL];
+                const loja = lojaMap[idL];
+                const nomeLoja = loja?.nome_loja || 'Sem Loja';
+                const metaLoja = parseFloat(loja?.meta_mensal || 0);
+                const somaVendedores = vendedores.reduce((s, v) => s + getMetaVendedor(v.id_usuario), 0);
+                const realizadoLoja = vendedores.reduce((s, v) => s + (realizadoPorVendedor[v.id_usuario] || 0), 0);
+                const metaExibida = metaLoja > 0 ? metaLoja : somaVendedores;
+
+                // Cabeçalho da loja
+                sections += `
+                <div style="margin-bottom:28px; border:1.5px solid var(--border-light); border-radius:var(--radius-md); overflow:hidden;">
+                    <div style="background:var(--bg-body); padding:16px 20px; border-bottom:1.5px solid var(--border-light);">
+                        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--brand-blue-dark)" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                                <span style="font-weight:800; font-size:var(--font-md); color:var(--brand-blue-dark);">${escapeHtml(nomeLoja)}</span>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                                <span style="font-size:var(--font-xs); color:var(--text-muted);">Meta da loja:</span>
+                                <input type="text" id="metaLoja_${idL}" value="R$ ${fmt(metaExibida)}"
+                                    onfocus="this.select()"
+                                    oninput="this.value = formatCurrency(this.value)"
+                                    style="width:160px; padding:6px 10px; border-radius:8px; border:1.5px solid var(--border-light); font-size:var(--font-sm); font-weight:700; text-align:right; background:var(--card-bg); color:var(--text-primary);">
+                                <button onclick="salvarMetaLoja('${idL}')"
+                                    style="padding:6px 14px; border-radius:8px; background:var(--brand-blue); color:#fff; border:none; cursor:pointer; font-size:var(--font-xs); font-weight:600;">
+                                    Salvar
+                                </button>
+                                ${metaLoja === 0 ? `<span style="font-size:10px; color:var(--text-muted); font-style:italic;">(usando soma dos vendedores)</span>` : ''}
+                            </div>
+                        </div>
+                        ${progressBar(realizadoLoja, metaExibida)}
+                    </div>
+                    <table style="width:100%; border-collapse:collapse;">
+                        <thead>
+                            <tr style="background:var(--bg-body); border-bottom:1px solid var(--border-light);">
+                                <th style="padding:10px 20px 10px 36px; text-align:left; font-size:var(--font-xs); color:var(--text-muted); font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">Vendedor</th>
+                                <th style="padding:10px 20px; text-align:left; font-size:var(--font-xs); color:var(--text-muted); font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">Meta Individual</th>
+                                <th style="padding:10px 20px; text-align:left; font-size:var(--font-xs); color:var(--text-muted); font-weight:600; text-transform:uppercase; letter-spacing:0.05em; min-width:200px;">Progresso</th>
+                                <th style="padding:10px 20px; text-align:right; font-size:var(--font-xs); color:var(--text-muted); font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+
+                vendedores.forEach((v, idx) => {
+                    const meta = getMetaVendedor(v.id_usuario);
+                    const real = realizadoPorVendedor[v.id_usuario] || 0;
+                    const p = pct(real, meta);
+                    const cor = barColor(p);
+                    const bg = idx % 2 === 0 ? 'var(--card-bg)' : 'var(--bg-body)';
+                    sections += `
+                            <tr style="background:${bg}; border-bottom:1px solid var(--border-light);">
+                                <td style="padding:14px 20px 14px 36px;">
+                                    <div style="display:flex; align-items:center; gap:8px;">
+                                        <div style="width:28px; height:28px; border-radius:50%; background:var(--brand-blue); color:#fff; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center;">${escapeHtml(v.nome.charAt(0).toUpperCase())}</div>
+                                        <strong style="font-size:var(--font-sm);">${escapeHtml(v.nome)}</strong>
+                                    </div>
+                                </td>
+                                <td style="padding:14px 20px; font-weight:700; font-size:var(--font-sm);">R$ ${fmt(meta)}</td>
+                                <td style="padding:14px 20px;">
+                                    <div style="display:flex; align-items:center; gap:8px;">
+                                        <div style="flex:1; background:var(--border-light); border-radius:99px; height:8px; overflow:hidden; min-width:80px;">
+                                            <div style="width:${p}%; height:100%; background:${cor}; border-radius:99px;"></div>
+                                        </div>
+                                        <span style="font-size:11px; font-weight:700; color:${cor}; min-width:36px;">${p}%</span>
+                                        <span style="font-size:11px; color:var(--text-muted);">R$ ${fmt(real)}</span>
+                                    </div>
+                                </td>
+                                <td style="padding:14px 20px; text-align:right;">
+                                    <button class="btn-salvar-modal" style="padding:6px 14px; font-size:11px; background:var(--card-bg); border:1px solid var(--border-light); color:var(--text-primary); border-radius:8px;"
+                                        onclick="abrirModalMeta('${v.id_usuario}', '${escapeHtml(v.nome)}', ${meta})">Editar Meta</button>
+                                </td>
+                            </tr>`;
+                });
+
+                sections += `</tbody></table></div>`;
+            });
+
+            document.getElementById('mainContent').innerHTML = `
+                <header class="dashboard-header">
+                    <div style="display:flex; align-items:center; gap:16px;">
+                        <button class="btn-voltar" onclick="navigateTo('admin_inicio')">← Voltar</button>
+                        <h1>Gestão de Metas</h1>
+                    </div>
+                    <span style="font-size:var(--font-xs); color:var(--text-muted);">Mês atual · dados em tempo real</span>
+                </header>
+                <div style="padding:0 0 32px;">${sections || '<p style="color:var(--text-muted); padding:24px;">Nenhum vendedor cadastrado.</p>'}</div>`;
+        }
+
+        async function salvarMetaLoja(idLoja) {
+            const input = document.getElementById(`metaLoja_${idLoja}`);
+            if (!input) return;
+            const valor = parseCurrency(input.value);
+            if (valor < 0) { showToast('Valor inválido.', 'error'); return; }
+            try {
+                const { error } = await db.from('lojas').update({ meta_mensal: Math.round(valor) }).eq('id_loja', idLoja);
+                if (error) throw error;
+                const idx = listaLojas.findIndex(l => l.id_loja === idLoja);
+                if (idx > -1) listaLojas[idx].meta_mensal = Math.round(valor);
+                showToast('Meta da loja salva!', 'success');
+                renderMetas();
+            } catch (e) { showToast('Erro ao salvar meta da loja: ' + e.message, 'error'); }
         }
 
         async function abrirDetalhesCliente(id) {
@@ -1869,7 +2039,7 @@
             const comentarios = clienteAtualParaDetalhes.comentarios || []; const comentariosHtml = renderComentariosHtml(comentarios, id);
             const statusClass = classToFormatStatus(orc.status);
             const interesse = escapeHtml(orc.interesse || '-');
-            const interesseColor = orc.interesse === 'Alto' ? '#10b981' : orc.interesse === 'Médio' ? '#f59e0b' : orc.interesse === 'Baixo' ? '#ef4444' : '#94a3b8';
+            const interesseColor = orc.interesse === 'Alta' ? '#10b981' : orc.interesse === 'Média' ? '#f59e0b' : orc.interesse === 'Baixa' ? '#ef4444' : '#94a3b8';
             const dataCriacao = orc.data_criacao ? new Date(orc.data_criacao).toLocaleDateString('pt-BR') : '-';
             const ultimoContato = comentarios.length > 0 ? new Date(comentarios[comentarios.length - 1].data_criacao).toLocaleDateString('pt-BR') : '-';
             const whats = (orc.clientes?.whatsapp || '').replace(/\D/g, '');
@@ -1947,6 +2117,16 @@
                 closeModal('modalEditarMeta'); showToast('Meta atualizada com sucesso', 'success'); renderMetas();
             } catch (e) { document.getElementById('errMeta').textContent = 'Erro ao salvar: ' + e.message; } 
             finally { btn.classList.remove('saving'); btn.disabled = false; }
+        }
+
+        function toggleSenhaAdmin() {
+            const input = document.getElementById('adminModSenha');
+            const icon = document.getElementById('eyeIconAdmin');
+            const isHidden = input.type === 'password';
+            input.type = isHidden ? 'text' : 'password';
+            icon.innerHTML = isHidden
+                ? '<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>'
+                : '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
         }
 
         function formatCurrency(value) { let num = value.replace(/\D/g, ''); num = (parseInt(num) || 0).toString(); return 'R$ ' + parseInt(num.slice(0, -2) || '0').toLocaleString('pt-BR') + ',' + num.slice(-2).padStart(2, '0'); }
@@ -2250,6 +2430,11 @@
             const btn = event.currentTarget;
             btn.classList.add('saving'); btn.disabled = true; isConfirmingPerda = true;
             try {
+                console.log("mapStatusUUID ao perder:", JSON.stringify(mapStatusUUID));
+                if (!mapStatusUUID.length) {
+                    const { data } = await db.from('status_orcamento').select('*');
+                    mapStatusUUID = data || [];
+                }
                 const statusPerdido = mapStatusUUID.find(s => s.nome === STATUS.PERDIDO);
                 if (!statusPerdido) throw new Error('Status "Perdido" não encontrado');
                 const { error } = await db.from('orcamentos').update({ id_status: statusPerdido.id_status }).eq('id_orcamento', idOrcamentoParaPerder);
@@ -2289,6 +2474,11 @@
             btn.disabled = true;
 
             try {
+                console.log("mapStatusUUID ao fechar:", JSON.stringify(mapStatusUUID));
+                if (!mapStatusUUID.length) {
+                    const { data } = await db.from('status_orcamento').select('*');
+                    mapStatusUUID = data || [];
+                }
                 const statusFechado = mapStatusUUID.find(s => s.nome === STATUS.FECHADO);
                 if (!statusFechado) throw new Error('Status "Fechado" não encontrado');
                 const { error } = await db.from('orcamentos').update({
