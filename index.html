@@ -791,8 +791,10 @@
             btn.classList.add('saving'); btn.disabled = true; err.textContent = '';
 
             try {
+                const payload = { nome, email, loja, perfil, status, senha };
+                console.log("Payload sendo enviado para a Edge Function:", JSON.stringify(payload));
                 const { data, error } = await db.functions.invoke('criar-usuario', {
-                    body: { nome, email, loja, perfil, status, senha }
+                    body: payload
                 });
 
                 if (error) throw new Error(error.message);
