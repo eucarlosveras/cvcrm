@@ -627,7 +627,8 @@
     const isAdmin = currentUser.perfil === 'Administrador' || currentUser.perfil === 'Admin';
     try {
         // 1. Adicione 'usuarios(id_loja)' no select para conseguir filtrar pela loja
-let query = db.from('orcamentos').select('id_orcamento, valor_orcado, id_usuario, data_contato, hora_contato, clientes(nome_cliente, whatsapp), status_orcamento(nome), usuarios(id_loja)');        
+        let query = db.from('orcamentos').select('id_orcamento, valor_orcado, id_usuario, data_contato, hora_contato, clientes(nome_cliente, whatsapp), status_orcamento(nome), usuarios!inner(id_loja)');
+        
         // 2. Lógica de filtro hierárquica
         if (currentUser.perfil === 'Vendedor') {
             query = query.eq('id_usuario', currentUser.id_usuario);
@@ -673,21 +674,18 @@ let query = db.from('orcamentos').select('id_orcamento, valor_orcado, id_usuario
                 // Regra de Ferro: Se for Gerente, obriga a loja a ser a dele E o vendedor a existir
                 if (currentUser.perfil === 'Gerente') {
                     query = query.eq('usuarios.id_loja', currentUser.id_loja);
-                } 
-                // Se for Vendedor, vê apenas o dele
-                else if (currentUser.perfil === 'Vendedor') {
+                    if (selectedVendedor !== 'todos') query = query.eq('id_usuario', selectedVendedor);
+                } else if (currentUser.perfil === 'Vendedor') {
                     query = query.eq('id_usuario', currentUser.id_usuario);
+                } else {
+                    if (selectedVendedor !== 'todos') {
+                        query = query.eq('id_usuario', selectedVendedor);
+                    } else if (selectedLoja !== 'todas') {
+                        const idsLoja = todosVendedores.filter(v => v.id_loja === selectedLoja).map(v => v.id_usuario);
+                        if (idsLoja.length > 0) query = query.in('id_usuario', idsLoja);
+                    }
                 }
 
-                    // 3. Só aplica os filtros de busca (vendedor/loja) se NÃO for Gerente (ou seja, se for Admin)
-                    else {
-                        if (selectedVendedor !== 'todos') {
-                            query = query.eq('id_usuario', selectedVendedor);
-                        } else if (selectedLoja !== 'todas') {
-                            const idsLoja = todosVendedores.filter(v => v.id_loja === selectedLoja).map(v => v.id_usuario);
-                            if (idsLoja.length > 0) query = query.in('id_usuario', idsLoja);
-                        }
-                    }
                     // 3. Só aplica os filtros de busca (vendedor/loja) se NÃO for Gerente (ou seja, se for Admin)
                     else {
                         if (selectedVendedor !== 'todos') {
@@ -1158,7 +1156,12 @@ let query = db.from('orcamentos').select('id_orcamento, valor_orcado, id_usuario
         }
 
         function buildVendedorOptions() {
-            const filtrados = selectedLoja === 'todas' ? todosVendedores : todosVendedores.filter(v => v.id_loja === selectedLoja);
+            let filtrados = todosVendedores;
+            if (currentUser.perfil === 'Gerente') {
+                filtrados = todosVendedores.filter(v => v.id_loja === currentUser.id_loja);
+            } else if (selectedLoja !== 'todas') {
+                filtrados = todosVendedores.filter(v => v.id_loja === selectedLoja);
+            }
             let opts = '<option value="todos" ' + (selectedVendedor === 'todos' ? 'selected' : '') + '>Todos os vendedores</option>';
             filtrados.forEach(v => { opts += `<option value="${v.id_usuario}" ${selectedVendedor == v.id_usuario ? 'selected' : ''}>${escapeHtml(v.nome)}</option>`; });
             return opts;
@@ -1929,11 +1932,15 @@ let query = db.from('orcamentos').select('id_orcamento, valor_orcado, id_usuario
             }
 
             let sections = '';
-            const lojaIds = Object.keys(porLoja).sort((a, b) => {
+            let lojaIds = Object.keys(porLoja).sort((a, b) => {
                 const nA = lojaMap[a]?.nome_loja || 'Sem Loja';
                 const nB = lojaMap[b]?.nome_loja || 'Sem Loja';
                 return nA.localeCompare(nB);
             });
+
+            if (currentUser.perfil === 'Gerente') {
+                lojaIds = lojaIds.filter(idL => idL === currentUser.id_loja);
+            }
 
             lojaIds.forEach(idL => {
                 const vendedores = porLoja[idL];
