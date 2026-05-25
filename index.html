@@ -1156,12 +1156,7 @@
         }
 
         function buildVendedorOptions() {
-            let filtrados = todosVendedores;
-            if (currentUser.perfil === 'Gerente') {
-                filtrados = todosVendedores.filter(v => v.id_loja === currentUser.id_loja);
-            } else if (selectedLoja !== 'todas') {
-                filtrados = todosVendedores.filter(v => v.id_loja === selectedLoja);
-            }
+            const filtrados = selectedLoja === 'todas' ? todosVendedores : todosVendedores.filter(v => v.id_loja === selectedLoja);
             let opts = '<option value="todos" ' + (selectedVendedor === 'todos' ? 'selected' : '') + '>Todos os vendedores</option>';
             filtrados.forEach(v => { opts += `<option value="${v.id_usuario}" ${selectedVendedor == v.id_usuario ? 'selected' : ''}>${escapeHtml(v.nome)}</option>`; });
             return opts;
