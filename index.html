@@ -1518,25 +1518,24 @@
                 const pk = await detectClientePK();
                 const isVendedor = currentUser.perfil === 'Vendedor';
 
-                let clienteIds = null;
-                if (isVendedor) {
-                    // Buscar apenas clientes vinculados a orçamentos do vendedor logado
-                    const { data: orcsVendedor, error: erroOrcs } = await db
-                        .from('orcamentos')
-                        .select('id_cliente')
-                        .eq('id_usuario', currentUser.id_usuario);
-                    if (erroOrcs) throw erroOrcs;
+            // Nova lógica de filtragem hierárquica
+                let query = db.from('clientes').select('*');
+
+                if (currentUser.perfil === 'Vendedor') {
+                    // Vendedor continua vendo apenas clientes que ele já atendeu
+                    const { data: orcsVendedor } = await db.from('orcamentos')
+                        .select('id_cliente').eq('id_usuario', currentUser.id_usuario);
                     const ids = [...new Set((orcsVendedor || []).map(o => o.id_cliente).filter(Boolean))];
-                    if (ids.length === 0) {
-                        main.innerHTML = `
-                            <header class="dashboard-header"><h1>Clientes</h1></header>
-                            <div class="table-card" style="text-align:center;padding:48px;color:var(--text-muted);">
-                                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom:12px;opacity:.4;"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                                <p style="font-size:var(--font-md);font-weight:600;margin-bottom:6px;">Nenhum cliente encontrado</p>
-                                <p style="font-size:var(--font-sm);">Você ainda não possui clientes vinculados a orçamentos seus.</p>
-                            </div>`;
-                        return;
-                    }
+                    query = query.in(pk, ids);
+                } 
+                else if (currentUser.perfil === 'Gerente') {
+                    // Gerente vê TODOS os clientes da sua loja
+                    query = query.eq('id_loja', currentUser.id_loja);
+                }
+                
+                // Agora executamos a query final
+                const { data: clientes, error } = await query.order('nome_cliente');
+                if (error) throw error;
                     clienteIds = ids;
                 }
 
