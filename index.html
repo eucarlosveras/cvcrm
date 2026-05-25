@@ -317,15 +317,34 @@
     <div class="modal-overlay" id="modalConfirmaFechamento" onclick="if(event.target === this) closeModal('modalConfirmaFechamento')">
         <div class="modal-card" style="max-width:480px;">
             <h3>&#x1F389; Confirmar Fechamento de Venda</h3>
-            <p style="margin-bottom:20px; color:var(--text-secondary); font-size:var(--font-sm);">Preencha os detalhes finais para registrar a venda.</p>
-            
-            <label for="fechamentoDataEntrega">Data de Entrega *</label>
-            <input type="date" id="fechamentoDataEntrega" class="form-input" style="margin-bottom:4px;">
-            <div class="field-error" id="errDataEntrega"></div>
+            <p style="margin-bottom:20px; color:var(--text-secondary); font-size:var(--font-sm);">O produto será entregue ou retirado na loja?</p>
 
-            <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:10px 14px; margin-top:12px; font-size:var(--font-xs); color:#166534; display:flex; align-items:flex-start; gap:8px;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0; margin-top:1px;"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                <span>Um agendamento de <strong>confirmacao de recebimento</strong> sera criado automaticamente na data de entrega.</span>
+            <!-- Passo 1: escolha entrega ou retirada -->
+            <div id="fechamentoStep1">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px;">
+                    <button id="btnOpcaoEntrega" onclick="selecionarModoFechamento('entrega')"
+                        style="padding:18px 12px; border-radius:12px; border:2px solid var(--border-light); background:var(--card-bg); cursor:pointer; font-family:'Inter',sans-serif; font-size:var(--font-sm); font-weight:600; color:var(--text-primary); transition:all .2s; display:flex; flex-direction:column; align-items:center; gap:8px;">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                        Entrega
+                    </button>
+                    <button id="btnOpcaoRetirada" onclick="selecionarModoFechamento('retirada')"
+                        style="padding:18px 12px; border-radius:12px; border:2px solid var(--border-light); background:var(--card-bg); cursor:pointer; font-family:'Inter',sans-serif; font-size:var(--font-sm); font-weight:600; color:var(--text-primary); transition:all .2s; display:flex; flex-direction:column; align-items:center; gap:8px;">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                        Retirada na Loja
+                    </button>
+                </div>
+                <div class="field-error" id="errModoFechamento"></div>
+            </div>
+
+            <!-- Passo 2: data de entrega (só aparece se "Entrega" for selecionado) -->
+            <div id="fechamentoStep2" style="display:none; margin-top:4px;">
+                <label for="fechamentoDataEntrega">Data de Entrega *</label>
+                <input type="date" id="fechamentoDataEntrega" class="form-input" style="margin-bottom:4px;">
+                <div class="field-error" id="errDataEntrega"></div>
+                <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:10px 14px; margin-top:12px; font-size:var(--font-xs); color:#166534; display:flex; align-items:flex-start; gap:8px;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0; margin-top:1px;"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                    <span>Um agendamento de <strong>confirmação de recebimento</strong> será criado automaticamente na data de entrega.</span>
+                </div>
             </div>
 
             <div class="modal-btns">
@@ -2254,6 +2273,7 @@
                                 <div class="form-group"><label>Data do Orçamento *</label><input type="date" id="modDataOrcamento" class="form-input" value="${hoje}" onblur="validateField('modDataOrcamento','errDataOrc')"><div class="field-error" id="errDataOrc"></div></div>
                                 <div class="form-group"><label>Data do Próximo Contato *</label><input type="date" id="modDataContato" class="form-input" onblur="validateField('modDataContato','errDataContato')"><div class="field-error" id="errDataContato"></div></div>
                                 <div class="form-group"><label>Horário do Contato *</label><input type="time" id="modHoraContato" class="form-input" onblur="validateField('modHoraContato','errHoraContato')"><div class="field-error" id="errHoraContato"></div></div>
+                                <div class="form-group" style="grid-column: 1 / -1;"><label for="modMotivoContato">Motivo do Contato</label><select id="modMotivoContato" class="form-input"><option value="">Selecionar...</option><option value="Virada de Tabela">Virada de Tabela</option><option value="Quebra de Objeção">Quebra de Objeção</option><option value="Negociação">Negociação</option><option value="Confirmação de Entrega">Confirmação de Entrega</option></select></div>
                             </div>
                         </div>
                     </div>
@@ -2286,6 +2306,7 @@
                 const dataOrcamento = document.getElementById('modDataOrcamento').value;
                 const dataContato = document.getElementById('modDataContato').value;
                 const horaContato = document.getElementById('modHoraContato').value;
+                const motivoContato = document.getElementById('modMotivoContato') ? document.getElementById('modMotivoContato').value : '';
                 
                 let valid = true;
                 if (!nome) { document.getElementById('errNome').textContent = 'Obrigatório'; valid = false; }
@@ -2387,6 +2408,7 @@
                     data_criacao: dataCriacaoFinal,
                     data_contato: dataContato,
                     hora_contato: horaContato,
+                    observacao_agendamento: motivoContato || null,
                     observacoes: observacoes,
                     origem: origem
                 };
@@ -2449,12 +2471,52 @@
             finally { btn.classList.remove('saving'); btn.disabled = false; isConfirmingPerda = false; }
         }
 
+        let modoFechamentoSelecionado = null; // 'entrega' | 'retirada'
+
+        function selecionarModoFechamento(modo) {
+            modoFechamentoSelecionado = modo;
+            const btnEntrega = document.getElementById('btnOpcaoEntrega');
+            const btnRetirada = document.getElementById('btnOpcaoRetirada');
+            const step2 = document.getElementById('fechamentoStep2');
+            const errModo = document.getElementById('errModoFechamento');
+            if (errModo) errModo.textContent = '';
+
+            // Highlight selecionado
+            btnEntrega.style.borderColor = modo === 'entrega' ? 'var(--brand-blue)' : 'var(--border-light)';
+            btnEntrega.style.background = modo === 'entrega' ? '#eff6ff' : 'var(--card-bg)';
+            btnEntrega.style.color = modo === 'entrega' ? 'var(--brand-blue-dark)' : 'var(--text-primary)';
+            btnRetirada.style.borderColor = modo === 'retirada' ? 'var(--accent-green)' : 'var(--border-light)';
+            btnRetirada.style.background = modo === 'retirada' ? '#f0fdf4' : 'var(--card-bg)';
+            btnRetirada.style.color = modo === 'retirada' ? 'var(--accent-green-dark)' : 'var(--text-primary)';
+
+            if (modo === 'entrega') {
+                step2.style.display = 'block';
+            } else {
+                step2.style.display = 'none';
+                const errData = document.getElementById('errDataEntrega');
+                if (errData) errData.textContent = '';
+            }
+        }
+
         function abrirConfirmaFechamento(id) {
             idOrcamentoParaPerder = id;
+            modoFechamentoSelecionado = null;
+
+            // Reset visual
+            const btnEntrega = document.getElementById('btnOpcaoEntrega');
+            const btnRetirada = document.getElementById('btnOpcaoRetirada');
+            if (btnEntrega) { btnEntrega.style.borderColor = 'var(--border-light)'; btnEntrega.style.background = 'var(--card-bg)'; btnEntrega.style.color = 'var(--text-primary)'; }
+            if (btnRetirada) { btnRetirada.style.borderColor = 'var(--border-light)'; btnRetirada.style.background = 'var(--card-bg)'; btnRetirada.style.color = 'var(--text-primary)'; }
+
+            const step2 = document.getElementById('fechamentoStep2');
+            if (step2) step2.style.display = 'none';
             const dataEntrega = document.getElementById('fechamentoDataEntrega');
-            const errData = document.getElementById('errDataEntrega');
             if (dataEntrega) dataEntrega.value = '';
+            const errData = document.getElementById('errDataEntrega');
             if (errData) errData.textContent = '';
+            const errModo = document.getElementById('errModoFechamento');
+            if (errModo) errModo.textContent = '';
+
             openModal('modalConfirmaFechamento');
             const btn = document.getElementById('btnConfirmaFechar');
             btn.querySelector('.btn-spinner').style.display = 'none';
@@ -2462,11 +2524,23 @@
             btn.disabled = false;
             btn.onclick = async () => { await confirmarFechamento(id); };
         }
+
         async function confirmarFechamento(id) {
-            const dataEntrega = document.getElementById('fechamentoDataEntrega').value;
-            const errData = document.getElementById('errDataEntrega');
-            errData.textContent = '';
-            if (!dataEntrega) { errData.textContent = 'Selecione a data de entrega.'; return; }
+            const errModo = document.getElementById('errModoFechamento');
+            errModo.textContent = '';
+
+            if (!modoFechamentoSelecionado) {
+                errModo.textContent = 'Selecione se o produto será entregue ou retirado na loja.';
+                return;
+            }
+
+            let dataEntrega = null;
+            if (modoFechamentoSelecionado === 'entrega') {
+                dataEntrega = document.getElementById('fechamentoDataEntrega').value;
+                const errData = document.getElementById('errDataEntrega');
+                errData.textContent = '';
+                if (!dataEntrega) { errData.textContent = 'Selecione a data de entrega.'; return; }
+            }
 
             const btn = document.getElementById('btnConfirmaFechar');
             btn.querySelector('.btn-spinner').style.display = 'inline-block';
@@ -2474,49 +2548,67 @@
             btn.disabled = true;
 
             try {
-                console.log("mapStatusUUID ao fechar:", JSON.stringify(mapStatusUUID));
                 if (!mapStatusUUID.length) {
                     const { data } = await db.from('status_orcamento').select('*');
                     mapStatusUUID = data || [];
                 }
                 const statusFechado = mapStatusUUID.find(s => s.nome === STATUS.FECHADO);
                 if (!statusFechado) throw new Error('Status "Fechado" não encontrado');
-                const { error } = await db.from('orcamentos').update({
-                    id_status: statusFechado.id_status,
-                    data_entrega: dataEntrega
-                }).eq('id_orcamento', id);
+
+                const updatePayload = { id_status: statusFechado.id_status };
+                if (dataEntrega) updatePayload.data_entrega = dataEntrega;
+
+                const { error } = await db.from('orcamentos').update(updatePayload).eq('id_orcamento', id);
                 if (error) throw error;
 
-                const dataEntregaObj = new Date(dataEntrega + 'T00:00:00');
-                const dataConfirmacao = dataEntrega;
-                const dataEntregaFormatada = dataEntregaObj.toLocaleDateString('pt-BR');
+                if (modoFechamentoSelecionado === 'entrega') {
+                    const dataEntregaObj = new Date(dataEntrega + 'T00:00:00');
+                    const dataEntregaFormatada = dataEntregaObj.toLocaleDateString('pt-BR');
 
-                // Registrar comentário de fechamento
-                await db.from('comentarios').insert([{
-                    id_orcamento: id,
-                    texto: `Venda fechada com sucesso! Entrega prevista para: ${dataEntregaFormatada}.`,
-                    tipo: 'Sistema',
-                    autor: currentUser.nome
-                }]);
+                    await db.from('comentarios').insert([{
+                        id_orcamento: id,
+                        texto: `🎉 Venda fechada com sucesso! Produto será ENTREGUE. Entrega prevista para: ${dataEntregaFormatada}.`,
+                        tipo: 'Sistema',
+                        autor: currentUser.nome
+                    }]);
 
-                // Criar agendamento automático de confirmação de recebimento
-                await db.from('orcamentos').update({
-                    data_contato: dataConfirmacao,
-                    hora_contato: '09:00',
-                    observacao_agendamento: `Confirmação de recebimento - Entrega prevista para ${dataEntregaFormatada}`
-                }).eq('id_orcamento', id);
+                    // Criar agendamento automático de confirmação de recebimento
+                    await db.from('orcamentos').update({
+                        data_contato: dataEntrega,
+                        hora_contato: '09:00',
+                        observacao_agendamento: `Confirmação de recebimento - Entrega prevista para ${dataEntregaFormatada}`
+                    }).eq('id_orcamento', id);
 
-                await db.from('comentarios').insert([{
-                    id_orcamento: id,
-                    texto: `Agendamento automático criado: Confirmação de recebimento para ${dataEntregaFormatada} às 09:00.`,
-                    tipo: 'Sistema',
-                    autor: currentUser.nome
-                }]);
+                    await db.from('comentarios').insert([{
+                        id_orcamento: id,
+                        texto: `Agendamento automático criado: Confirmação de recebimento para ${dataEntregaFormatada} às 09:00.`,
+                        tipo: 'Sistema',
+                        autor: currentUser.nome
+                    }]);
 
-                showToast('Venda fechada! Agendamento de confirmação criado automaticamente.', 'success');
-                closeModal('modalConfirmaFechamento');
-                if (currentView === 'detalhes_cliente') await abrirDetalhesCliente(id);
-                else navigateTo(currentView);
+                    closeModal('modalConfirmaFechamento');
+                    showToast('🎉 Venda fechada! Agendamento de confirmação criado automaticamente.', 'success');
+                    await carregarDados();
+                    navigateTo('inicio');
+
+                } else {
+                    // Retirada na loja
+                    await db.from('comentarios').insert([{
+                        id_orcamento: id,
+                        texto: `🎉 Venda fechada com sucesso! Produto RETIRADO NA LOJA pelo cliente.`,
+                        tipo: 'Sistema',
+                        autor: currentUser.nome
+                    }]);
+
+                    closeModal('modalConfirmaFechamento');
+
+                    // Exibir parabéns antes de redirecionar
+                    setTimeout(() => {
+                        showToast('🏆 Parabéns! Venda concluída com sucesso!', 'success');
+                    }, 100);
+                    await carregarDados();
+                    navigateTo('inicio');
+                }
             } catch (e) {
                 showToast('Erro ao fechar venda: ' + e.message, 'error');
                 btn.querySelector('.btn-spinner').style.display = 'none';
