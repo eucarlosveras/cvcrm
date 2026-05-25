@@ -1927,15 +1927,11 @@
             }
 
             let sections = '';
-            let lojaIds = Object.keys(porLoja).sort((a, b) => {
+            const lojaIds = Object.keys(porLoja).sort((a, b) => {
                 const nA = lojaMap[a]?.nome_loja || 'Sem Loja';
                 const nB = lojaMap[b]?.nome_loja || 'Sem Loja';
                 return nA.localeCompare(nB);
             });
-
-            if (currentUser.perfil === 'Gerente') {
-                lojaIds = lojaIds.filter(idL => idL === currentUser.id_loja);
-            }
 
             lojaIds.forEach(idL => {
                 const vendedores = porLoja[idL];
