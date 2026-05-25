@@ -622,25 +622,27 @@
             location.reload();
         }
 
-        async function carregarKpisEDashboard() {
-            if (!currentUser) return;
-            const isAdmin = currentUser.perfil === 'Administrador' || currentUser.perfil === 'Admin';
-            try {
-                let query = db.from('orcamentos').select('id_orcamento, valor_orcado, id_usuario, data_contato, hora_contato, clientes(nome_cliente, whatsapp), status_orcamento(nome)');
+      async function carregarKpisEDashboard() {
+    if (!currentUser) return;
+    const isAdmin = currentUser.perfil === 'Administrador' || currentUser.perfil === 'Admin';
+    try {
+        // 1. Adicione 'usuarios(id_loja)' no select para conseguir filtrar pela loja
+        let query = db.from('orcamentos').select('id_orcamento, valor_orcado, id_usuario, data_contato, hora_contato, clientes(nome_cliente, whatsapp), status_orcamento(nome), usuarios(id_loja)');
 
-                if (currentUser.perfil === 'Vendedor') query = query.eq('id_usuario', currentUser.id_usuario);
-                else if (!isAdmin && selectedVendedor !== 'todos') query = query.eq('id_usuario', selectedVendedor);
-                else if (isAdmin && selectedVendedor !== 'todos') query = query.eq('id_usuario', selectedVendedor);
-
-                if (currentDay) {
-                    const start = new Date(currentYear, currentMonth - 1, currentDay).toISOString();
-                    const end = new Date(currentYear, currentMonth - 1, currentDay, 23, 59, 59).toISOString();
-                    query = query.gte('data_criacao', start).lte('data_criacao', end);
-                } else if (currentMonth && currentYear) {
-                    const startDate = new Date(currentYear, currentMonth - 1, 1).toISOString();
-                    const endDate = new Date(currentYear, currentMonth, 0, 23, 59, 59).toISOString();
-                    query = query.gte('data_criacao', startDate).lte('data_criacao', endDate);
-                }
+        // 2. Lógica de filtro hierárquica
+        if (currentUser.perfil === 'Vendedor') {
+            query = query.eq('id_usuario', currentUser.id_usuario);
+        } 
+        else if (currentUser.perfil === 'Gerente') {
+            // Filtra orçamentos onde o usuário dono do orçamento pertence à mesma loja do gerente
+            query = query.eq('usuarios.id_loja', currentUser.id_loja);
+        }
+        else if (!isAdmin && selectedVendedor !== 'todos') {
+            query = query.eq('id_usuario', selectedVendedor);
+        }
+        else if (isAdmin && selectedVendedor !== 'todos') {
+            query = query.eq('id_usuario', selectedVendedor);
+        }
 
                 const { data, error } = await query;
                 if (!error) {
