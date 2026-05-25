@@ -627,8 +627,8 @@
     const isAdmin = currentUser.perfil === 'Administrador' || currentUser.perfil === 'Admin';
     try {
         // 1. Adicione 'usuarios(id_loja)' no select para conseguir filtrar pela loja
-        let query = db.from('orcamentos').select('id_orcamento, valor_orcado, id_usuario, data_contato, hora_contato, clientes(nome_cliente, whatsapp), status_orcamento(nome), usuarios(id_loja)');
-
+        let query = db.from('orcamentos').select('id_orcamento, valor_orcado, id_usuario, data_contato, hora_contato, clientes(nome_cliente, whatsapp), status_orcamento(nome), usuarios!inner(id_loja)');
+        
         // 2. Lógica de filtro hierárquica
         if (currentUser.perfil === 'Vendedor') {
             query = query.eq('id_usuario', currentUser.id_usuario);
