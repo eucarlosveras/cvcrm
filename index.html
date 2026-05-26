@@ -2543,7 +2543,7 @@
             btn.onclick = async () => { await confirmarFechamento(id); };
         }
 
-        async function confirmarFechamento(id) {
+       async function confirmarFechamento(id) {
             const errModo = document.getElementById('errModoFechamento');
             errModo.textContent = '';
 
@@ -2606,8 +2606,7 @@
 
                     closeModal('modalConfirmaFechamento');
                     showToast('🎉 Venda fechada! Agendamento de confirmação criado automaticamente.', 'success');
-                    await carregarDados();
-                    navigateTo('inicio');
+                    navigateTo('inicio'); 
 
                 } else {
                     // Retirada na loja
@@ -2624,8 +2623,7 @@
                     setTimeout(() => {
                         showToast('🏆 Parabéns! Venda concluída com sucesso!', 'success');
                     }, 100);
-                    await carregarDados();
-                    navigateTo('inicio');
+                    navigateTo('inicio'); 
                 }
             } catch (e) {
                 showToast('Erro ao fechar venda: ' + e.message, 'error');
