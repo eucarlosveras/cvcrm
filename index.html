@@ -879,13 +879,19 @@
         }
 
         async function carregarProdutos() {
-            try {
-                const { data, error } = await db.from('produtos').select('produto');
-                if (!error && data) {
-                    todosProdutos = data.map(p => ({ nome: p.produto || '' })).filter(p => p.nome.trim() !== '').sort((a, b) => a.nome.localeCompare(b.nome));
-                }
-            } catch (e) { }
+    try {
+        const { data, error } = await db.from('produtos').select('id_produto, codigo, nome_produto');
+        if (!error && data) {
+            todosProdutos = data.map(p => ({
+                id_produto: p.id_produto,
+                codigo: p.codigo || '',
+                nome: p.nome_produto || ''
+            })).filter(p => p.nome.trim() !== '').sort((a, b) => a.nome.localeCompare(b.nome));
         }
+    } catch (e) {
+        console.error('Erro ao carregar tabela de produtos:', e);
+    }
+}
 
         async function carregarHistoricoFaturamento() {
             if (!currentUser || currentUser.perfil !== 'Vendedor') { historicoFaturamento = []; return; }
