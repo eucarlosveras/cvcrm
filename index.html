@@ -1579,6 +1579,8 @@
 
             requestAnimationFrame(() => { tentarRenderizarGraficos(total, fechados); });
             atualizarTabelaPaginadaServer();
+            renderNotificationBadge(buildNotifications().filter(n => n.id !== null).length);
+
         }
 
         function renderAgendaDia() {
