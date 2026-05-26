@@ -1356,16 +1356,38 @@
             const hoje = new Date().toISOString().split('T')[0];
             const notificacoes = [];
             const isEmAberto = (s) => [STATUS.EM_NEGOCIACAO, STATUS.CONTATO_INICIAL, STATUS.NEGOCIACAO, STATUS.AGUARDANDO].includes(s);
+            
             const agendadosHoje = kpisMensais.filter(o => o.data_contato === hoje && isEmAberto(o.status));
             const atrasados = kpisMensais.filter(o => o.data_contato && o.data_contato < hoje && isEmAberto(o.status));
+            
+            // Notificações de agenda
             agendadosHoje.forEach(o => notificacoes.push({ tipo: 'info', texto: `Contato agendado hoje: <strong>${escapeHtml(o.clientes?.nome_cliente || 'Cliente')}</strong>`, id: o.id_orcamento, data: o.hora_contato || 'horário não definido' }));
             atrasados.forEach(o => notificacoes.push({ tipo: 'critical', texto: `Contato atrasado: <strong>${escapeHtml(o.clientes?.nome_cliente || 'Cliente')}</strong>`, id: o.id_orcamento, data: o.data_contato || 'data não definida' }));
             
-            const naoLidas = notificacoes.filter(n => { if (n.id === null) return true; return !notificacoesLidas.has(n.id); });
-            if (naoLidas.length === 0) naoLidas.push({ tipo: 'info', texto: 'Nenhum alerta no momento.', id: null, data: '' });
+            // --- INÍCIO DA MELHORIA: INJETAR ALERTAS DO BANCO ---
+            notificacoesBanco.forEach(n => {
+                notificacoes.push({
+                    tipo: 'comentario_gerente',
+                    texto: n.texto,
+                    id: n.id_referencia, // ID do orçamento para redirecionar
+                    id_notif: n.id,      // ID da notificação para marcar como lida
+                    data: 'Novo comentário do gerente'
+                });
+            });
+            // --- FIM DA MELHORIA ---
+
+            // Filtra as não lidas
+            const naoLidas = notificacoes.filter(n => { 
+                if (n.id === null) return true; 
+                if (n.tipo === 'comentario_gerente') return true; // Já vêm filtradas como lida=false do banco
+                return !notificacoesLidas.has(n.id); 
+            });
+
+            if (naoLidas.length === 0) {
+                naoLidas.push({ tipo: 'info', texto: 'Nenhum alerta no momento.', id: null, data: '' });
+            }
             return naoLidas;
         }
-
         function renderNotificationBadge(count) {
             const badge = document.getElementById('notificationBadgeCount');
             if (!badge) return;
