@@ -673,21 +673,7 @@
             const notificacoes = buildNotifications();
             renderNotificationBadge(notificacoes.filter(n => n.id !== null).length);
         }
-                // Regra de Ferro: Se for Gerente, obriga a loja a ser a dele E o vendedor a existir
-               if (currentUser.perfil === 'Gerente') {
-                    query = query.eq('usuarios.id_loja', currentUser.id_loja);
-                    if (selectedVendedor !== 'todos') query = query.eq('id_usuario', selectedVendedor);
-                } else if (currentUser.perfil === 'Vendedor') {
-                    query = query.eq('id_usuario', currentUser.id_usuario);
-                } else {
-                    if (selectedVendedor !== 'todos') {
-                        query = query.eq('id_usuario', selectedVendedor);
-                    } else if (selectedLoja !== 'todas') {
-                        const idsLoja = todosVendedores.filter(v => v.id_loja === selectedLoja).map(v => v.id_usuario);
-                        if (idsLoja.length > 0) query = query.in('id_usuario', idsLoja);
-                    }
-                }
-
+                
                 if (searchTerm) query = query.ilike('clientes.nome_cliente', `%${searchTerm}%`);
                 if (searchProtocolo) query = query.ilike('protocolo', `%${searchProtocolo}%`);
 
