@@ -1422,12 +1422,55 @@
         function renderizarDropdownNotificacoes(notificacoes) {
             const dropdown = document.getElementById('notificationDropdown');
             let html = '<div class="notif-header">Central de Alertas</div>';
+            
             notificacoes.forEach(n => {
-                const dotClass = n.tipo === 'critical' ? 'critical' : n.tipo === 'warning' ? 'warning' : 'info';
-                const onclick = n.id ? `onclick="marcarNotificacaoLida('${n.id}'); abrirDetalhesCliente('${n.id}'); document.getElementById('notificationDropdown').classList.remove('open');"` : '';
-                html += `<div class="notif-item" ${onclick} style="${n.id ? '' : 'cursor:default;'}"><span class="notif-dot ${dotClass}"></span><div style="flex:1;"><div>${n.texto}</div><div style="font-size:10px; color:var(--text-muted);">${escapeHtml(n.data)}</div></div></div>`;
+                let dotClass = 'info';
+                let onclick = '';
+                
+                // Define o estilo e a ação dependendo do tipo de notificação
+                if (n.tipo === 'critical') dotClass = 'critical';
+                else if (n.tipo === 'warning') dotClass = 'warning';
+                else if (n.tipo === 'comentario_gerente') dotClass = 'warning'; // Destaque especial para o gerente
+
+                if (n.tipo === 'comentario_gerente') {
+                    // Clique personalizado: marca como lida no banco E abre o orçamento
+                    onclick = `onclick="marcarNotificacaoBancoLida('${n.id_notif}', '${n.id}'); document.getElementById('notificationDropdown').classList.remove('open');"`;
+                } else if (n.id) {
+                    // Comportamento padrão para agendamentos
+                    onclick = `onclick="marcarNotificacaoLida('${n.id}'); abrirDetalhesCliente('${n.id}'); document.getElementById('notificationDropdown').classList.remove('open');"`;
+                }
+
+                html += `<div class="notif-item" ${onclick} style="${n.id ? 'cursor:pointer;' : 'cursor:default;'}">
+                            <span class="notif-dot ${dotClass}"></span>
+                            <div style="flex:1;">
+                                <div>${n.texto}</div>
+                                <div style="font-size:10px; color:var(--text-muted);">${escapeHtml(n.data)}</div>
+                            </div>
+                         </div>`;
             });
             dropdown.innerHTML = html;
+        }
+
+        // Nova função auxiliar: marca a notificação do gerente como lida no Supabase e abre o cliente
+        async function marcarNotificacaoBancoLida(idNotif, idOrcamento) {
+            try {
+                // Atualiza o status no banco de dados
+                await db.from('notificacoes').update({ lida: true }).eq('id', idNotif);
+                
+                // Remove da lista local para atualizar o badge sem precisar de F5
+                notificacoesBanco = notificacoesBanco.filter(n => String(n.id) !== String(idNotif));
+                
+                // Recalcula o badge de notificações
+                const novasNotifs = buildNotifications();
+                renderNotificationBadge(novasNotifs.filter(n => n.id !== null).length);
+                
+                // Abre a tela do orçamento
+                abrirDetalhesCliente(idOrcamento);
+            } catch (e) {
+                console.error('Erro ao processar notificação:', e);
+                // Se der erro no banco, abre o orçamento mesmo assim (fallback)
+                abrirDetalhesCliente(idOrcamento);
+            }
         }
 
         function classToFormatStatus(status) {
