@@ -1095,12 +1095,38 @@
             btn.disabled = true; msg.textContent = '';
 
             try {
+                // 1. Salva o comentário no banco
                 const { error } = await db.from('comentarios').insert([{
                     id_orcamento: clienteAtualParaDetalhes.id_orcamento,
                     texto: texto, tipo: 'Comentário', autor: currentUser.nome
                 }]);
 
                 if (error) throw error;
+
+                // --- INÍCIO DA MELHORIA: NOTIFICAÇÃO DO GERENTE ---
+                if (currentUser.perfil === 'Gerente') {
+                    try {
+                        const orcamento = clienteAtualParaDetalhes;
+                        
+                        // Garante que o gerente não está disparando alerta para si mesmo
+                        if (orcamento && orcamento.id_usuario !== currentUser.id_usuario) {
+                            
+                            // Grava o alerta na tabela 'notificacoes'
+                            await db.from('notificacoes').insert([{
+                                id_usuario: orcamento.id_usuario, // Destinatário: Vendedor
+                                texto: `${currentUser.nome} fez um comentário`,
+                                tipo: 'comentario_gerente',
+                                id_referencia: orcamento.id_orcamento,
+                                id_cliente: orcamento.id_cliente,
+                                lida: false
+                            }]);
+                        }
+                    } catch (e) {
+                        console.error('Erro ao gerar notificação de comentário do gerente:', e);
+                    }
+                }
+                // --- FIM DA MELHORIA ---
+
                 document.getElementById('novoComentario').value = '';
                 atualizarIndicadorDigitacao();
                 showToast('Histórico registrado!', 'success');
