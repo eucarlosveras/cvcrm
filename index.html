@@ -1272,7 +1272,10 @@
 
         function buildProdutosOptionsDatalist() {
             if (todosProdutos.length === 0) return '';
-            return todosProdutos.map(p => `<option value="${escapeHtml(p.nome)}">${escapeHtml(p.codigo)} - ${escapeHtml(p.nome)}</option>`).join('');
+            return todosProdutos.map(p => {
+                const textoDisplay = p.codigo ? `${p.codigo} - ${p.nome}` : p.nome;
+                return `<option value="${escapeHtml(textoDisplay)}">`;
+            }).join('');
         }
 
         function renderizarGraficos(total, fechados) {
