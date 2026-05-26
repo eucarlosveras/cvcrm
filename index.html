@@ -2305,8 +2305,13 @@
 
         function validarProdutoSelecionado(input) {
             const checkSpan = input.parentElement.querySelector('.prod-check');
-            const produtoDigitado = input.value.trim();
-            const produtoExiste = todosProdutos.some(p => p.nome.toLowerCase() === produtoDigitado.toLowerCase());
+            const produtoDigitado = input.value.trim().toLowerCase();
+            
+            const produtoExiste = todosProdutos.some(p => {
+                const textoDisplay = p.codigo ? `${p.codigo} - ${p.nome}`.toLowerCase() : p.nome.toLowerCase();
+                return textoDisplay === produtoDigitado || p.nome.toLowerCase() === produtoDigitado;
+            });
+        
             if (produtoExiste && produtoDigitado !== '') {
                 checkSpan.style.display = 'inline';
                 input.style.borderColor = '#10b981';
