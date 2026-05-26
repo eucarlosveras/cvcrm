@@ -1602,6 +1602,7 @@
             }
             document.getElementById('mainContent').innerHTML = html;
             document.querySelectorAll('.table-card tbody tr.clickable-row').forEach(row => { row.addEventListener('click', function() { const id = this.getAttribute('data-id'); if (id) abrirDetalhesCliente(id); }); });
+            renderNotificationBadge(buildNotifications().filter(n => n.id !== null).length);
         }
 
         // legacy – kept for compatibility but redirects to new page
