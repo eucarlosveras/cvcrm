@@ -2524,7 +2524,7 @@
                 let idInteresse = null;
                 if (interesse) {
                     const nivel = mapInteresseUUID.find(n => n.nome === interesse);
-                    idInteresse = nivel ? nivel.id_nivel : null;
+                    idInteresse = nivel ? nivel.id_interesse : null;
                 }
                 let dataCriacaoFinal = dataOrcamento;
                 const hojeData = new Date().toISOString().split('T')[0];
