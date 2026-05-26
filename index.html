@@ -2364,10 +2364,12 @@
             return true;
         }
 
-        function renderNovoOrcamentoPage() {
+        async function renderNovoOrcamentoPage() {
             const main = document.getElementById('mainContent');
-            carregarProdutos();
-            const hoje = new Date().toISOString().split('T')[0];
+            await carregarProdutos();   // aguarda os produtos carregarem
+            // ...
+            adicionarProdutoRow();      // agora todosProdutos já está preenchido ✓
+        }
 
             main.innerHTML = `
                 <header class="dashboard-header">
