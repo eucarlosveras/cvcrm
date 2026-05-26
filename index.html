@@ -623,27 +623,26 @@
             location.reload();
         }
 
-      async function carregarKpisEDashboard() {
-    if (!currentUser) return;
-    const isAdmin = currentUser.perfil === 'Administrador' || currentUser.perfil === 'Admin';
-    try {
-        // 1. Adicione 'usuarios(id_loja)' no select para conseguir filtrar pela loja
-        let query = db.from('orcamentos').select('id_orcamento, valor_orcado, id_usuario, data_contato, hora_contato, clientes(nome_cliente, whatsapp), status_orcamento(nome), usuarios!inner(id_loja)');
-        
-        // 2. Lógica de filtro hierárquica
-        if (currentUser.perfil === 'Vendedor') {
-            query = query.eq('id_usuario', currentUser.id_usuario);
-        } 
-        else if (currentUser.perfil === 'Gerente') {
-            // Filtra orçamentos onde o usuário dono do orçamento pertence à mesma loja do gerente
-            query = query.eq('usuarios.id_loja', currentUser.id_loja);
-        }
-        else if (!isAdmin && selectedVendedor !== 'todos') {
-            query = query.eq('id_usuario', selectedVendedor);
-        }
-        else if (isAdmin && selectedVendedor !== 'todos') {
-            query = query.eq('id_usuario', selectedVendedor);
-        }
+     async function carregarKpisEDashboard() {
+            if (!currentUser) return;
+            const isAdmin = currentUser.perfil === 'Administrador' || currentUser.perfil === 'Admin';
+            try {
+                // 1. Select inicial
+                let query = db.from('orcamentos').select('id_orcamento, valor_orcado, id_usuario, data_contato, hora_contato, clientes(nome_cliente, whatsapp), status_orcamento(nome), usuarios!inner(id_loja)');
+                
+                // 2. Lógica de filtro hierárquica
+                if (currentUser.perfil === 'Vendedor') {
+                    query = query.eq('id_usuario', currentUser.id_usuario);
+                } 
+                else if (currentUser.perfil === 'Gerente') {
+                    query = query.eq('usuarios.id_loja', currentUser.id_loja);
+                }
+                else if (!isAdmin && selectedVendedor !== 'todos') {
+                    query = query.eq('id_usuario', selectedVendedor);
+                }
+                else if (isAdmin && selectedVendedor !== 'todos') {
+                    query = query.eq('id_usuario', selectedVendedor);
+                }
 
                 const { data, error } = await query;
                 if (!error) {
@@ -652,26 +651,28 @@
                         status: o.status_orcamento ? o.status_orcamento.nome : STATUS.CONTATO_INICIAL
                     }));
                 }
-            } catch(e) { kpisMensais = []; }
+
+                // ---- INÍCIO DA BUSCA DE ALERTAS NO BANCO ----
+                const { data: notifs, error: errNotif } = await db
+                    .from('notificacoes')
+                    .select('*')
+                    .eq('id_usuario', currentUser.id_usuario)
+                    .eq('lida', false);
+                
+                if (!errNotif) {
+                    notificacoesBanco = notifs || [];
+                }
+                // ---- FIM DA BUSCA DE ALERTAS NO BANCO ----
+
+            } catch(e) { 
+                kpisMensais = []; 
+                notificacoesBanco = []; 
+            }
 
             atualizarBadge();
             const notificacoes = buildNotifications();
             renderNotificationBadge(notificacoes.filter(n => n.id !== null).length);
         }
-
-        async function atualizarTabelaPaginadaServer() {
-            const tbody = document.getElementById('tableBody');
-            const pagination = document.getElementById('paginationContainer');
-            if (!tbody || !pagination) return;
-            
-            const isGerente = currentUser.perfil === 'Gerente' || currentUser.perfil === 'Administrador' || currentUser.perfil === 'Admin';
-            tbody.innerHTML = `<tr><td colspan="${isGerente ? '7' : '6'}" style="text-align:center; padding:24px;">Carregando dados...</td></tr>`;
-
-            try {
-                // Usamos !inner aqui. Isso força o banco a ignorar orçamentos que não tenham um vendedor (usuário) vinculado.
-                let query = db.from('orcamentos')
-                    .select('*, clientes!inner(nome_cliente, whatsapp), usuarios!inner(nome, id_loja), status_orcamento(nome)', { count: 'exact' });
-            
                 // Regra de Ferro: Se for Gerente, obriga a loja a ser a dele E o vendedor a existir
                if (currentUser.perfil === 'Gerente') {
                     query = query.eq('usuarios.id_loja', currentUser.id_loja);
