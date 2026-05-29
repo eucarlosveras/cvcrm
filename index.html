@@ -2239,8 +2239,9 @@
     }
 }
         function renderDetalhesClientePage() {
-            if (!clienteAtualParaDetalhes) { navigateTo(previousView); return; }
-            const orc = clienteAtualParaDetalhes; const id = orc.id_orcamento;
+            if (!AppState.contextoVenda.clienteAtual) { navigateTo(previousView); return; }
+            const orc = AppState.contextoVenda.clienteAtual; 
+            const id = orc.id_orcamento;
             const isGerente = currentUser.perfil === 'Gerente' || currentUser.perfil === 'Administrador' || currentUser.perfil === 'Admin';
             const main = document.getElementById('mainContent');
             let actionsHtml = '';
@@ -2251,7 +2252,8 @@
                 actionsHtml += `<button class="btn-danger-ghost" onclick="abrirMotivoPerda('${orc.id_orcamento}')">Perder Venda</button>`;
             }
             
-            const comentarios = clienteAtualParaDetalhes.comentarios || []; const comentariosHtml = renderComentariosHtml(comentarios, id);
+            const comentarios = orc.comentarios || []; 
+            const comentariosHtml = renderComentariosHtml(comentarios, id);
             const statusClass = classToFormatStatus(orc.status);
             const interesse = escapeHtml(orc.interesse || '-');
             const interesseColor = orc.interesse === 'Alta' ? '#10b981' : orc.interesse === 'Média' ? '#f59e0b' : orc.interesse === 'Baixa' ? '#ef4444' : '#94a3b8';
