@@ -1094,7 +1094,7 @@
         }
 
         function cancelarEdicao() {
-            clienteAtualParaDetalhes.comentarios.forEach(c => delete c._editando);
+            AppState.contextoVenda.clienteAtual.comentarios.forEach(c => delete c._editando);
             renderDetalhesClientePage();
         }
 
