@@ -442,7 +442,7 @@
                     paginaAtual: 1
                 },
                 contextoVenda: {
-                    clienteAtual: null,          // Substitui clienteAtualParaDetalhes
+                    clienteAtual: null,          // Substitui AppState.contextoVenda.clienteAtual
                     clienteParaAcao: null,       // Substitui clienteSelecionadoParaAcao
                     orcamentoParaPerder: null    // Substitui idOrcamentoParaPerder
                 }
@@ -491,7 +491,7 @@
         let selectedVendedor = 'todos';
         let selectedLoja = 'todas';
         
-        let clienteAtualParaDetalhes = null;
+        let AppState.contextoVenda.clienteAtual = null;
         let clienteSelecionadoParaAcao = null;
         let clienteParaOrcamento = null;
         let idOrcamentoParaPerder = null;
@@ -1084,7 +1084,7 @@
         }
 
         function editarComentario(id_comentario) {
-            const com = clienteAtualParaDetalhes.comentarios;
+            const com = AppState.contextoVenda.clienteAtual.comentarios;
             com.forEach(c => delete c._editando);
             const index = com.findIndex(c => String(c.id_comentario) === String(id_comentario));
             if (index < 0) return;
@@ -1108,8 +1108,8 @@
             try {
                 const { error } = await db.from('comentarios').update({ texto: novoTexto }).eq('id_comentario', id_comentario);
                 if (error) throw error;
-                const index = clienteAtualParaDetalhes.comentarios.findIndex(c => String(c.id_comentario) === String(id_comentario));
-                if (index > -1) { clienteAtualParaDetalhes.comentarios[index].texto = novoTexto; delete clienteAtualParaDetalhes.comentarios[index]._editando; }
+                const index = AppState.contextoVenda.clienteAtual.comentarios.findIndex(c => String(c.id_comentario) === String(id_comentario));
+                if (index > -1) { AppState.contextoVenda.clienteAtual.comentarios[index].texto = novoTexto; delete AppState.contextoVenda.clienteAtual.comentarios[index]._editando; }
                 showToast('Comentário editado', 'success');
                 renderDetalhesClientePage();
             } catch (e) {
@@ -1130,7 +1130,7 @@
             try {
                 const { error } = await db.from('comentarios').delete().eq('id_comentario', comentarioParaExcluir);
                 if (error) throw error;
-                clienteAtualParaDetalhes.comentarios = clienteAtualParaDetalhes.comentarios.filter(c => String(c.id_comentario) !== String(comentarioParaExcluir));
+                AppState.contextoVenda.clienteAtual.comentarios = AppState.contextoVenda.clienteAtual.comentarios.filter(c => String(c.id_comentario) !== String(comentarioParaExcluir));
                 closeModal('modalExcluirComentario');
                 showToast('Comentário excluído', 'success');
                 renderDetalhesClientePage();
@@ -1164,7 +1164,7 @@
             try {
                 // 1. Salva o comentário no banco
                 const { error } = await db.from('comentarios').insert([{
-                    id_orcamento: clienteAtualParaDetalhes.id_orcamento,
+                    id_orcamento: AppState.contextoVenda.clienteAtual.id_orcamento,
                     texto: texto, tipo: 'Comentário', autor: currentUser.nome
                 }]);
 
@@ -1173,7 +1173,7 @@
                 // --- INÍCIO DA MELHORIA: NOTIFICAÇÃO DO GERENTE ---
                 if (currentUser.perfil === 'Gerente') {
                     try {
-                        const orcamento = clienteAtualParaDetalhes;
+                        const orcamento = AppState.contextoVenda.clienteAtual;
                         
                         // Garante que o gerente não está disparando alerta para si mesmo
                         if (orcamento && orcamento.id_usuario !== currentUser.id_usuario) {
@@ -1197,7 +1197,7 @@
                 document.getElementById('novoComentario').value = '';
                 atualizarIndicadorDigitacao();
                 showToast('Histórico registrado!', 'success');
-                await abrirDetalhesCliente(clienteAtualParaDetalhes.id_orcamento);
+                await abrirDetalhesCliente(AppState.contextoVenda.clienteAtual.id_orcamento);
             } catch (e) {
                 msg.textContent = 'Erro ao salvar: ' + e.message; msg.style.color = '#ef4444';
             } finally {
@@ -1219,8 +1219,8 @@
                     loader.textContent = '✓ Salvo'; loader.style.color = 'var(--accent-green)'; loader.classList.add('visible');
                     setTimeout(() => loader.classList.remove('visible'), 2500);
                 }
-                if (clienteAtualParaDetalhes && String(clienteAtualParaDetalhes.id_orcamento) === String(id)) {
-                    clienteAtualParaDetalhes.observacoes = texto;
+                if (AppState.contextoVenda.clienteAtual && String(AppState.contextoVenda.clienteAtual.id_orcamento) === String(id)) {
+                    AppState.contextoVenda.clienteAtual.observacoes = texto;
                 }
             } catch (e) {
                 if (loader) {
@@ -2837,17 +2837,17 @@
             const btn = document.getElementById('btnConfirmarAgendamento');
             btn.querySelector('.btn-spinner').style.display = 'inline-block'; btn.querySelector('.btn-text').textContent = 'Salvando...'; btn.disabled = true;
             try {
-                const { error: err1 } = await db.from('orcamentos').update({ data_contato: data, hora_contato: hora, observacao_agendamento: obs }).eq('id_orcamento', clienteAtualParaDetalhes.id_orcamento);
+                const { error: err1 } = await db.from('orcamentos').update({ data_contato: data, hora_contato: hora, observacao_agendamento: obs }).eq('id_orcamento', AppState.contextoVenda.clienteAtual.id_orcamento);
                 if (err1) throw new Error(err1.message);
                 
                 const dataFormatada = new Date(data + 'T00:00:00').toLocaleDateString('pt-BR');
                 let texto = `Retorno agendado para ${dataFormatada}${hora ? ' às ' + hora : ''} • ${tipo}`;
                 if (obs) texto += `\nLembrete: ${obs}`;
                 
-                const { error: err2 } = await db.from('comentarios').insert([{ id_orcamento: clienteAtualParaDetalhes.id_orcamento, texto: texto, tipo: 'Sistema', autor: currentUser.nome }]);
+                const { error: err2 } = await db.from('comentarios').insert([{ id_orcamento: AppState.contextoVenda.clienteAtual.id_orcamento, texto: texto, tipo: 'Sistema', autor: currentUser.nome }]);
                 if (err2) throw new Error(err2.message);
                 
-                showToast('Agendamento confirmado!', 'success'); await abrirDetalhesCliente(clienteAtualParaDetalhes.id_orcamento);
+                showToast('Agendamento confirmado!', 'success'); await abrirDetalhesCliente(AppState.contextoVenda.clienteAtual.id_orcamento);
             } catch (e) { showToast('Erro ao agendar: ' + e.message, 'error'); } 
             finally { btn.querySelector('.btn-spinner').style.display = 'none'; btn.querySelector('.btn-text').textContent = 'Confirmar Agendamento'; btn.disabled = false; }
         }
