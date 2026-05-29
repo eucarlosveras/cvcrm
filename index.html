@@ -423,6 +423,52 @@
             EM_NEGOCIACAO: 'Em Negociação'
         };
 
+        // O nosso Cofre (Estado Global da Aplicação)
+            const AppState = {
+                usuarioLogado: null,
+                kpisMensais: [],
+                filtros: {
+                    vendedor: 'todos',
+                    loja: 'todas',
+                    mes: new Date().getMonth() + 1,
+                    ano: new Date().getFullYear(),
+                    dia: null,
+                    status: 'todos',
+                    busca: ''
+                },
+                ui: {
+                    viewAtual: 'inicio',
+                    viewAnterior: 'inicio',
+                    paginaAtual: 1
+                },
+                contextoVenda: {
+                    clienteAtual: null,          // Substitui clienteAtualParaDetalhes
+                    clienteParaAcao: null,       // Substitui clienteSelecionadoParaAcao
+                    orcamentoParaPerder: null    // Substitui idOrcamentoParaPerder
+                }
+            };
+
+        // --- GUARDIÕES DO ESTADO ---
+        
+        function setUsuarioLogado(usuario) {
+            if (usuario && usuario.status?.toLowerCase() !== 'ativo') {
+                console.error("Tentativa de logar usuário inativo barrada pelo estado.");
+                return false;
+            }
+            AppState.usuarioLogado = usuario;
+            return true;
+        }
+        
+        function setClienteAtual(clienteData) {
+            AppState.contextoVenda.clienteAtual = clienteData;
+        }
+        
+        function setFiltroMes(mes, ano) {
+            AppState.filtros.mes = mes;
+            AppState.filtros.ano = ano;
+            AppState.filtros.dia = null; // Resetar o dia ao mudar o mês
+        }
+
         let mapStatusUUID = []; 
         let mapInteresseUUID = [];
         let listaLojas = [];
