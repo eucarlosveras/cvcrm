@@ -2210,29 +2210,34 @@
         }
 
         async function abrirDetalhesCliente(id) {
-            if (!id) { showToast('Erro: Orçamento não encontrado.', 'error'); return; }
-            try {
-                showLoader();
-                const { data, error } = await db.from('orcamentos')
-                    .select('*, clientes(nome_cliente, whatsapp, cpf), usuarios(nome), status_orcamento(nome), niveis_interesse(nome)')
-                    .eq('id_orcamento', id).single();
-                    
-                if (error || !data) throw new Error('Orçamento não encontrado.');
-                
-                data.status = data.status_orcamento ? data.status_orcamento.nome : STATUS.CONTATO_INICIAL;
-                data.interesse = data.niveis_interesse ? data.niveis_interesse.nome : null;
-
-                clienteAtualParaDetalhes = data;
-                
-                const { data: comentarios, error: erroComent } = await db.from('comentarios').select('*').eq('id_orcamento', id).order('data_criacao', { ascending: true });
-                if (erroComent) throw erroComent;
-                clienteAtualParaDetalhes.comentarios = comentarios || [];
-                
-                previousView = currentView; currentView = 'detalhes_cliente'; setUltimaVisita(id); renderDetalhesClientePage();
-            } catch (e) { showToast('Erro ao carregar cliente.', 'error'); } 
-            finally { hideLoader(); }
-        }
-
+    if (!id) { showToast('Erro: Orçamento não encontrado.', 'error'); return; }
+    try {
+        showLoader();
+        const { data, error } = await db.from('orcamentos')
+            .select('*, clientes(nome_cliente, whatsapp, cpf), usuarios(nome), status_orcamento(nome), niveis_interesse(nome)')
+            .eq('id_orcamento', id).single();
+            
+        if (error || !data) throw new Error('Orçamento não encontrado.');
+        
+        data.status = data.status_orcamento ? data.status_orcamento.nome : STATUS.CONTATO_INICIAL;
+        data.interesse = data.niveis_interesse ? data.niveis_interesse.nome : null;
+        
+        const { data: comentarios, error: erroComent } = await db.from('comentarios').select('*').eq('id_orcamento', id).order('data_criacao', { ascending: true });
+        if (erroComent) throw erroComent;
+        
+        // Anexamos os comentários direto no objeto 'data'
+        data.comentarios = comentarios || [];
+        
+        // Guardamos o pacote completo dentro do Cofre!
+        setClienteAtual(data);
+        
+        previousView = currentView; currentView = 'detalhes_cliente'; setUltimaVisita(id); renderDetalhesClientePage();
+    } catch (e) { 
+        showToast('Erro ao carregar cliente.', 'error'); 
+    } finally { 
+        hideLoader(); 
+    }
+}
         function renderDetalhesClientePage() {
             if (!clienteAtualParaDetalhes) { navigateTo(previousView); return; }
             const orc = clienteAtualParaDetalhes; const id = orc.id_orcamento;
