@@ -1080,16 +1080,23 @@
 
         async function carregarProdutos() {
     try {
-        const { data, error } = await db.from('produtos').select('id_produto, codigo, nome_produto');
-        if (!error && data) {
+        const { data, error } = await db.from('produtos').select('id_produto, codigo, nome_produto').order('nome_produto');
+        if (error) {
+            console.error('Supabase erro em produtos:', error.code, error.message, error.details, error.hint);
+            showToast('Erro ao carregar produtos: ' + (error.message || error.code), 'error');
+            return;
+        }
+        if (data) {
             todosProdutos = data.map(p => ({
                 id_produto: p.id_produto,
                 codigo: p.codigo || '',
                 nome: p.nome_produto || ''
-            })).filter(p => p.nome.trim() !== '').sort((a, b) => a.nome.localeCompare(b.nome));
+            })).filter(p => p.nome.trim() !== '');
+            console.log('Produtos carregados:', todosProdutos.length);
         }
     } catch (e) {
         console.error('Erro ao carregar tabela de produtos:', e);
+        showToast('Erro inesperado ao carregar produtos', 'error');
     }
 }
 
