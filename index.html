@@ -151,26 +151,67 @@
         .pagination { display: flex; align-items: center; gap: 8px; margin-top: 16px; justify-content: flex-end; font-size: var(--font-sm); } .pagination button { padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border-light); background: var(--card-bg); color: var(--text-primary); cursor: pointer; font-weight: 500; transition: all 0.2s;} .pagination button:hover:not(:disabled) { background: #f1f5f9; } .pagination button:disabled { opacity: 0.5; cursor: default; }
 
         /* ── DETALHES DO ORÇAMENTO PREMIUM ── */
+        /* ── Detalhes Page ── */
+        .det-hero-bar {
+            background: var(--card-bg);
+            border: 1px solid var(--border-light);
+            border-radius: 14px;
+            padding: 20px 24px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow-sm);
+        }
+        body.dark .det-hero-bar { background: #1e293b; border-color: #334155; }
+        .det-hero-cliente { flex: 1; min-width: 200px; }
+        .det-hero-nome { font-size: 1.35rem; font-weight: 800; color: var(--text-primary); line-height: 1.2; }
+        .det-hero-protocolo { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; color: var(--brand-blue-dark); background: #eff6ff; border: 1px solid #bfdbfe; padding: 3px 10px; border-radius: 6px; margin-top: 6px; display: inline-block; }
+        .det-hero-meta { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+        .det-hero-valor { font-family: 'JetBrains Mono', monospace; font-size: 1.5rem; font-weight: 800; color: #059669; }
+        .det-hero-produtos { display: flex; flex-direction: column; gap: 2px; font-size: 12px; font-weight: 600; color: var(--text-secondary); max-width: 280px; }
+        .det-hero-produto-item { background: #f1f5f9; border-radius: 5px; padding: 2px 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        body.dark .det-hero-produto-item { background: #334155; }
+        .det-hero-actions { display: flex; gap: 8px; flex-shrink: 0; }
+        .btn-fechar-hero { display: flex; align-items: center; gap: 6px; padding: 10px 18px; border-radius: 8px; border: none; background: #059669; color: #fff; font-weight: 700; font-size: 13px; cursor: pointer; transition: 0.2s; white-space: nowrap; }
+        .btn-fechar-hero:hover { background: #047857; box-shadow: 0 4px 12px rgba(5,150,105,0.3); }
+        .btn-perder-hero { display: flex; align-items: center; gap: 6px; padding: 10px 16px; border-radius: 8px; border: 1px solid #fecaca; background: #fef2f2; color: #dc2626; font-weight: 700; font-size: 13px; cursor: pointer; transition: 0.2s; white-space: nowrap; }
+        .btn-perder-hero:hover { background: #fee2e2; }
+
         .detalhes-page-wrapper {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
-            gap: 24px;
-            height: calc(100vh - 140px);
-            min-height: 500px;
+            gap: 20px;
+            align-items: stretch;
+            height: calc(100vh - 130px);
+            min-height: 560px;
         }
-        .detalhes-page-wrapper .det-col-wide {
-            grid-column: span 1;
-            display: flex;
-            flex-direction: column;
-            gap: 24px;
-            min-height: 0;
-        }
+        .detalhes-page-wrapper .det-col-wide,
         .detalhes-page-wrapper .det-col-history {
-            grid-column: span 1;
             display: flex;
             flex-direction: column;
             min-height: 0;
         }
+        .detalhes-page-wrapper .det-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+        .det-whatsapp-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; }
+        body.dark .det-whatsapp-row { background: #0f172a; border-color: #334155; }
+        .det-whatsapp-num { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 600; color: var(--text-primary); }
+        .btn-wa-inline { display: flex; align-items: center; gap: 5px; padding: 7px 12px; background: #25d366; color: #fff; border-radius: 7px; text-decoration: none; font-weight: 700; font-size: 12px; flex-shrink: 0; transition: 0.2s; }
+        .btn-wa-inline:hover { background: #128c7e; }
+        .det-quick-dates { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+        .btn-quick-date { padding: 5px 12px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: var(--card-bg); color: var(--text-secondary); font-size: 12px; font-weight: 600; cursor: pointer; transition: 0.2s; font-family: 'Inter', sans-serif; }
+        .btn-quick-date:hover { border-color: var(--brand-blue); color: var(--brand-blue); background: #eff6ff; }
+        .det-comment-expand { background: #f8fafc; border: 1.5px dashed #e2e8f0; border-radius: 10px; padding: 12px 16px; cursor: pointer; color: var(--text-muted); font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 8px; transition: 0.2s; flex-shrink: 0; margin-top: 12px; }
+        body.dark .det-comment-expand { background: #0f172a; border-color: #334155; }
+        .det-comment-expand:hover { border-color: var(--brand-blue); color: var(--brand-blue); }
+        .det-comment-form { margin-top: 12px; flex-shrink: 0; display: none; }
+        .det-comment-form.open { display: block; }
 
         /* mantém o grid antigo para outras telas que o usem */
         .detalhes-page-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
@@ -256,6 +297,7 @@
             .detalhes-page-wrapper .det-col-wide,
             .detalhes-page-wrapper .det-col-history { grid-column: span 1; }
             .det-timeline-scroll { max-height: 300px; }
+            .btn-fechar-hero, .btn-perder-hero { flex: 1; justify-content: center; }
         }
         .form-input { width: 100%; padding: 14px 16px; border: 1.5px solid var(--border-light); border-radius: 10px; font-family: 'Inter', sans-serif; font-size: var(--font-sm); color: var(--text-primary); background: var(--bg-body); transition: all 0.2s; box-shadow: inset 0 1px 2px rgba(0,0,0,0.02); } .form-input:focus { border-color: var(--brand-blue); outline: none; box-shadow: 0 0 0 3px rgba(59,130,246,0.1), inset 0 1px 2px rgba(0,0,0,0.02); background: var(--card-bg); }
         body.dark .form-input { background: #0f172a; border-color: #334155; color: #f1f5f9; box-shadow: inset 0 1px 2px rgba(0,0,0,0.2); } body.dark .form-input:focus { background: #1e293b; border-color: var(--brand-blue); }
@@ -1167,7 +1209,11 @@
                 renderClientes();
             }
             else if (view === 'metas') renderMetas();
-            else if (view === 'detalhes_cliente') renderDetalhesClientePage();
+            else if (view === 'detalhes_cliente') {
+                const fab = document.getElementById('fabButton');
+                if (fab) fab.style.display = 'none';
+                renderDetalhesClientePage();
+            }
             else if (view === 'novo_orcamento') renderNovoOrcamentoPage();
             else if (view === 'clientes_lista') await renderClientesLista();
             else if (view === 'ficha_cliente') await renderFichaCliente();
@@ -2418,58 +2464,68 @@
             const valorFormatado = 'R$ ' + parseFloat(orc.valor_orcado || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
 
             main.innerHTML = `
+
                 <!-- HEADER -->
-                <header class="dashboard-header" style="display:flex; align-items:center; gap:16px; margin-bottom:24px; flex-wrap:wrap;">
-                    <button class="btn-voltar" onclick="voltarDetalhes()" style="background:#fff; border:1px solid #e2e8f0; padding:8px 16px; border-radius:8px; cursor:pointer; font-weight:600; color:#475569; display:flex; align-items:center; gap:6px;">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Voltar
+                <header style="display:flex; align-items:center; gap:16px; margin-bottom:20px; flex-wrap:wrap;">
+                    <button class="btn-voltar" onclick="voltarDetalhes()">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Voltar
                     </button>
-                    <h1 style="font-size:20px; font-weight:800; color:#0f172a; flex:1;">${escapeHtml(orc.clientes?.nome_cliente || 'Cliente')}</h1>
-                    ${orc.protocolo ? `<span style="font-family:'JetBrains Mono',monospace; font-size:13px; background:#eff6ff; color:var(--brand-blue-dark); padding:6px 12px; border-radius:8px; font-weight:700; border:1px solid #bfdbfe;">${escapeHtml(orc.protocolo)}</span>` : ''}
-                    <span class="status-tag ${statusClass}" style="font-size:13px; padding:6px 14px;">${escapeHtml(orc.status)}</span>
+                    <div style="flex:1; min-width:0;">
+                        <div style="font-size:1.25rem; font-weight:800; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(orc.clientes?.nome_cliente || 'Cliente')}</div>
+                        ${orc.protocolo ? `<span style="font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:700; color:var(--brand-blue-dark); background:#eff6ff; border:1px solid #bfdbfe; padding:2px 9px; border-radius:5px; margin-top:4px; display:inline-block;">${escapeHtml(orc.protocolo)}</span>` : ''}
+                    </div>
                 </header>
 
-                <!-- GRADE 3 COLUNAS -->
+                <!-- GRADE 3 COLUNAS IGUAIS -->
                 <div class="detalhes-page-wrapper">
 
-                    <!-- COL 1: DADOS DO CLIENTE -->
+                    <!-- ══ COL 1: DADOS DO CLIENTE ══ -->
                     <div class="det-col-wide">
                         <section class="det-section">
                             <div class="det-section-header">
-                                <svg class="det-section-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                <svg class="det-section-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                                 <h2 class="det-section-title">Dados do Cliente</h2>
                             </div>
 
-                            <!-- Valor hero -->
-                            <div class="det-valor-hero">
-                                <span class="det-valor-hero-label">Valor Orçado</span>
-                                <span class="det-valor-hero-num">${valorFormatado}</span>
-                            </div>
-
-                            <!-- Pills linha 1 -->
+                            <!-- Pills: Status + Interesse -->
                             <div class="det-pill-row">
                                 <div class="det-pill">
-                                    <span class="det-pill-label">Protocolo</span>
-                                    <span class="det-pill-value mono">${escapeHtml(orc.protocolo || orc.id_orcamento?.slice(0,8) || '-')}</span>
+                                    <span class="det-pill-label">Status</span>
+                                    <span class="det-pill-value"><span class="status-tag ${statusClass}" style="font-size:11px; padding:3px 10px;">${escapeHtml(orc.status)}</span></span>
                                 </div>
                                 <div class="det-pill">
                                     <span class="det-pill-label">Interesse</span>
-                                    <span class="det-pill-value"><svg width="10" height="10" viewBox="0 0 10 10"><circle cx="5" cy="5" r="5" fill="${interesseColor}"/></svg>${interesse}</span>
+                                    <span class="det-pill-value"><svg width="9" height="9" viewBox="0 0 10 10"><circle cx="5" cy="5" r="5" fill="${interesseColor}"/></svg> ${interesse}</span>
                                 </div>
                             </div>
 
-                            <!-- Pills linha 2 -->
-                            <div class="det-pill-row">
-                                <div class="det-pill">
-                                    <span class="det-pill-label">WhatsApp</span>
-                                    <span class="det-pill-value mono">${escapeHtml(orc.clientes?.whatsapp || '-')}</span>
+                            <!-- Pills: WhatsApp -->
+                            <div class="det-pill-row" style="grid-template-columns:1fr;">
+                                <div class="det-pill" style="flex-direction:row; align-items:center; justify-content:space-between;">
+                                    <div>
+                                        <span class="det-pill-label">WhatsApp</span>
+                                        <span class="det-pill-value mono" style="margin-top:3px; display:block;">${escapeHtml(orc.clientes?.whatsapp || '-')}</span>
+                                    </div>
+                                    ${whats ? `<a href="https://wa.me/55${whats}" target="_blank" class="btn-wa-inline">
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                                        Chamar
+                                    </a>` : ''}
                                 </div>
+                            </div>
+
+                            <!-- Pills: CPF + Origem -->
+                            <div class="det-pill-row">
                                 <div class="det-pill">
                                     <span class="det-pill-label">CPF / CNPJ</span>
                                     <span class="det-pill-value mono">${escapeHtml(orc.clientes?.cpf || '-')}</span>
                                 </div>
+                                <div class="det-pill">
+                                    <span class="det-pill-label">Origem</span>
+                                    <span class="det-pill-value">${escapeHtml(orc.origem || '-')}</span>
+                                </div>
                             </div>
 
-                            <!-- Pills linha 3 -->
+                            <!-- Pills: Datas -->
                             <div class="det-pill-row">
                                 <div class="det-pill">
                                     <span class="det-pill-label">Criado em</span>
@@ -2481,18 +2537,20 @@
                                 </div>
                             </div>
 
+                            <!-- Pills: Valor + Produto(s) -->
+                            <div class="det-pill-row" style="grid-template-columns:1fr;">
+                                <div class="det-pill">
+                                    <span class="det-pill-label">Valor Orçado</span>
+                                    <span class="det-pill-value" style="font-family:'JetBrains Mono',monospace; font-size:1.15rem; font-weight:800; color:#059669;">${valorFormatado}</span>
+                                </div>
+                            </div>
+
                             ${orc.modelo_colchao ? `
                             <div class="det-pill-row" style="grid-template-columns:1fr;">
                                 <div class="det-pill">
-                                    <span class="det-pill-label">Produto</span>
-                                    <span class="det-pill-value" style="line-height:1.8;">${formatarProdutos(orc.modelo_colchao)}</span>
+                                    <span class="det-pill-label">Produto(s)</span>
+                                    <span class="det-pill-value" style="flex-direction:column; align-items:flex-start; gap:4px; line-height:1.7;">${formatarProdutos(orc.modelo_colchao)}</span>
                                 </div>
-                            </div>` : ''}
-
-                            ${orc.forma_pagamento || orc.data_entrega ? `
-                            <div class="det-pill-row">
-                                ${orc.forma_pagamento ? `<div class="det-pill"><span class="det-pill-label">Pagamento</span><span class="det-pill-value">${escapeHtml(orc.forma_pagamento)}</span></div>` : ''}
-                                ${orc.data_entrega ? `<div class="det-pill"><span class="det-pill-label">Entrega</span><span class="det-pill-value blue">${new Date(orc.data_entrega + 'T00:00:00').toLocaleDateString('pt-BR')}</span></div>` : ''}
                             </div>` : ''}
 
                             ${isGerente ? `
@@ -2503,26 +2561,50 @@
                                 </div>
                             </div>` : ''}
 
-                            <!-- Observações -->
-                            <div class="det-obs-area" style="margin-top:4px;">
-                                <label class="det-obs-label">Observações Fixas <span id="obsSalvaLoader" class="auto-save-indicator">✓ Salvo</span></label>
-                                <textarea id="obsFixaCliente" class="form-input" style="flex:1; resize:none; min-height:80px; font-size:13px;" placeholder="Ex: Cliente prefere contato de manhã..." onblur="salvarObservacaoFixa('${orc.id_orcamento}')">${escapeHtml(orc.observacoes || '')}</textarea>
+                            ${orc.forma_pagamento || orc.data_entrega ? `
+                            <div class="det-pill-row">
+                                ${orc.forma_pagamento ? `<div class="det-pill"><span class="det-pill-label">Pagamento</span><span class="det-pill-value">${escapeHtml(orc.forma_pagamento)}</span></div>` : ''}
+                                ${orc.data_entrega ? `<div class="det-pill"><span class="det-pill-label">Entrega</span><span class="det-pill-value blue">${new Date(orc.data_entrega + 'T00:00:00').toLocaleDateString('pt-BR')}</span></div>` : ''}
+                            </div>` : ''}
+
+                            <!-- Observações fixas (empurra para baixo) -->
+                            <div class="det-obs-area" style="margin-top:auto; padding-top:12px;">
+                                <label class="det-obs-label">Observações <span id="obsSalvaLoader" class="auto-save-indicator">✓ Salvo</span></label>
+                                <textarea id="obsFixaCliente" class="form-input" style="resize:none; min-height:72px; font-size:13px;" placeholder="Ex: Cliente prefere contato de manhã..." onblur="salvarObservacaoFixa('${orc.id_orcamento}')">${escapeHtml(orc.observacoes || '')}</textarea>
                             </div>
 
-                            <!-- WhatsApp -->
-                            <a href="https://wa.me/55${whats}" target="_blank" class="btn-whatsapp-full" style="margin-top:16px;">
-                                <svg class="btn-whatsapp-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-                                Iniciar Conversa WhatsApp
-                            </a>
+                            <!-- Ações de fechamento (apenas para vendedores em status aberto) -->
+                            ${isOpenStatus && !isGerente ? `
+                            <div style="display:flex; gap:8px; margin-top:16px; padding-top:16px; border-top:1px solid var(--border-light);">
+                                <button class="btn-fechar-hero" style="flex:1; justify-content:center;" onclick="abrirConfirmaFechamento('${orc.id_orcamento}')">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                                    Fechar Venda
+                                </button>
+                                <button class="btn-perder-hero" style="flex:1; justify-content:center;" onclick="abrirMotivoPerda('${orc.id_orcamento}')">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                                    Marcar Perdida
+                                </button>
+                            </div>` : ''}
+
                         </section>
                     </div>
 
-                    <!-- COL 2: AGENDAMENTO + AÇÕES -->
+                    <!-- ══ COL 2: AGENDAMENTO ══ -->
                     <div class="det-col-wide">
                         <section class="det-section">
                             <div class="det-section-header">
-                                <svg class="det-section-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                <svg class="det-section-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                                 <h2 class="det-section-title">Agendar Próximo Contato</h2>
+                            </div>
+
+                            <div style="margin-bottom:16px;">
+                                <div style="font-size:10px; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:.05em; margin-bottom:8px;">Acesso rápido</div>
+                                <div class="det-quick-dates">
+                                    <button class="btn-quick-date" onclick="setQuickDate(1)">Amanhã</button>
+                                    <button class="btn-quick-date" onclick="setQuickDate(3)">Em 3 dias</button>
+                                    <button class="btn-quick-date" onclick="setQuickDate(7)">Semana que vem</button>
+                                    <button class="btn-quick-date" onclick="setQuickDate(15)">Em 15 dias</button>
+                                </div>
                             </div>
 
                             <div class="schedule-form-grid" style="margin-bottom:16px;">
@@ -2559,49 +2641,38 @@
 
                             <div class="form-group" style="flex:1; display:flex; flex-direction:column; margin-bottom:0;">
                                 <label>Observações / Lembrete</label>
-                                <textarea id="agendarObservacao" class="form-input" style="flex:1; resize:none; font-size:13px; min-height:100px;" placeholder="Detalhes contextuais para o próximo contato..."></textarea>
+                                <textarea id="agendarObservacao" class="form-input" style="flex:1; resize:none; font-size:13px; min-height:120px;" placeholder="Detalhes contextuais para o próximo contato..."></textarea>
                             </div>
 
-                            <button class="btn-agendar-full" id="btnConfirmarAgendamento" onclick="agendarContato()">
+                            <button class="btn-agendar-full" id="btnConfirmarAgendamento" onclick="agendarContato()" style="margin-top:auto;">
                                 <span class="btn-spinner" style="display:none; width:16px; height:16px; border:2px solid rgba(255,255,255,0.3); border-top-color:#fff; border-radius:50%; animation:spin 1s linear infinite;"></span>
                                 <span class="btn-text" style="display:flex; align-items:center; gap:6px;">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                                     Confirmar Agendamento
                                 </span>
                             </button>
                             <div class="field-error" id="agendarMsg" style="text-align:center; margin-top:8px;"></div>
-
-                            ${isOpenStatus && !isGerente ? `
-                            <div style="display:flex; gap:8px; margin-top:20px; padding-top:16px; border-top:1px solid #f1f5f9;">
-                                <button onclick="abrirConfirmaFechamento('${orc.id_orcamento}')" style="flex:1; display:flex; align-items:center; justify-content:center; gap:6px; padding:8px 12px; border-radius:8px; border:1px solid #a7f3d0; background:#f0fdf4; color:#059669; font-size:12px; font-weight:600; cursor:pointer; transition:0.2s;" onmouseover="this.style.background='#dcfce7'" onmouseout="this.style.background='#f0fdf4'">
-                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                                    Fechar Venda
-                                </button>
-                                <button onclick="abrirMotivoPerda('${orc.id_orcamento}')" style="flex:1; display:flex; align-items:center; justify-content:center; gap:6px; padding:8px 12px; border-radius:8px; border:1px solid #fecaca; background:#fff5f5; color:#dc2626; font-size:12px; font-weight:600; cursor:pointer; transition:0.2s;" onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='#fff5f5'">
-                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-                                    Marcar Perdida
-                                </button>
-                            </div>` : ''}
                         </section>
                     </div>
 
-                    <!-- COL 3: HISTÓRICO / COMENTÁRIOS -->
+                    <!-- ══ COL 3: HISTÓRICO ══ -->
                     <div class="det-col-history">
                         <section class="det-section scrollable">
                             <div class="det-section-header">
-                                <svg class="det-section-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                                <svg class="det-section-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                                 <h2 class="det-section-title">Histórico de Contatos</h2>
                             </div>
 
-                            <!-- Lista scrollável -->
                             <div class="det-timeline-scroll" id="listaComentarios">
                                 ${comentariosHtml}
                             </div>
 
-                            <!-- Caixa novo comentário -->
-                            <div class="det-comment-box" style="margin-top:16px;">
-                                <span class="det-comment-label">Novo Registro</span>
-                                <textarea id="novoComentario" rows="3" class="form-input" style="font-size:13px; background:var(--card-bg); resize:none;" placeholder="Registre observações, ligações ou anotações sobre este cliente..." oninput="atualizarIndicadorDigitacao()"></textarea>
+                            <div class="det-comment-expand" id="btnExpandComment" onclick="expandirComentario()">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                Adicionar registro...
+                            </div>
+                            <div class="det-comment-form" id="formComentario">
+                                <textarea id="novoComentario" rows="3" class="form-input" style="font-size:13px; background:var(--card-bg); resize:none;" placeholder="Registre observações, ligações ou anotações..." oninput="atualizarIndicadorDigitacao()"></textarea>
                                 <div class="typing-indicator" id="typingIndicator">Mensagem sendo redigida...</div>
                                 <div class="det-comment-actions">
                                     <div class="field-error" id="comentarioMsg"></div>
@@ -2618,6 +2689,8 @@
                     </div>
 
                 </div>
+            
+            
             `;
         }
 
@@ -3197,7 +3270,28 @@
             finally { btn.querySelector('.btn-spinner').style.display = 'none'; btn.querySelector('.btn-text').textContent = 'Confirmar Agendamento'; btn.disabled = false; }
         }
 
-        function voltarDetalhes() { currentView = previousView; navigateTo(currentView); }
+        function voltarDetalhes() {
+            const fab = document.getElementById('fabButton');
+            if (fab && currentUser?.perfil === 'Vendedor') fab.style.display = 'flex';
+            currentView = previousView;
+            navigateTo(currentView);
+        }
+        function setQuickDate(dias) {
+            const d = new Date();
+            d.setDate(d.getDate() + dias);
+            const iso = d.toISOString().split('T')[0];
+            const input = document.getElementById('agendarData');
+            if (input) input.value = iso;
+        }
+
+        function expandirComentario() {
+            const btn = document.getElementById('btnExpandComment');
+            const form = document.getElementById('formComentario');
+            if (btn) btn.style.display = 'none';
+            if (form) { form.classList.add('open'); const ta = document.getElementById('novoComentario'); if (ta) ta.focus(); }
+        }
+
+
         function changePage(page) { currentPage = page; atualizarTabelaPaginadaServer(); }
 
         function validateField(idInput, idErro) { const el = document.getElementById(idInput); const err = document.getElementById(idErro); if (!el || !err) return; const val = el.value.trim(); if (!val) { err.textContent = 'Obrigatório'; el.style.borderColor = '#ef4444'; return false; } else { err.textContent = ''; el.style.borderColor = 'var(--border-light)'; return true; } }
