@@ -1807,31 +1807,31 @@
                 }
 
             const top5 = {};
-            dados.forEach(o => {
-                const modelosStr = (o.modelo_colchao || '').trim();
-                if (!modelosStr || modelosStr === 'Sem modelo') return;
-                
-                // Separa pela vírgula para contabilizar cada produto da lista individualmente
-                const listaProdutos = modelosStr.split(',').map(p => p.trim()).filter(Boolean);
-                listaProdutos.forEach(m => {
-                    if (!top5[m]) top5[m] = { nome: m, count: 0 };
-                    top5[m].count++;
-                });
+            // Usa fechadosArr para contar apenas o que realmente foi vendido e fechado
+        fechadosArr.forEach(o => {
+            const modelosStr = (o.modelo_colchao || '').trim();
+            if (!modelosStr || modelosStr === 'Sem modelo') return;
+            
+            const listaProdutos = modelosStr.split(',').map(p => p.trim()).filter(Boolean);
+            listaProdutos.forEach(m => {
+                if (!top5[m]) top5[m] = { nome: m, count: 0 };
+                top5[m].count++;
             });
-            
-            const top5Ordenado = Object.values(top5).sort((a, b) => b.count - a.count).slice(0, 5);
-            
-            // Adicionei a quantidade de orçamentos na frente da lista para dar mais clareza visual
-            const top5Html = top5Ordenado.map((p, i) => `
-                <li>
-                    <span class="top5-rank">${i + 1}</span>
-                    <span style="flex:1;">${escapeHtml(p.nome)}</span>
-                    <span style="font-size:11px; font-weight:700; color:var(--text-muted);">${p.count} orç.</span>
-                </li>
-            `).join('') || '<li style="justify-content:center; color:var(--text-muted);">Nenhum produto orçado</li>';
-                        const colVendedor = isGerente ? '<th>Vendedor</th>' : '';
-                        const searchTagHtml = searchTerm ? `<span class="search-tag">🔍 "${escapeHtml(searchTerm)}" <span class="remove-search" onclick="clearSearch()" aria-label="Limpar busca">✕</span></span>` : '';
-
+        });
+        
+        const top5Ordenado = Object.values(top5).sort((a, b) => b.count - a.count).slice(0, 5);
+        
+        // Trocado de 'orç.' para 'unid.' para fazer sentido com Vendas Fechadas
+        const top5Html = top5Ordenado.map((p, i) => `
+            <li>
+                <span class="top5-rank">${i + 1}</span>
+                <span style="flex:1;">${escapeHtml(p.nome)}</span>
+                <span style="font-size:11px; font-weight:700; color:var(--text-muted);">${p.count} unid.</span>
+            </li>
+        `).join('') || '<li style="justify-content:center; color:var(--text-muted);">Nenhuma venda fechada</li>';
+        
+        const colVendedor = isGerente ? '<th>Vendedor</th>' : '';
+        const searchTagHtml = searchTerm ? `<span class="search-tag">🔍 "${escapeHtml(searchTerm)}" <span class="remove-search" onclick="clearSearch()" aria-label="Limpar busca">✕</span></span>` : '';
             const tabelaHtml = `<div class="table-card"><div class="table-card-header"><h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/></svg> Carteira de Negociações</h3><div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
             <div id="searchTagContainer">${searchTagHtml}</div>
             <input type="text" class="search-input" placeholder="Buscar cliente..." id="searchInput" onchange="handleSearch()" onkeyup="if(event.key === 'Enter') handleSearch()" value="${escapeHtml(searchTerm)}" aria-label="Buscar cliente">
