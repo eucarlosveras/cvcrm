@@ -2840,9 +2840,7 @@
                 if (!cpf || cpf.length !== 11) { document.getElementById('errCpf').textContent = 'CPF inválido'; valid = false; }
                 if (!whats) { document.getElementById('errWhats').textContent = 'Obrigatório'; valid = false; }
                 if (!dataOrcamento) { document.getElementById('errDataOrc').textContent = 'Obrigatório'; valid = false; }
-                if (!dataContato) { document.getElementById('errDataContato').textContent = 'Obrigatório'; valid = false; }
-                if (!horaContato) { document.getElementById('errHoraContato').textContent = 'Obrigatório'; valid = false; }
-                
+                                
                 const produtoRows = document.querySelectorAll('.produto-row');
                 if (produtoRows.length === 0) {
                     document.getElementById('errItens').textContent = 'Adicione pelo menos um produto';
