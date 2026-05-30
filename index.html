@@ -2931,8 +2931,8 @@
                     valor_orcado: valorTotal,
                     modelo_colchao: produtosList.map(p => p.nome).join(', '),
                     data_criacao: dataCriacaoFinal,
-                    data_contato: dataContato,
-                    hora_contato: horaContato,
+                    data_contato: dataContato || null,
+                    hora_contato: horaContato || null,
                     observacao_agendamento: motivoContato || null,
                     observacoes: observacoes,
                     origem: origem
