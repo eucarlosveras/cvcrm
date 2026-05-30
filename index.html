@@ -343,10 +343,16 @@
         .produtos-wrapper::-webkit-scrollbar { width: 6px; }
         .produtos-wrapper::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         
-        .produto-row { display: grid; grid-template-columns: 1fr 120px 40px; gap: 8px; align-items: center; position: relative; }
+        .produto-row { display: grid; grid-template-columns: 1fr 90px 90px 40px; gap: 8px; align-items: center; position: relative; }
+        .input-de, .input-por { width: 100%; height: 40px; padding: 0 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-family: 'Inter', sans-serif; font-size: 13px; color: #334155; background: #fff; transition: 0.2s; text-align: right; }
+        .input-de:focus, .input-por:focus { border-color: var(--brand-blue); outline: none; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15); }
+        .input-de::placeholder { color: #94a3b8; font-size: 12px; }
+        .input-por::placeholder { color: #94a3b8; font-size: 12px; }
         
         .btn-remove-item { width: 40px; height: 40px; border-radius: 8px; background: #fff; color: #475569; border: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; }
         .btn-remove-item:hover { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
+        select.prod-nome { width: 100%; min-width: 200px; height: 40px; padding: 0 10px; cursor: pointer; }
+        @media (max-width: 600px) { select.prod-nome { min-width: unset; width: 100%; } }
         
         .btn-add-item-premium { width: 100%; height: 40px; border-radius: 8px; background: #f8fafc; color: var(--brand-blue); border: 1px dashed #93c5fd; font-weight: 600; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; flex-shrink: 0; transition: 0.2s; }
         .btn-add-item-premium:hover { background: #eff6ff; border-color: var(--brand-blue); }
@@ -2641,18 +2647,26 @@
         function formatCurrency(value) { let num = value.replace(/\D/g, ''); num = (parseInt(num) || 0).toString(); return 'R$ ' + parseInt(num.slice(0, -2) || '0').toLocaleString('pt-BR') + ',' + num.slice(-2).padStart(2, '0'); }
         function parseCurrency(value) { return parseFloat(value.replace(/[^\d,]/g, '').replace(',', '.')) || 0; }
 
+        function buildProdutoSelectOptions() {
+            let opts = '<option value="">Selecione um produto</option>';
+            if (todosProdutos.length === 0) return opts;
+            todosProdutos.forEach(p => {
+                const texto = p.codigo ? `${p.codigo} - ${p.nome}` : p.nome;
+                opts += `<option value="${escapeHtml(texto)}">${escapeHtml(texto)}</option>`;
+            });
+            return opts;
+        }
+
         function adicionarProdutoRow() {
             const container = document.getElementById('produtosContainer'); 
-            const datalistHtml = `<datalist id="produtosList">${buildProdutosOptionsDatalist()}</datalist>`;
             const row = document.createElement('div'); 
             row.className = 'produto-row';
             row.innerHTML = `
-                <div style="position: relative;">
-                    <input type="text" class="form-input prod-nome" list="produtosList" placeholder="Produto ou serviço" onchange="validarProdutoSelecionado(this)">
-                    ${datalistHtml}
-                    <span class="prod-check" style="display:none; position:absolute; right:10px; top:10px; color:#10b981; font-weight:bold;">✓</span>
-                </div>
-                <input type="text" class="form-input prod-valor font-data" placeholder="R$ 0,00" inputmode="decimal" oninput="this.value = formatCurrency(this.value); calcTotalModal();">
+                <select class="form-input prod-nome" required style="min-width:200px;">
+                    ${buildProdutoSelectOptions()}
+                </select>
+                <input type="text" class="form-input input-de font-data" placeholder="De" inputmode="decimal" oninput="this.value = formatCurrency(this.value);">
+                <input type="text" class="form-input input-por font-data" placeholder="Por" inputmode="decimal" oninput="this.value = formatCurrency(this.value); calcTotalModal();">
                 <button type="button" class="btn-remove-item" onclick="removerProdutoRow(this)" title="Remover item">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
                 </button>
@@ -2681,7 +2695,7 @@
 
         function removerProdutoRow(btn) { btn.parentElement.remove(); calcTotalModal(); atualizarBotoesLixeira(); }
         function atualizarBotoesLixeira() { const btns = document.getElementById('produtosContainer').querySelectorAll('.btn-remove-item'); if (btns.length === 1) { btns[0].style.opacity = '0.3'; btns[0].style.pointerEvents = 'none'; } else { btns.forEach(b => { b.style.opacity = '1'; b.style.pointerEvents = 'auto'; }); } }
-        function calcTotalModal() { let total = 0; document.querySelectorAll('.prod-valor').forEach(inp => { total += parseCurrency(inp.value); }); document.getElementById('displayTotalModal').textContent = 'R$ ' + total.toLocaleString('pt-BR', { minimumFractionDigits: 2 }); return total; }
+        function calcTotalModal() { let total = 0; document.querySelectorAll('.input-por').forEach(inp => { total += parseCurrency(inp.value); }); document.getElementById('displayTotalModal').textContent = 'R$ ' + total.toLocaleString('pt-BR', { minimumFractionDigits: 2 }); return total; }
 
         function abrirNovoOrcamento() { if (currentUser?.perfil !== 'Vendedor') return; navigateTo('novo_orcamento'); }
 
@@ -2849,7 +2863,7 @@
                     let hasEmpty = false;
                     produtoRows.forEach(row => {
                         const nomeProd = row.querySelector('.prod-nome').value.trim();
-                        const valorProd = parseCurrency(row.querySelector('.prod-valor').value);
+                        const valorProd = parseCurrency(row.querySelector('.input-por').value);
                         if (!nomeProd || valorProd <= 0) hasEmpty = true;
                     });
                     if (hasEmpty) {
@@ -2903,9 +2917,10 @@
                 let valorTotal = 0;
                 produtoRows.forEach(row => {
                     const nomeProd = row.querySelector('.prod-nome').value.trim();
-                    const valorProd = parseCurrency(row.querySelector('.prod-valor').value);
-                    produtosList.push({ nome: nomeProd, valor: valorProd });
-                    valorTotal += valorProd;
+                    const valorDe = parseCurrency(row.querySelector('.input-de').value);
+                    const valorPor = parseCurrency(row.querySelector('.input-por').value);
+                    produtosList.push({ nome: nomeProd, valorDe: valorDe, valorPor: valorPor });
+                    valorTotal += valorPor;
                 });
                 
                 const statusInicial = mapStatusUUID.find(s => s.nome === STATUS.CONTATO_INICIAL);
