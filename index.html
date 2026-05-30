@@ -950,7 +950,7 @@
                         tr.innerHTML = `
                             <td style="text-align:center; font-family:monospace; font-weight:700; font-size:var(--font-sm); color:var(--brand-blue-dark); white-space:nowrap;">${escapeHtml(idNumerico)}</td>
                             <td><span class="client-name">${escapeHtml(nome)}</span></td>
-                            <td>${escapeHtml(o.modelo_colchao || '-')}</td>
+                            <td style="line-height:1.6;">${formatarProdutos(o.modelo_colchao)}</td>
                             ${isGerente ? `<td>${escapeHtml(o.usuarios?.nome || '-')}</td>` : ''}
                             <td><span class="status-tag ${classToFormatStatus(statusTexto)}">${escapeHtml(statusTexto)}</span></td>
                             <td title="${dataCompleta}">${dataRelativa}</td>
@@ -1812,7 +1812,7 @@
                     const nome = escapeHtml(o.clientes?.nome_cliente || 'Cliente');
                     const whats = (o.clientes?.whatsapp || '').replace(/\D/g, '');
                     const motivo = escapeHtml(o.observacao_agendamento || '-');
-                    html += `<tr class="clickable-row" data-id="${o.id_orcamento}"><td><span class="client-name">${nome}</span></td><td>${escapeHtml(o.clientes?.whatsapp || '-')}</td><td style="font-size:var(--font-xs); color:var(--text-secondary);">${motivo}</td><td>${escapeHtml(o.modelo_colchao || '-')}</td>${isGerente ? `<td>${escapeHtml(o.usuarios?.nome || '-')}</td>` : ''}<td>${escapeHtml(o.hora_contato || '-')}</td><td><a href="https://wa.me/55${whats}" target="_blank" class="btn-whatsapp-full" style="padding:8px 14px; font-size:12px;" onclick="event.stopPropagation()">Ligar</a></td></tr>`;
+                    html += `<tr class="clickable-row" data-id="${o.id_orcamento}"><td><span class="client-name">${nome}</span></td><td>${escapeHtml(o.clientes?.whatsapp || '-')}</td><td style="font-size:var(--font-xs); color:var(--text-secondary);">${motivo}</td><td style="line-height:1.6;">${formatarProdutos(o.modelo_colchao)}</td>${isGerente ? `<td>${escapeHtml(o.usuarios?.nome || '-')}</td>` : ''}<td>${escapeHtml(o.hora_contato || '-')}</td><td><a href="https://wa.me/55${whats}" target="_blank" class="btn-whatsapp-full" style="padding:8px 14px; font-size:12px;" onclick="event.stopPropagation()">Ligar</a></td></tr>`;
                 });
                 html += '</tbody></table></div>';
             }
@@ -2018,7 +2018,7 @@
                         return `<div class="orc-mini-card" onclick="abrirDetalhesCliente('${o.id_orcamento}')">
                             <span class="orc-mini-num">${escapeHtml(String(idNum))}</span>
                             <div class="orc-mini-info">
-                                <div style="font-weight:600;font-size:var(--font-sm);margin-bottom:2px;">${escapeHtml(o.modelo_colchao || '-')}</div>
+                                <div style="font-weight:600;font-size:var(--font-sm);margin-bottom:2px;line-height:1.6;">${formatarProdutos(o.modelo_colchao)}</div>
                                 <div style="font-size:var(--font-xs);color:var(--text-muted);">${new Date(o.data_criacao).toLocaleDateString('pt-BR')} · ${escapeHtml(o.usuarios?.nome || '-')}</div>
                             </div>
                             <span class="status-tag ${stClass}" style="font-size:10px;">${escapeHtml(st)}</span>
@@ -2485,7 +2485,7 @@
                             <div class="det-pill-row" style="grid-template-columns:1fr;">
                                 <div class="det-pill">
                                     <span class="det-pill-label">Produto</span>
-                                    <span class="det-pill-value">${escapeHtml(orc.modelo_colchao)}</span>
+                                    <span class="det-pill-value" style="line-height:1.8;">${formatarProdutos(orc.modelo_colchao)}</span>
                                 </div>
                             </div>` : ''}
 
@@ -2653,6 +2653,12 @@
 
         function formatCurrency(value) { let num = value.replace(/\D/g, ''); num = (parseInt(num) || 0).toString(); return 'R$ ' + parseInt(num.slice(0, -2) || '0').toLocaleString('pt-BR') + ',' + num.slice(-2).padStart(2, '0'); }
         function parseCurrency(value) { return parseFloat(value.replace(/[^\d,]/g, '').replace(',', '.')) || 0; }
+
+        function formatarProdutos(modelo_colchao) {
+            if (!modelo_colchao) return '-';
+            return modelo_colchao.split(', ').map(p => escapeHtml(p.trim())).filter(Boolean).join('<br>');
+        }
+
 
         function buildProdutoSelectOptions() {
             let opts = '<option value="">Selecione um produto</option>';
