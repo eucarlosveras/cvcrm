@@ -2736,9 +2736,9 @@
             return true;
         }
 
-        function renderNovoOrcamentoPage() {
+        async function renderNovoOrcamentoPage() {
             const main = document.getElementById('mainContent');
-            carregarProdutos();   
+            if (todosProdutos.length === 0) await carregarProdutos();
             const hoje = new Date().toISOString().split('T')[0];
         
             main.innerHTML = `
