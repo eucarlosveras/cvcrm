@@ -349,9 +349,10 @@
         .novo-orcamento-wrapper {
             flex: 1; 
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
             gap: 24px;
-            height: calc(100vh - 140px); 
+            align-items: stretch; /* Garante que todos os cartões acompanhem a altura do maior */
+            width: 100%;
             min-height: 500px;
         }
 
