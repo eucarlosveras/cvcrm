@@ -1798,7 +1798,7 @@
 
     // 3. UI/UX: RÓTULO DE PERÍODO CLARO PARA O USUÁRIO
     const nomeMesSelecionado = new Date(currentYear, currentMonth - 1, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-    const labelPeriodo = currentDay ? `Resultados de ${currentDay} de ${nomeMesSelecionado}` : `Resultados de ${nomeMesSelecionado}`;
+    const labelPeriodo = currentDay ? `de ${currentDay} de ${nomeMesSelecionado}` : `de ${nomeMesSelecionado}`;
 
     // 4. HEADER HTML BEM FECHADO E ISOLADO
     const headerHtml = `
