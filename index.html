@@ -1753,34 +1753,65 @@
         }
 
         function renderInicio() {
-            const main = document.getElementById('mainContent');
-            const dados = kpisMensais;
-            const total = dados.length;
-            const fechadosArr = dados.filter(o => o.status === STATUS.FECHADO || o.status === STATUS.VENDIDO);
-            const fechados = fechadosArr.length;
-            const negociacao = dados.filter(o => [STATUS.EM_NEGOCIACAO, STATUS.CONTATO_INICIAL, STATUS.NEGOCIACAO, STATUS.AGUARDANDO].includes(o.status)).length;
-            const valorVendido = fechadosArr.reduce((s, o) => s + parseFloat(o.valor_orcado || 0), 0);
-            const conversao = total ? Math.round((fechados / total) * 100) : 0;
-            const metaAtual = calcularMetaTotal();
-            const percMetaExato = metaAtual ? Math.round((valorVendido / metaAtual) * 100) : 0;
+    const main = document.getElementById('mainContent');
+    const isGerente = currentUser.perfil === 'Gerente' || currentUser.perfil === 'Administrador' || currentUser.perfil === 'Admin';
 
-            const isGerente = currentUser.perfil === 'Gerente' || currentUser.perfil === 'Administrador' || currentUser.perfil === 'Admin';
-            const gamified = getGamifiedColors(percMetaExato);
+    // 1. FILTRO CIRÚRGICO: Pega apenas o que é do mês/dia vigente
+    const dados = kpisMensais.filter(o => {
+        if (!o.data_criacao) return false;
+        
+        const dataOrc = o.data_criacao.split('T')[0]; 
+        const [ano, mes, dia] = dataOrc.split('-');
+        
+        const isMesAnoCorreto = (parseInt(mes) === parseInt(currentMonth)) && (parseInt(ano) === parseInt(currentYear));
+        
+        if (currentDay) {
+            return isMesAnoCorreto && (parseInt(dia) === parseInt(currentDay));
+        }
+        return isMesAnoCorreto;
+    });
 
-            const headerHtml = `<header class="dashboard-header"><h1>${isGerente ? 'Dashboard Vendas' : 'Dashboard do Vendedor'}</h1><div class="header-controls">${renderFiltrosData(isGerente)}<div class="header-notification-area"><button class="btn-notification" id="btnNotification" onclick="event.stopPropagation(); toggleNotifications();" aria-label="Notificações"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg><span class="notification-badge" id="notificationBadgeCount"></span></button></div></div></header>`;
-            const progressHtml = `<div class="gamified-progress-card"><div class="progress-icon" style="background:${gamified.iconBg}; box-shadow:${gamified.shadow};">${gamified.iconSvg}</div><div class="progress-info"><h3>Atingimento de Meta</h3><p class="progress-subtitle">R$ ${valorVendido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} / R$ ${metaAtual.toLocaleString('pt-BR')}</p></div><div class="progress-bar-outer"><div class="progress-bar-inner-gamified" style="width:${Math.min(100, percMetaExato)}%; background:${gamified.bg}; box-shadow:${gamified.shadow};"><span class="progress-percent">${percMetaExato > 100 ? '100+' : percMetaExato}%</span></div></div><div class="progress-motive-text" style="color:${gamified.motiveColor};">${gamified.motive}</div></div>`;
-            const kpiHtml = `<div class="kpi-card"><div class="kpi-label-row"><span class="kpi-dot blue"></span><span class="kpi-label">Oportunidades Geradas</span></div><div class="kpi-value">${total}</div></div><div class="kpi-card"><div class="kpi-label-row"><span class="kpi-dot orange"></span><span class="kpi-label">Em Tratativa</span></div><div class="kpi-value">${negociacao}</div></div><div class="kpi-card"><div class="kpi-label-row"><span class="kpi-dot green"></span><span class="kpi-label">Taxa de Conversão</span></div><div class="kpi-value">${conversao}%</div></div><div class="kpi-card vendido-highlight"><div class="kpi-label-row"><span class="kpi-dot green"></span><span class="kpi-label">Vendas Fechadas</span></div><div class="kpi-value">R$ ${valorVendido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div></div>`;
+    // 2. CÁLCULOS COM OS DADOS FILTRADOS (agora tudo zera sozinho na virada!)
+    const total = dados.length;
+    const fechadosArr = dados.filter(o => o.status === STATUS.FECHADO || o.status === STATUS.VENDIDO);
+    const fechados = fechadosArr.length;
+    const negociacao = dados.filter(o => [STATUS.EM_NEGOCIACAO, STATUS.CONTATO_INICIAL, STATUS.NEGOCIACAO, STATUS.AGUARDANDO].includes(o.status)).length;
+    const valorVendido = fechadosArr.reduce((s, o) => s + parseFloat(o.valor_orcado || 0), 0);
+    const conversao = total ? Math.round((fechados / total) * 100) : 0;
+    const metaAtual = calcularMetaTotal();
+    const percMetaExato = metaAtual ? Math.round((valorVendido / metaAtual) * 100) : 0;
+    const gamified = getGamifiedColors(percMetaExato);
 
-            const donutHtml = `<div class="chart-card"><h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Aproveitamento</h3><div class="donut-wrapper"><canvas id="donutCanvas" width="200" height="200"></canvas></div><div class="donut-legend"><div style="display:flex; align-items:center; gap:8px;"><span class="legend-color orcados"></span> Orçados <strong>${total}</strong></div><div style="display:flex; align-items:center; gap:8px;"><span class="legend-color fechados"></span> Fechados <strong>${fechados}</strong></div></div></div>`;
+    // 3. UI/UX: RÓTULO DE PERÍODO CLARO PARA O USUÁRIO
+    const nomeMesSelecionado = new Date(currentYear, currentMonth - 1, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+    const labelPeriodo = currentDay ? `Resultados de ${currentDay} de ${nomeMesSelecionado}` : `Resultados de ${nomeMesSelecionado}`;
 
-            let barChartHtml = '';
-            if (!isGerente) {
-                if (historicoFaturamento.length > 0) {
-                    barChartHtml = `<div class="chart-card"><h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg> Evolução Mensal</h3><div class="bar-chart-wrapper"><canvas id="barChartCanvas"></canvas></div></div>`;
-                } else {
-                    barChartHtml = `<div class="chart-card"><h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg> Evolução Mensal</h3><div style="display:flex; align-items:center; justify-content:center; height:200px; color:var(--text-muted);">Sem dados de faturamento no período.</div></div>`;
-                }
-            }
+    // 4. HEADER HTML BEM FECHADO E ISOLADO
+    const headerHtml = `
+    <header class="dashboard-header">
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+            <h1 style="margin: 0;">${isGerente ? 'Dashboard Vendas' : 'Dashboard do Vendedor'}</h1>
+            <span style="font-size: 13px; color: var(--text-muted); font-weight: 500; text-transform: capitalize;">${labelPeriodo}</span>
+        </div>
+        <div class="header-controls">
+            ${renderFiltrosData(isGerente)}
+            <div class="header-notification-area">
+                <button class="btn-notification" id="btnNotification" onclick="event.stopPropagation(); toggleNotifications();" aria-label="Notificações">
+                    <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+                    <span class="notification-badge" id="notificationBadgeCount"></span>
+                </button>
+            </div>
+        </div>
+    </header>`;
+
+    // 5. CARDS E GRÁFICOS
+    const progressHtml = `<div class="gamified-progress-card"><div class="progress-icon" style="background:${gamified.iconBg}; box-shadow:${gamified.shadow};">${gamified.iconSvg}</div><div class="progress-info"><h3>Atingimento de Meta</h3><p class="progress-subtitle">R$ ${valorVendido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} / R$ ${metaAtual.toLocaleString('pt-BR')}</p></div><div class="progress-bar-outer"><div class="progress-bar-inner-gamified" style="width:${Math.min(100, percMetaExato)}%; background:${gamified.bg}; box-shadow:${gamified.shadow};"><span class="progress-percent">${percMetaExato > 100 ? '100+' : percMetaExato}%</span></div></div><div class="progress-motive-text" style="color:${gamified.motiveColor};">${gamified.motive}</div></div>`;
+    
+    const kpiHtml = `<div class="kpi-card"><div class="kpi-label-row"><span class="kpi-dot blue"></span><span class="kpi-label">Oportunidades Geradas</span></div><div class="kpi-value">${total}</div></div><div class="kpi-card"><div class="kpi-label-row"><span class="kpi-dot orange"></span><span class="kpi-label">Em Tratativa</span></div><div class="kpi-value">${negociacao}</div></div><div class="kpi-card"><div class="kpi-label-row"><span class="kpi-dot green"></span><span class="kpi-label">Taxa de Conversão</span></div><div class="kpi-value">${conversao}%</div></div><div class="kpi-card vendido-highlight"><div class="kpi-label-row"><span class="kpi-dot green"></span><span class="kpi-label">Vendas Fechadas</span></div><div class="kpi-value">R$ ${valorVendido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div></div>`;
+    
+    const donutHtml = `<div class="chart-card"><h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Aproveitamento</h3><div class="donut-wrapper"><canvas id="donutCanvas" width="200" height="200"></canvas></div><div class="donut-legend"><div style="display:flex; align-items:center; gap:8px;"><span class="legend-color orcados"></span> Orçados <strong>${total}</strong></div><div style="display:flex; align-items:center; gap:8px;"><span class="legend-color fechados"></span> Fechados <strong>${fechados}</strong></div></div></div>`;
+
+    let barChartHtml = '';
 
             let rankingHtml = '';
                 if (isGerente) {
