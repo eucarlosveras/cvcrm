@@ -235,15 +235,20 @@
         .det-section-icon { color: var(--brand-blue); flex-shrink: 0; }
 
         /* Data pills */
-        .det-pill-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; flex-shrink: 0; }
-        .det-pill { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 3px; }
-        body.dark .det-pill { background: #0f172a; border-color: #334155; }
-        .det-pill-label { font-size: 11px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
-        .det-pill-value { font-size: 13px; font-weight: 600; color: #0f172a; display: flex; align-items: center; gap: 6px; }
+        .det-pill-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; flex-shrink: 0; }
+        .det-pill { background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 9px; padding: 10px 13px; display: flex; flex-direction: column; gap: 4px; }
+        body.dark .det-pill { background: #0f172a; border-color: #1e293b; }
+        .det-pill-label { font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.07em; }
+        .det-pill-value { font-size: 13px; font-weight: 600; color: #1e293b; display: flex; align-items: center; gap: 6px; line-height: 1.4; }
         body.dark .det-pill-value { color: #f1f5f9; }
-        .det-pill-value.mono { font-family: 'JetBrains Mono', monospace; font-size: 12px; }
-        .det-pill-value.green { color: #059669; font-size: 18px; font-family: 'JetBrains Mono', monospace; }
-        .det-pill-value.blue { color: var(--brand-blue); }
+        .det-pill-value.mono { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 500; letter-spacing: -0.01em; }
+        .det-pill-value.blue { color: var(--brand-blue); font-size: 13px; }
+        .det-pill.highlight { background: #f0fdf4; border-color: #bbf7d0; }
+        body.dark .det-pill.highlight { background: rgba(16,185,129,0.08); border-color: rgba(16,185,129,0.25); }
+        .det-pill.highlight .det-pill-label { color: #059669; }
+        .det-pill.highlight .det-pill-value { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 700; color: #059669; letter-spacing: -0.01em; }
+        .det-pill-row-action { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+        .det-pill-row-action > div { min-width: 0; }
 
         /* Valor total hero */
         .det-valor-hero { background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border: 1px solid #a7f3d0; border-radius: 12px; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-shrink: 0; }
@@ -1798,7 +1803,7 @@
 
     // 3. UI/UX: RÓTULO DE PERÍODO CLARO PARA O USUÁRIO
     const nomeMesSelecionado = new Date(currentYear, currentMonth - 1, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-    const labelPeriodo = currentDay ? `de ${currentDay} de ${nomeMesSelecionado}` : `de ${nomeMesSelecionado}`;
+    const labelPeriodo = currentDay ? `Resultados de ${currentDay} de ${nomeMesSelecionado}` : `Resultados de ${nomeMesSelecionado}`;
 
     // 4. HEADER HTML BEM FECHADO E ISOLADO
     const headerHtml = `
@@ -1919,8 +1924,11 @@
                 agendados.forEach(o => {
                     const nome = escapeHtml(o.clientes?.nome_cliente || 'Cliente');
                     const whats = (o.clientes?.whatsapp || '').replace(/\D/g, '');
-                    const motivo = escapeHtml(o.observacao_agendamento || '-');
-                    html += `<tr class="clickable-row" data-id="${o.id_orcamento}"><td><span class="client-name">${nome}</span></td><td>${escapeHtml(o.clientes?.whatsapp || '-')}</td><td style="font-size:var(--font-xs); color:var(--text-secondary);">${motivo}</td><td style="line-height:1.6;">${formatarProdutos(o.modelo_colchao)}</td>${isGerente ? `<td>${escapeHtml(o.usuarios?.nome || '-')}</td>` : ''}<td>${escapeHtml(o.hora_contato || '-')}</td><td><a href="https://wa.me/55${whats}" target="_blank" class="btn-whatsapp-full" style="padding:8px 14px; font-size:12px;" onclick="event.stopPropagation()">Ligar</a></td></tr>`;
+                    const agendRaw = o.observacao_agendamento || '';
+                    const linhas = agendRaw.split('\n');
+                    const tipo = escapeHtml(linhas[0] || '-');
+                    const obsExtra = linhas.length > 1 ? `<div style="font-size:11px; color:var(--text-muted); margin-top:2px; font-weight:400;">${escapeHtml(linhas.slice(1).join(' '))}</div>` : '';
+                    html += `<tr class="clickable-row" data-id="${o.id_orcamento}"><td><span class="client-name">${nome}</span></td><td>${escapeHtml(o.clientes?.whatsapp || '-')}</td><td style="font-size:var(--font-xs); color:var(--text-secondary); font-weight:600;">${tipo}${obsExtra}</td><td style="line-height:1.6;">${formatarProdutos(o.modelo_colchao)}</td>${isGerente ? `<td>${escapeHtml(o.usuarios?.nome || '-')}</td>` : ''}<td>${escapeHtml(o.hora_contato || '-')}</td><td><a href="https://wa.me/55${whats}" target="_blank" class="btn-whatsapp-full" style="padding:8px 14px; font-size:12px;" onclick="event.stopPropagation()">Ligar</a></td></tr>`;
                 });
                 html += '</tbody></table></div>';
             }
@@ -2549,6 +2557,7 @@
                                 <h2 class="det-section-title">Dados do Cliente</h2>
                             </div>
 
+                            
                             <div class="det-pill-row">
                                 <div class="det-pill">
                                     <span class="det-pill-label">Status</span>
@@ -2556,23 +2565,25 @@
                                 </div>
                                 <div class="det-pill">
                                     <span class="det-pill-label">Interesse</span>
-                                    <span class="det-pill-value"><svg width="9" height="9" viewBox="0 0 10 10"><circle cx="5" cy="5" r="5" fill="${interesseColor}"/></svg> ${interesse}</span>
+                                    <span class="det-pill-value"><svg width="8" height="8" viewBox="0 0 10 10" style="flex-shrink:0;"><circle cx="5" cy="5" r="5" fill="${interesseColor}"/></svg>${interesse}</span>
                                 </div>
                             </div>
 
-                            <div class="det-pill-row" style="grid-template-columns:1fr;">
-                                <div class="det-pill" style="flex-direction:row; align-items:center; justify-content:space-between;">
-                                    <div>
-                                        <span class="det-pill-label">WhatsApp</span>
-                                        <span class="det-pill-value mono" style="margin-top:3px; display:block;">${escapeHtml(orc.clientes?.whatsapp || '-')}</span>
+                            
+                            <div class="det-pill-row" style="grid-template-columns:1fr; margin-bottom:10px;">
+                                <div class="det-pill">
+                                    <span class="det-pill-label">WhatsApp</span>
+                                    <div class="det-pill-row-action">
+                                        <span class="det-pill-value mono">${escapeHtml(orc.clientes?.whatsapp || '-')}</span>
+                                        ${whats ? `<a href="https://wa.me/55${whats}" target="_blank" class="btn-wa-inline" style="flex-shrink:0;">
+                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                                            Chamar
+                                        </a>` : ''}
                                     </div>
-                                    ${whats ? `<a href="https://wa.me/55${whats}" target="_blank" class="btn-wa-inline">
-                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-                                        Chamar
-                                    </a>` : ''}
                                 </div>
                             </div>
 
+                            
                             <div class="det-pill-row">
                                 <div class="det-pill">
                                     <span class="det-pill-label">CPF / CNPJ</span>
@@ -2584,6 +2595,7 @@
                                 </div>
                             </div>
 
+                            
                             <div class="det-pill-row">
                                 <div class="det-pill">
                                     <span class="det-pill-label">Criado em</span>
@@ -2595,13 +2607,15 @@
                                 </div>
                             </div>
 
+                            
                             <div class="det-pill-row" style="grid-template-columns:1fr;">
-                                <div class="det-pill">
+                                <div class="det-pill highlight">
                                     <span class="det-pill-label">Valor Orçado</span>
-                                    <span class="det-pill-value" style="font-family:'JetBrains Mono',monospace; font-size:1.15rem; font-weight:800; color:#059669;">${valorFormatado}</span>
+                                    <span class="det-pill-value">${valorFormatado}</span>
                                 </div>
                             </div>
 
+                            
                             ${orc.modelo_colchao ? `
                             <div class="det-pill-row" style="grid-template-columns:1fr;">
                                 <div class="det-pill">
@@ -2610,18 +2624,20 @@
                                 </div>
                             </div>` : ''}
 
+                            
+                            ${orc.forma_pagamento || orc.data_entrega ? `
+                            <div class="det-pill-row">
+                                ${orc.forma_pagamento ? `<div class="det-pill"><span class="det-pill-label">Pagamento</span><span class="det-pill-value">${escapeHtml(orc.forma_pagamento)}</span></div>` : ''}
+                                ${orc.data_entrega ? `<div class="det-pill"><span class="det-pill-label">Entrega</span><span class="det-pill-value blue">${new Date(orc.data_entrega + 'T00:00:00').toLocaleDateString('pt-BR')}</span></div>` : ''}
+                            </div>` : ''}
+
+                            
                             ${isGerente ? `
                             <div class="det-pill-row" style="grid-template-columns:1fr;">
                                 <div class="det-pill">
                                     <span class="det-pill-label">Vendedor</span>
                                     <span class="det-pill-value">${escapeHtml(orc.usuarios?.nome || '-')}</span>
                                 </div>
-                            </div>` : ''}
-
-                            ${orc.forma_pagamento || orc.data_entrega ? `
-                            <div class="det-pill-row">
-                                ${orc.forma_pagamento ? `<div class="det-pill"><span class="det-pill-label">Pagamento</span><span class="det-pill-value">${escapeHtml(orc.forma_pagamento)}</span></div>` : ''}
-                                ${orc.data_entrega ? `<div class="det-pill"><span class="det-pill-label">Entrega</span><span class="det-pill-value blue">${new Date(orc.data_entrega + 'T00:00:00').toLocaleDateString('pt-BR')}</span></div>` : ''}
                             </div>` : ''}
 
                             <div class="det-obs-area" style="margin-top:auto; padding-top:12px;">
@@ -2724,12 +2740,12 @@
                                 <div class="field-error" id="agendarTipoErro"></div>
                             </div>
 
-                            <div class="form-group" style="flex:1; display:flex; flex-direction:column; margin-bottom:0;">
+                            <div class="form-group" style="flex:1; display:flex; flex-direction:column; margin-bottom:16px;">
                                 <label>Observações / Lembrete</label>
                                 <textarea id="agendarObservacao" class="form-input" style="flex:1; resize:none; font-size:13px; min-height:120px;" placeholder="Detalhes contextuais para o próximo contato..."></textarea>
                             </div>
 
-                            <button class="btn-agendar-full" id="btnConfirmarAgendamento" onclick="agendarContato()" style="margin-top:auto;">
+                            <button class="btn-agendar-full" id="btnConfirmarAgendamento" onclick="agendarContato()" style="margin-top:0;">
                                 <span class="btn-spinner" style="display:none; width:16px; height:16px; border:2px solid rgba(255,255,255,0.3); border-top-color:#fff; border-radius:50%; animation:spin 1s linear infinite;"></span>
                                 <span class="btn-text" style="display:flex; align-items:center; gap:6px;">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -2949,7 +2965,7 @@
                         
                         <div class="form-group"><label for="modDataOrcamento">Data do Orçamento</label><input type="date" id="modDataOrcamento" class="form-input font-data" value="${hoje}" onblur="validateField('modDataOrcamento','errDataOrc')"><div class="field-error" id="errDataOrc" style="color:#ef4444; font-size:12px; margin-top:4px;"></div></div>
                         
-                        <div class="form-group"><label for="modMotivoContato">Motivo do Contato</label><select id="modMotivoContato" class="form-input"><option value="">Selecionar objetivo...</option><option value="Virada de Tabela">Virada de Tabela</option><option value="Quebra de Objeção">Quebra de Objeção</option><option value="Negociação">Negociação</option><option value="Confirmação de Entrega">Confirmação de Entrega</option></select></div>
+                        <div class="form-group"><label for="modMotivoContato">Tipo de Contato</label><select id="modMotivoContato" class="form-input"><option value="">Selecionar...</option><optgroup label="Vendas"><option value="Apresentação de Campanha/Promoção">Apresentação de Campanha/Promoção</option><option value="Reativação de Contato Antigo">Reativação de Contato Antigo</option><option value="Acompanhamento de Orçamento">Acompanhamento de Orçamento</option><option value="Virada de Tabela">Virada de Tabela</option><option value="Quebra de Objeção">Quebra de Objeção</option><option value="Cross-sell (Venda Cruzada)">Cross-sell (Venda Cruzada)</option></optgroup><optgroup label="Pós-Venda"><option value="Alinhamento Logístico">Alinhamento Logístico</option><option value="Acompanhamento de Adaptação (Pós-Entrega)">Acompanhamento de Adaptação (Pós-Entrega)</option><option value="Assistência Técnica">Assistência Técnica</option></optgroup></select></div>
                         
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                             <div class="form-group"><label for="modDataContato">Data</label><input type="date" id="modDataContato" class="form-input font-data" onblur="validateField('modDataContato','errDataContato')"><div class="field-error" id="errDataContato" style="color:#ef4444; font-size:12px; margin-top:4px;"></div></div>
@@ -3315,7 +3331,8 @@
             const btn = document.getElementById('btnConfirmarAgendamento');
             btn.querySelector('.btn-spinner').style.display = 'inline-block'; btn.querySelector('.btn-text').textContent = 'Salvando...'; btn.disabled = true;
             try {
-                const { error: err1 } = await db.from('orcamentos').update({ data_contato: data, hora_contato: hora, observacao_agendamento: obs }).eq('id_orcamento', AppState.contextoVenda.clienteAtual.id_orcamento);
+                const obsAgendamento = obs ? `${tipo}\n${obs}` : tipo;
+                const { error: err1 } = await db.from('orcamentos').update({ data_contato: data, hora_contato: hora, observacao_agendamento: obsAgendamento }).eq('id_orcamento', AppState.contextoVenda.clienteAtual.id_orcamento);
                 if (err1) throw new Error(err1.message);
                 
                 const dataFormatada = new Date(data + 'T00:00:00').toLocaleDateString('pt-BR');
