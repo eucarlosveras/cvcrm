@@ -2438,11 +2438,15 @@
 
                 sections += `</tbody></table></div>`;
             });
+            
+            const btnVoltarHtml = (currentUser.perfil === 'Administrador' || currentUser.perfil === 'Admin') 
+                ? `<button class="btn-voltar" onclick="navigateTo('admin_inicio')">← Voltar</button>` 
+                : '';
 
             document.getElementById('mainContent').innerHTML = `
                 <header class="dashboard-header">
                     <div style="display:flex; align-items:center; gap:16px;">
-                        <button class="btn-voltar" onclick="navigateTo('admin_inicio')">← Voltar</button>
+                        ${btnVoltarHtml}
                         <h1>Gestão de Metas</h1>
                     </div>
                     <span style="font-size:var(--font-xs); color:var(--text-muted);">Mês atual · dados em tempo real</span>
