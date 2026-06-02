@@ -386,15 +386,28 @@
         .produtos-wrapper::-webkit-scrollbar { width: 6px; }
         .produtos-wrapper::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         
-        .produto-row { display: grid; grid-template-columns: minmax(0, 1fr) 90px 90px 40px; gap: 8px; align-items: center; position: relative; }
-        .input-de, .input-por { width: 100%; height: 40px; padding: 0 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-family: 'Inter', sans-serif; font-size: 13px; color: #334155; background: #fff; transition: 0.2s; text-align: right; }
+        .produto-row { display: flex; flex-direction: column; gap: 6px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px; position: relative; transition: border-color 0.2s; }
+        .produto-row:hover { border-color: #cbd5e1; }
+        body.dark .produto-row { background: #0f172a; border-color: #334155; }
+        body.dark .produto-row:hover { border-color: #475569; }
+        .produto-row-top { display: flex; align-items: center; gap: 8px; }
+        .produto-row-bottom { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .produto-row-label { font-size: 10px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px; }
+        .input-de, .input-por { width: 100%; height: 36px; padding: 0 10px; border: 1px solid #e2e8f0; border-radius: 7px; font-family: 'Inter', sans-serif; font-size: 13px; color: #334155; background: #fff; transition: 0.2s; text-align: right; }
+        body.dark .input-de, body.dark .input-por { background: #1e293b; border-color: #334155; color: #f1f5f9; }
         .input-de:focus, .input-por:focus { border-color: var(--brand-blue); outline: none; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15); }
         .input-de::placeholder { color: #94a3b8; font-size: 12px; }
         .input-por::placeholder { color: #94a3b8; font-size: 12px; }
+        .input-por { border-color: #bfdbfe; background: #eff6ff; font-weight: 600; color: #1d4ed8; }
+        body.dark .input-por { background: rgba(59,130,246,0.1); border-color: #3b82f6; color: #93c5fd; }
+        .input-por:focus { border-color: var(--brand-blue); background: #fff; color: #334155; }
+        body.dark .input-por:focus { background: #1e293b; color: #f1f5f9; }
         
-        .btn-remove-item { width: 40px; height: 40px; border-radius: 8px; background: #fff; color: #475569; border: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; }
-        .btn-remove-item:hover { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
-        select.prod-nome { width: 100%; min-width: 0; height: 40px; padding: 0 10px; cursor: pointer; text-overflow: ellipsis; overflow: hidden; }
+        .btn-remove-item { width: 30px; height: 30px; border-radius: 6px; background: transparent; color: #94a3b8; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; flex-shrink: 0; }
+        .btn-remove-item:hover { background: #fef2f2; color: #dc2626; }
+        select.prod-nome { flex: 1; min-width: 0; height: 36px; padding: 0 10px; cursor: pointer; text-overflow: ellipsis; overflow: hidden; border-radius: 7px; border: 1px solid #e2e8f0; font-family: 'Inter', sans-serif; font-size: 13px; color: #334155; background: #fff; transition: 0.2s; }
+        select.prod-nome:focus { border-color: var(--brand-blue); outline: none; box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
+        body.dark select.prod-nome { background: #1e293b; border-color: #334155; color: #f1f5f9; }
         @media (max-width: 600px) { select.prod-nome { min-width: unset; width: 100%; } }
         
         .btn-add-item-premium { width: 100%; height: 40px; border-radius: 8px; background: #f8fafc; color: var(--brand-blue); border: 1px dashed #93c5fd; font-weight: 600; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; flex-shrink: 0; transition: 0.2s; }
@@ -2785,14 +2798,24 @@
             const row = document.createElement('div'); 
             row.className = 'produto-row';
             row.innerHTML = `
-                <select class="form-input prod-nome" required>
-                    ${buildProdutoSelectOptions()}
-                </select>
-                <input type="text" class="form-input input-de font-data" placeholder="De" inputmode="decimal" oninput="this.value = formatCurrency(this.value);">
-                <input type="text" class="form-input input-por font-data" placeholder="Por" inputmode="decimal" oninput="this.value = formatCurrency(this.value); calcTotalModal();">
-                <button type="button" class="btn-remove-item" onclick="removerProdutoRow(this)" title="Remover item">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
-                </button>
+                <div class="produto-row-top">
+                    <select class="form-input prod-nome" required>
+                        ${buildProdutoSelectOptions()}
+                    </select>
+                    <button type="button" class="btn-remove-item" onclick="removerProdutoRow(this)" title="Remover item">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+                    </button>
+                </div>
+                <div class="produto-row-bottom">
+                    <div>
+                        <div class="produto-row-label">De</div>
+                        <input type="text" class="form-input input-de font-data" placeholder="R$ 0,00" inputmode="decimal" oninput="this.value = formatCurrency(this.value);">
+                    </div>
+                    <div>
+                        <div class="produto-row-label">Por</div>
+                        <input type="text" class="form-input input-por font-data" placeholder="R$ 0,00" inputmode="decimal" oninput="this.value = formatCurrency(this.value); calcTotalModal();">
+                    </div>
+                </div>
             `;
             container.appendChild(row); 
             atualizarBotoesLixeira();
@@ -2816,7 +2839,7 @@
             }
         }
 
-        function removerProdutoRow(btn) { btn.parentElement.remove(); calcTotalModal(); atualizarBotoesLixeira(); }
+        function removerProdutoRow(btn) { btn.closest('.produto-row').remove(); calcTotalModal(); atualizarBotoesLixeira(); }
         function atualizarBotoesLixeira() { const btns = document.getElementById('produtosContainer').querySelectorAll('.btn-remove-item'); if (btns.length === 1) { btns[0].style.opacity = '0.3'; btns[0].style.pointerEvents = 'none'; } else { btns.forEach(b => { b.style.opacity = '1'; b.style.pointerEvents = 'auto'; }); } }
         function calcTotalModal() { let total = 0; document.querySelectorAll('.input-por').forEach(inp => { total += parseCurrency(inp.value); }); document.getElementById('displayTotalModal').textContent = 'R$ ' + total.toLocaleString('pt-BR', { minimumFractionDigits: 2 }); return total; }
 
