@@ -870,8 +870,7 @@
             const isAdmin = currentUser.perfil === 'Administrador' || currentUser.perfil === 'Admin';
             try {
                 // 1. Select inicial
-                let query = db.from('orcamentos').select('id_orcamento, valor_orcado, id_usuario, data_contato, hora_contato, observacao_agendamento, modelo_colchao, clientes(nome_cliente, whatsapp), status_orcamento(nome), usuarios!inner(id_loja)');
-                
+                let query = db.from('orcamentos').select('id_orcamento, valor_orcado, id_usuario, data_criacao, data_contato, hora_contato, observacao_agendamento, modelo_colchao, clientes(nome_cliente, whatsapp), status_orcamento(nome), usuarios!inner(id_loja)');                
                 // 2. Lógica de filtro hierárquica
                 if (currentUser.perfil === 'Vendedor') {
                     query = query.eq('id_usuario', currentUser.id_usuario);
