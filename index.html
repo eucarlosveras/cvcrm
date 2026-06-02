@@ -2529,25 +2529,27 @@
                 <div class="detalhes-page-wrapper">
 
                     <!-- ══ COL 1: DADOS DO CLIENTE ══ -->
+                   <div class="detalhes-page-wrapper">
+
                     <div class="det-col-wide">
                         <section class="det-section">
-                            <div class="det-section-header">
-                                <svg class="det-section-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                                <h2 class="det-section-title">Dados do Cliente</h2>
-                            </div>
-
-                            <!-- Pills: Status + Interesse -->
-                            <div class="det-pill-row">
-                                <div class="det-pill">
-                                    <span class="det-pill-label">Status</span>
-                                    <span class="det-pill-value"><span class="status-tag ${statusClass}" style="font-size:11px; padding:3px 10px;">${escapeHtml(orc.status)}</span></span>
-                                </div>
-                                <div class="det-pill">
-                                    <span class="det-pill-label">Interesse</span>
-                                    <span class="det-pill-value"><svg width="9" height="9" viewBox="0 0 10 10"><circle cx="5" cy="5" r="5" fill="${interesseColor}"/></svg> ${interesse}</span>
-                                </div>
-                            </div>
-
+                            <h2 class="det-section-title">Dados do Cliente</h2>
+                            </section>
+                    </div>
+                
+                    <div class="det-col-history">
+                        <section class="det-section scrollable">
+                            <h2 class="det-section-title">Histórico de Contatos</h2>
+                            </section>
+                    </div>
+                
+                    <div class="det-col-wide">
+                        <section class="det-section">
+                            <h2 class="det-section-title">Agendar Próximo Contato</h2>
+                            </section>
+                    </div>
+                
+                </div>
                             <!-- Pills: WhatsApp -->
                             <div class="det-pill-row" style="grid-template-columns:1fr;">
                                 <div class="det-pill" style="flex-direction:row; align-items:center; justify-content:space-between;">
