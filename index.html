@@ -2966,14 +2966,26 @@
             const cpfInput = document.getElementById('modCpf');
             const errSpan = document.getElementById('errCpf');
             let cpf = cpfInput.value.replace(/\D/g, '');
-            if (cpf.length !== 11) { errSpan.textContent = 'CPF deve ter 11 dígitos'; return false; }
+            
+            // Se estiver vazio, passa direto (agora é opcional)
+            if (cpf.length === 0) {
+                errSpan.textContent = '';
+                return true;
+            }
+            
+            // Se preencheu, valida o tamanho (11 para CPF ou 14 para CNPJ)
+            if (cpf.length !== 11 && cpf.length !== 14) { 
+                errSpan.textContent = 'CPF/CNPJ inválido'; 
+                return false; 
+            }
+            
             errSpan.textContent = '';
             const { data: existing } = await db.from('clientes')
                 .select('*')
                 .eq('cpf', cpf)
                 .maybeSingle();
             if (existing) {
-                errSpan.textContent = `⚠️ CPF já pertence a ${existing.nome_cliente}. O orçamento será vinculado a este cliente.`;
+                errSpan.textContent = `⚠️ Documento já pertence a ${existing.nome_cliente}. O orçamento será vinculado a este cliente.`;
                 return false;
             }
             return true;
