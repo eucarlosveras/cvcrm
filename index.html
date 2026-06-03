@@ -3105,9 +3105,14 @@
                 
                 let valid = true;
                 if (!nome) { document.getElementById('errNome').textContent = 'Obrigatório'; valid = false; }
-                if (!cpf || cpf.length !== 11) { document.getElementById('errCpf').textContent = 'CPF inválido'; valid = false; }
+                
+                // Valida apenas se o documento foi preenchido, mas não exige
+                if (cpf && cpf.length !== 11 && cpf.length !== 14) { 
+                    document.getElementById('errCpf').textContent = 'Documento inválido'; 
+                    valid = false; 
+                }
+                
                 if (!whats) { document.getElementById('errWhats').textContent = 'Obrigatório'; valid = false; }
-                if (!dataOrcamento) { document.getElementById('errDataOrc').textContent = 'Obrigatório'; valid = false; }
                                 
                 const produtoRows = document.querySelectorAll('.produto-row');
                 if (produtoRows.length === 0) {
@@ -3120,11 +3125,11 @@
                         const valorProd = parseCurrency(row.querySelector('.input-por').value);
                         if (!nomeProd || valorProd <= 0) hasEmpty = true;
                     });
+                    
                     if (hasEmpty) {
                         document.getElementById('errItens').textContent = 'Preencha nome e valor de todos os produtos';
                         valid = false;
                     }
-                }
                 
                 if (!valid) { 
                     showToast('Preencha todos os campos obrigatórios', 'error'); 
