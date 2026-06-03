@@ -1923,13 +1923,30 @@
 
         function renderAgendaDia() {
             const hoje = new Date().toISOString().split('T')[0];
-            const agendados = kpisMensais.filter(o => { return o.data_contato === hoje && [STATUS.EM_NEGOCIACAO, STATUS.CONTATO_INICIAL, STATUS.NEGOCIACAO, STATUS.AGUARDANDO].includes(o.status); });
+            
+            // 1. FILTRO: Removemos a trava do dia de hoje, trazendo qualquer orçamento com data de contato ativa e status aberto
+            let agendados = kpisMensais.filter(o => { 
+                return o.data_contato && [STATUS.EM_NEGOCIACAO, STATUS.CONTATO_INICIAL, STATUS.NEGOCIACAO, STATUS.AGUARDANDO].includes(o.status); 
+            });
+
+            // 2. ORDENAÇÃO: Cronológica crescente (as datas mais próximas e tarefas atrasadas ficam no topo)
+            agendados.sort((a, b) => {
+                if (a.data_contato !== b.data_contato) {
+                    return a.data_contato.localeCompare(b.data_contato);
+                }
+                return (a.hora_contato || '').localeCompare(b.hora_contato || '');
+            });
+
             const isGerente = currentUser.perfil === 'Gerente' || currentUser.perfil === 'Administrador' || currentUser.perfil === 'Admin';
-            let html = `<header class="dashboard-header"><h1>Agenda do Dia</h1><div class="header-controls">${isGerente ? `<div class="filter-wrapper"><span class="filter-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></span><select class="vendedor-select" id="vendedorSelectAgenda" onchange="filtrarPorVendedor(this.value)">${buildVendedorOptions()}</select></div>` : ''}<div class="filter-wrapper"><span class="filter-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/></svg></span><select class="month-select" onchange="changeMonth(this.value)">${buildMonthOptions()}</select></div><div class="filter-wrapper"><span class="filter-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg></span><select class="day-select" onchange="changeDay(this.value)">${buildDayOptions()}</select></div><div class="header-notification-area"><button class="btn-notification" id="btnNotification" onclick="event.stopPropagation(); toggleNotifications();" aria-label="Notificações"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg><span class="notification-badge" id="notificationBadgeCount"></span></button></div></div></header>`;
-            if (agendados.length === 0) { html += '<div class="chart-card" style="text-align:center; padding:48px; color:var(--text-muted);">Nenhum contato agendado para hoje.</div>'; }
-            else {
+            let html = `<header class="dashboard-header"><h1>Agenda e Próximos Passos</h1><div class="header-controls">${isGerente ? `<div class="filter-wrapper"><span class="filter-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></span><select class="vendedor-select" id="vendedorSelectAgenda" onchange="filtrarPorVendedor(this.value)">${buildVendedorOptions()}</select></div>` : ''}<div class="filter-wrapper"><span class="filter-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/></svg></span><select class="month-select" onchange="changeMonth(this.value)">${buildMonthOptions()}</select></div><div class="filter-wrapper"><span class="filter-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg></span><select class="day-select" onchange="changeDay(this.value)">${buildDayOptions()}</select></div><div class="header-notification-area"><button class="btn-notification" id="btnNotification" onclick="event.stopPropagation(); toggleNotifications();" aria-label="Notificações"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg><span class="notification-badge" id="notificationBadgeCount"></span></button></div></div></header>`;
+            
+            if (agendados.length === 0) { 
+                html += '<div class="chart-card" style="text-align:center; padding:48px; color:var(--text-muted);">Nenhum agendamento pendente encontrado.</div>'; 
+            } else {
                 const colVendedorAgenda = isGerente ? '<th>Vendedor</th>' : '';
-                html += `<div class="table-card"><table><thead><tr><th>Cliente</th><th>WhatsApp</th><th>Motivo do Contato</th><th>Produto</th>${colVendedorAgenda}<th>Horário</th><th>Ação</th></tr></thead><tbody>`;
+                // Mudamos o cabeçalho de "Horário" para "Data / Hora"
+                html += `<div class="table-card"><table><thead><tr><th>Cliente</th><th>WhatsApp</th><th>Motivo do Contato</th><th>Produto</th>${colVendedorAgenda}<th>Data / Hora</th><th>Ação</th></tr></thead><tbody>`;
+                
                 agendados.forEach(o => {
                     const nome = escapeHtml(o.clientes?.nome_cliente || 'Cliente');
                     const whats = (o.clientes?.whatsapp || '').replace(/\D/g, '');
@@ -1937,7 +1954,14 @@
                     const linhas = agendRaw.split('\n');
                     const tipo = escapeHtml(linhas[0] || '-');
                     const obsExtra = linhas.length > 1 ? `<div style="font-size:11px; color:var(--text-muted); margin-top:2px; font-weight:400;">${escapeHtml(linhas.slice(1).join(' '))}</div>` : '';
-                    html += `<tr class="clickable-row" data-id="${o.id_orcamento}"><td><span class="client-name">${nome}</span></td><td>${escapeHtml(o.clientes?.whatsapp || '-')}</td><td style="font-size:var(--font-xs); color:var(--text-secondary); font-weight:600;">${tipo}${obsExtra}</td><td style="line-height:1.6;">${formatarProdutos(o.modelo_colchao)}</td>${isGerente ? `<td>${escapeHtml(o.usuarios?.nome || '-')}</td>` : ''}<td>${escapeHtml(o.hora_contato || '-')}</td><td><a href="https://wa.me/55${whats}" target="_blank" class="btn-whatsapp-full" style="padding:8px 14px; font-size:12px;" onclick="event.stopPropagation()">Ligar</a></td></tr>`;
+                    
+                    // 3. FORMATAÇÃO VISUAL DA DATA: Exibe ex: "03/06 às 14:00" de forma limpa
+                    const dataObj = new Date(o.data_contato + 'T00:00:00');
+                    const dataExibicao = dataObj.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+                    const horaExibicao = o.hora_contato || '--:--';
+                    const agendamentoCompleto = `${dataExibicao} às ${horaExibicao}`;
+
+                    html += `<tr class="clickable-row" data-id="${o.id_orcamento}"><td><span class="client-name">${nome}</span></td><td>${escapeHtml(o.clientes?.whatsapp || '-')}</td><td style="font-size:var(--font-xs); color:var(--text-secondary); font-weight:600;">${tipo}${obsExtra}</td><td style="line-height:1.6;">${formatarProdutos(o.modelo_colchao)}</td>${isGerente ? `<td>${escapeHtml(o.usuarios?.nome || '-')}</td>` : ''}<td style="font-weight: 500; white-space: nowrap;">${agendamentoCompleto}</td><td><a href="https://wa.me/55${whats}" target="_blank" class="btn-whatsapp-full" style="padding:8px 14px; font-size:12px;" onclick="event.stopPropagation()">Ligar</a></td></tr>`;
                 });
                 html += '</tbody></table></div>';
             }
