@@ -1246,9 +1246,23 @@
             const user = (todosUsuarios && todosUsuarios.length > 0 ? todosUsuarios : todosVendedores).find(u => u.id_usuario === idVendedor);
             return user && user.meta_mensal ? parseFloat(user.meta_mensal) : META_PADRAO;
         }
-        function calcularMetaTotal() {
+        
+       function calcularMetaTotal() {
             if (currentUser.perfil === 'Vendedor') return getMetaVendedor(currentUser.id_usuario);
-            return todosVendedores.reduce((s, v) => s + getMetaVendedor(v.id_usuario), 0);
+            
+            let filtrados = todosVendedores;
+            if (currentUser.perfil === 'Gerente') {
+                filtrados = todosVendedores.filter(v => v.id_loja === currentUser.id_loja);
+                if (selectedVendedor !== 'todos') filtrados = filtrados.filter(v => v.id_usuario === selectedVendedor);
+            } else {
+                if (selectedVendedor !== 'todos') {
+                    filtrados = todosVendedores.filter(v => v.id_usuario === selectedVendedor);
+                } else if (selectedLoja !== 'todas') {
+                    filtrados = todosVendedores.filter(v => v.id_loja === selectedLoja);
+                }
+            }
+            
+            return filtrados.reduce((s, v) => s + getMetaVendedor(v.id_usuario), 0);
         }
 
         function getGamifiedColors(perc) {
