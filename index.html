@@ -1010,8 +1010,7 @@
                         tr.innerHTML = `
                             <td style="text-align:center; font-family:monospace; font-weight:700; font-size:var(--font-sm); color:var(--brand-blue-dark); white-space:nowrap;">${escapeHtml(idNumerico)}</td>
                             <td><span class="client-name">${escapeHtml(nome)}</span></td>
-                            <td style="line-height:1.6;">${formatarProdutos(o.modelo_colchao)}</td>
-                            ${isGerente ? `<td>${escapeHtml(o.usuarios?.nome || '-')}</td>` : ''}
+                            <td style="line-height:1.4; font-size: var(--font-xs); color: var(--text-secondary); max-width: 200px; white-space: normal;">${formatarProdutos(o.modelo_colchao)}</td>                            ${isGerente ? `<td>${escapeHtml(o.usuarios?.nome || '-')}</td>` : ''}
                             <td><span class="status-tag ${classToFormatStatus(statusTexto)}">${escapeHtml(statusTexto)}</span></td>
                             <td title="${dataCompleta}">${dataRelativa}</td>
                             <td style="font-weight:700;">R$ ${parseFloat(o.valor_orcado || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
