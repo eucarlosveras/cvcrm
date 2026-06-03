@@ -975,6 +975,11 @@
                     if(uuidsPermitidos.length > 0) query = query.in('id_status', uuidsPermitidos);
                 }
 
+                /* 
+                -- TRAVA DE MÊS/DIA REMOVIDA DA TABELA --
+                Para garantir a visão de esteira contínua e não perder 
+                os leads quentes da virada de mês.
+                
                 if (currentDay) {
                     const start = new Date(currentYear, currentMonth - 1, currentDay).toISOString();
                     const end = new Date(currentYear, currentMonth - 1, currentDay, 23, 59, 59).toISOString();
@@ -984,6 +989,7 @@
                     const endDate = new Date(currentYear, currentMonth, 0, 23, 59, 59).toISOString();
                     query = query.gte('data_criacao', startDate).lte('data_criacao', endDate);
                 }
+                */
 
                 const from = (currentPage - 1) * ITEMS_PER_PAGE;
                 const to = from + ITEMS_PER_PAGE - 1;
