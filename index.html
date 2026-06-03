@@ -3165,8 +3165,7 @@
                     const emailOrc = document.getElementById('modEmail') ? document.getElementById('modEmail').value.trim() : '';
                     const pkIns = await detectClientePK();
                     const { data: newCliente, error: errClient } = await db.from('clientes')
-                        .insert([{ nome_cliente: nome, whatsapp: whats, cpf: cpf, email: emailOrc || null, id_cliente_codigo: nextCodigo }])
-                        .select(pkIns)
+                    .insert([{ nome_cliente: nome, whatsapp: whats, cpf: cpf || null, email: emailOrc || null, id_cliente_codigo: nextCodigo }])                        .select(pkIns)
                         .single();
                     if (errClient) throw new Error('Erro ao criar cliente: ' + errClient.message);
                     idCliente = newCliente[pkIns];
