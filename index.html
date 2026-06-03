@@ -1956,9 +1956,9 @@
         function renderAgendaDia() {
             const hoje = new Date().toISOString().split('T')[0];
             
-            // 1. FILTRO: Removemos a trava do dia de hoje, trazendo qualquer orçamento com data de contato ativa e status aberto
+            // 1. FILTRO: Traz qualquer agendamento ativo, incluindo Fechados (Pós-venda), ocultando apenas os Perdidos
             let agendados = kpisMensais.filter(o => { 
-                return o.data_contato && [STATUS.EM_NEGOCIACAO, STATUS.CONTATO_INICIAL, STATUS.NEGOCIACAO, STATUS.AGUARDANDO].includes(o.status); 
+                return o.data_contato && ![STATUS.PERDIDO, STATUS.DECLINADO].includes(o.status); 
             });
 
             // 2. ORDENAÇÃO: Cronológica crescente (as datas mais próximas e tarefas atrasadas ficam no topo)
