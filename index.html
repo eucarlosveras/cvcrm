@@ -2828,7 +2828,23 @@
 
         function formatarProdutos(modelo_colchao) {
             if (!modelo_colchao) return '-';
-            return modelo_colchao.split(', ').map(p => escapeHtml(p.trim())).filter(Boolean).join('<br>');
+            
+            // Separa os produtos
+            const produtos = modelo_colchao.split(',').map(p => p.trim()).filter(Boolean);
+            if (produtos.length === 0) return '-';
+
+            const primeiroProduto = escapeHtml(produtos[0]);
+            
+            // Se tem só 1 produto, mostra ele normalmente
+            if (produtos.length === 1) {
+                return primeiroProduto;
+            } 
+            
+            // Se tem mais de 1, mostra o primeiro + a tag com a quantidade extra
+            const qtdExtra = produtos.length - 1;
+            const tagPlural = qtdExtra > 1 ? 'itens' : 'item';
+            
+            return `${primeiroProduto} <br><span style="display:inline-block; margin-top:4px; font-size:10px; font-weight:700; color:var(--brand-blue-dark); background:#eff6ff; border: 1px solid #bfdbfe; padding:2px 8px; border-radius:12px;">+ ${qtdExtra} ${tagPlural}</span>`;
         }
 
 
