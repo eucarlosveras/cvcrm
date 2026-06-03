@@ -888,20 +888,29 @@
             if (!currentUser) return;
             const isAdmin = currentUser.perfil === 'Administrador' || currentUser.perfil === 'Admin';
             try {
-                // 1. Select inicial
-                let query = db.from('orcamentos').select('id_orcamento, valor_orcado, id_usuario, data_criacao, data_contato, hora_contato, observacao_agendamento, modelo_colchao, clientes(nome_cliente, whatsapp), status_orcamento(nome), usuarios!inner(id_loja)');                
-                // 2. Lógica de filtro hierárquica
+                // 1. Select inicial COM ordenação e limite alto para evitar o teto do Supabase
+                let query = db.from('orcamentos')
+                    .select('id_orcamento, valor_orcado, id_usuario, data_criacao, data_contato, hora_contato, observacao_agendamento, modelo_colchao, clientes(nome_cliente, whatsapp), status_orcamento(nome), usuarios!inner(id_loja)')
+                    .order('data_criacao', { ascending: false })
+                    .limit(5000);
+                
+                // 2. Lógica de filtro hierárquica corrigida para o Admin
                 if (currentUser.perfil === 'Vendedor') {
                     query = query.eq('id_usuario', currentUser.id_usuario);
                 } 
                 else if (currentUser.perfil === 'Gerente') {
                     query = query.eq('usuarios.id_loja', currentUser.id_loja);
+                    if (selectedVendedor !== 'todos') query = query.eq('id_usuario', selectedVendedor);
                 }
-                else if (!isAdmin && selectedVendedor !== 'todos') {
-                    query = query.eq('id_usuario', selectedVendedor);
-                }
-                else if (isAdmin && selectedVendedor !== 'todos') {
-                    query = query.eq('id_usuario', selectedVendedor);
+                else {
+                    // Visão do Administrador
+                    if (selectedVendedor !== 'todos') {
+                        query = query.eq('id_usuario', selectedVendedor);
+                    } else if (selectedLoja !== 'todas') {
+                        const idsLoja = todosVendedores.filter(v => v.id_loja === selectedLoja).map(v => v.id_usuario);
+                        if (idsLoja.length > 0) query = query.in('id_usuario', idsLoja);
+                        else query = query.eq('id_usuario', '00000000-0000-0000-0000-000000000000');
+                    }
                 }
 
                 const { data, error } = await query;
