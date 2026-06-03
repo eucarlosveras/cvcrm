@@ -1676,7 +1676,7 @@
         function buildNotifications() {
             const hoje = new Date().toISOString().split('T')[0];
             const notificacoes = [];
-            const isEmAberto = (s) => [STATUS.EM_NEGOCIACAO, STATUS.CONTATO_INICIAL, STATUS.NEGOCIACAO, STATUS.AGUARDANDO].includes(s);
+            const isEmAberto = (s) => ![STATUS.PERDIDO, STATUS.DECLINADO].includes(s);
             
             const agendadosHoje = kpisMensais.filter(o => o.data_contato === hoje && isEmAberto(o.status));
             const atrasados = kpisMensais.filter(o => o.data_contato && o.data_contato < hoje && isEmAberto(o.status));
