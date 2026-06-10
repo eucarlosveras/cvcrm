@@ -738,24 +738,35 @@
 
         /* ── Ranking ── */
         .ranking-list {
-            list-style: none; display: flex; flex-direction: column; gap: 8px;
+            list-style: none; display: flex; flex-direction: column; gap: 14px;
             flex: 1; overflow-y: auto;
         }
-        .ranking-item { display: flex; align-items: center; gap: 8px; font-size: var(--font-sm); }
-        .ranking-pos { width: 20px; font-weight: 700; color: var(--text-muted); flex-shrink: 0; font-size: var(--font-xs); }
-        .ranking-nome { width: 88px; font-weight: 600; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .ranking-item {
+            display: flex; flex-direction: column; gap: 5px; font-size: var(--font-sm);
+        }
+        .ranking-item-top {
+            display: flex; align-items: center; gap: 8px;
+        }
+        .ranking-pos {
+            width: 22px; height: 22px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 800; font-size: 10px; flex-shrink: 0;
+            background: var(--surface-3); color: var(--text-muted);
+        }
+        .ranking-pos.pos-1 { background: #fef3c7; color: #b45309; }
+        .ranking-pos.pos-2 { background: #f1f5f9; color: #475569; }
+        .ranking-pos.pos-3 { background: #fff7ed; color: #c2410c; }
+        .ranking-nome { flex: 1; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .ranking-valor { font-weight: 700; color: var(--accent-green-dark); flex-shrink: 0; font-size: var(--font-xs); }
+        .ranking-pct-label { font-size: 10px; color: var(--text-muted); font-weight: 600; flex-shrink: 0; min-width: 34px; text-align: right; }
         .ranking-bar-outer {
-            flex: 1; height: 18px; background: var(--surface-3);
+            height: 6px; background: var(--surface-3);
             border-radius: var(--radius-full); overflow: hidden;
         }
         .ranking-bar-inner {
             height: 100%; border-radius: var(--radius-full);
-            background: linear-gradient(90deg, var(--accent-green), var(--accent-green-dark));
-            transition: width 0.6s ease;
-            display: flex; align-items: center; padding-left: 8px; min-width: fit-content;
+            transition: width 0.7s cubic-bezier(0.22,1,0.36,1);
         }
-        .ranking-bar-inner span { font-size: 10px; font-weight: 700; color: #fff; white-space: nowrap; }
-        .ranking-valor { width: 85px; text-align: right; font-weight: 700; color: var(--accent-green-dark); flex-shrink: 0; font-size: var(--font-xs); }
 
         .top5-list { list-style: none; flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
         .top5-list li {
@@ -989,6 +1000,54 @@
         }
         .btn-whatsapp-full:hover { background: #128c7e; box-shadow: 0 4px 12px rgba(37,211,102,0.3); transform: translateY(-1px); }
         .btn-whatsapp-icon { width: 16px; height: 16px; fill: currentColor; flex-shrink: 0; }
+
+        /* ── Agenda: botões orgânicos de contato ── */
+        .btn-wa-mini {
+            display: inline-flex; align-items: center; justify-content: center;
+            background: #25d366; color: white;
+            border-radius: 30px; width: 32px; height: 32px;
+            text-decoration: none; transition: all 0.2s ease; flex-shrink: 0;
+        }
+        .btn-wa-mini:hover { background: #128c7e; transform: scale(1.05); }
+
+        .btn-confirm-contact {
+            background: transparent; border: 2px solid var(--border-medium);
+            cursor: pointer; padding: 5px; border-radius: 30px;
+            display: inline-flex; align-items: center; justify-content: center;
+            transition: all 0.2s ease; color: var(--text-muted); flex-shrink: 0;
+        }
+        .btn-confirm-contact:hover {
+            background: var(--brand-blue-subtle); border-color: var(--brand-blue);
+            color: var(--brand-blue); transform: scale(1.05);
+        }
+        .btn-confirm-contact:active { transform: scale(0.95); }
+        .btn-confirm-contact.loading { opacity: 0.4; pointer-events: none; }
+
+        /* ── Agenda: toggle Pendentes / Realizados ── */
+        .agenda-toggle {
+            display: flex; gap: 4px;
+            background: var(--surface-2); border-radius: var(--radius-sm);
+            padding: 4px; margin-bottom: 16px; width: fit-content;
+        }
+        .agenda-toggle button {
+            padding: 7px 20px; border: none; border-radius: calc(var(--radius-sm) - 2px);
+            font-size: var(--font-sm); font-weight: 600; cursor: pointer;
+            background: transparent; color: var(--text-muted);
+            transition: all 0.18s ease; display: flex; align-items: center; gap: 7px;
+        }
+        .agenda-toggle button.active {
+            background: var(--card-bg); color: var(--text-primary);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.10);
+        }
+        .agenda-toggle .toggle-count {
+            display: inline-flex; align-items: center; justify-content: center;
+            background: var(--brand-blue-subtle); color: var(--brand-blue);
+            border-radius: var(--radius-full); font-size: 10px; font-weight: 700;
+            min-width: 18px; height: 18px; padding: 0 5px;
+        }
+        .agenda-toggle button.active .toggle-count {
+            background: var(--brand-blue); color: #fff;
+        }
 
         .schedule-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
         .form-group label {
@@ -1976,7 +2035,7 @@
             try {
                 // 1. Select inicial COM ordenação e limite alto para evitar o teto do Supabase
                 let query = db.from('orcamentos')
-                    .select('id_orcamento, valor_orcado, id_usuario, data_criacao, data_contato, hora_contato, observacao_agendamento, modelo_colchao, clientes(nome_cliente, whatsapp), status_orcamento(nome), usuarios!inner(id_loja)')
+                    .select('id_orcamento, valor_orcado, id_usuario, data_criacao, data_contato, hora_contato, observacao_agendamento, modelo_colchao, ligacao_confirmada, clientes(nome_cliente, whatsapp), status_orcamento(nome), usuarios!inner(id_loja, nome)')
                     .order('data_criacao', { ascending: false })
                     .limit(5000);
                 
@@ -2960,14 +3019,36 @@
                     }
                 
                     if (vendedoresRanking.length > 0) {
-                        const maxValor = Math.max(1, ...vendedoresRanking.map(v => dados.filter(o => o.id_usuario === v.id_usuario && (o.status === STATUS.FECHADO || o.status === STATUS.VENDIDO)).reduce((s, o) => s + parseFloat(o.valor_orcado || 0), 0)));
-                        
                         const ranking = vendedoresRanking.map(v => {
                             const vendido = dados.filter(o => o.id_usuario === v.id_usuario && (o.status === STATUS.FECHADO || o.status === STATUS.VENDIDO)).reduce((s, o) => s + parseFloat(o.valor_orcado || 0), 0);
-                            return { nome: v.nome, vendido, pct: maxValor ? (vendido / maxValor) * 100 : 0 };
+                            const meta = parseFloat(v.meta_mensal || 0);
+                            // pct = % da meta individual; se sem meta, usa ranking relativo (max=100)
+                            const pct = meta > 0 ? Math.min((vendido / meta) * 100, 100) : 0;
+                            return { nome: v.nome, vendido, meta, pct };
                         }).sort((a, b) => b.vendido - a.vendido);
-                        
-                        rankingHtml = `<div class="chart-card"><h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg> Top Vendedores</h3><ul class="ranking-list">${ranking.map((r, i) => `<li class="ranking-item"><span class="ranking-pos">#${i + 1}</span><span class="ranking-nome">${escapeHtml(r.nome)}</span><div class="ranking-bar-outer"><div class="ranking-bar-inner" style="width:${r.pct}%;"><span>${Math.round(r.pct)}%</span></div></div><span class="ranking-valor">R$ ${r.vendido.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}</span></li>`).join('')}</ul></div>`;
+
+                        // cores da barra por atingimento
+                        const barColor = pct => {
+                            if (pct >= 100) return 'linear-gradient(90deg,#059669,#10b981)';
+                            if (pct >= 70)  return 'linear-gradient(90deg,#2563eb,#6366f1)';
+                            if (pct >= 40)  return 'linear-gradient(90deg,#f59e0b,#fbbf24)';
+                            return 'linear-gradient(90deg,#ef4444,#f87171)';
+                        };
+                        const posClass = i => i === 0 ? 'pos-1' : i === 1 ? 'pos-2' : i === 2 ? 'pos-3' : '';
+                        const posLabel = i => i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i+1}`;
+
+                        rankingHtml = `<div class="chart-card"><h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg> Top Vendedores</h3><ul class="ranking-list">${ranking.map((r, i) => `
+                            <li class="ranking-item">
+                                <div class="ranking-item-top">
+                                    <span class="ranking-pos ${posClass(i)}">${posLabel(i)}</span>
+                                    <span class="ranking-nome">${escapeHtml(r.nome)}</span>
+                                    <span class="ranking-valor">R$\u00a0${r.vendido.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}</span>
+                                    <span class="ranking-pct-label">${r.meta > 0 ? Math.round(r.pct) + '%' : '–'}</span>
+                                </div>
+                                <div class="ranking-bar-outer">
+                                    <div class="ranking-bar-inner" style="width:${r.pct}%; background:${barColor(r.pct)};"></div>
+                                </div>
+                            </li>`).join('')}</ul></div>`;
                     } else {
                         rankingHtml = `<div class="chart-card"><h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg> Top Vendedores</h3><div style="display:flex; align-items:center; justify-content:center; height:200px; color:var(--text-muted);">Nenhum vendedor encontrado para esta loja.</div></div>`;
                     }
@@ -3039,53 +3120,197 @@
 
         }
 
+        function obterSemanaAtual() {
+            const hoje = new Date();
+            const diaSemana = hoje.getDay(); // 0 = Domingo
+            const diffSegunda = diaSemana === 0 ? -6 : 1 - diaSemana;
+            const segunda = new Date(hoje);
+            segunda.setDate(hoje.getDate() + diffSegunda);
+            segunda.setHours(0, 0, 0, 0);
+            const domingo = new Date(segunda);
+            domingo.setDate(segunda.getDate() + 6);
+            domingo.setHours(23, 59, 59, 999);
+            return { inicio: segunda, fim: domingo };
+        }
+
+        window.addEventListener('focus', () => {
+            if (currentView === 'agenda_dia') renderAgendaDia();
+        });
+
         function renderAgendaDia() {
-            const hoje = new Date().toISOString().split('T')[0];
-            
-            // 1. FILTRO: Traz qualquer agendamento ativo, incluindo Fechados (Pós-venda), ocultando apenas os Perdidos
-            let agendados = kpisMensais.filter(o => { 
-                return o.data_contato && ![STATUS.PERDIDO, STATUS.DECLINADO].includes(o.status); 
+            const { inicio, fim } = obterSemanaAtual();
+
+            // Filtro: semana corrente OU atrasados (data anterior a hoje) + não confirmados + sem Perdido/Declinado
+            const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+            let agendados = kpisMensais.filter(o => {
+                if (!o.data_contato) return false;
+                if ([STATUS.PERDIDO, STATUS.DECLINADO].includes(o.status)) return false;
+                if (o.ligacao_confirmada) return false;
+                const dataContato = new Date(o.data_contato + 'T00:00:00');
+                const naSemana = dataContato >= inicio && dataContato <= fim;
+                const atrasado = dataContato < hoje;
+                return naSemana || atrasado;
             });
 
-            // 2. ORDENAÇÃO: Cronológica crescente (as datas mais próximas e tarefas atrasadas ficam no topo)
+            // Ordenação cronológica crescente
             agendados.sort((a, b) => {
-                if (a.data_contato !== b.data_contato) {
+                if (a.data_contato !== b.data_contato)
                     return a.data_contato.localeCompare(b.data_contato);
-                }
                 return (a.hora_contato || '').localeCompare(b.hora_contato || '');
             });
 
             const isGerente = currentUser.perfil === 'Gerente' || currentUser.perfil === 'Administrador' || currentUser.perfil === 'Admin';
+            const colspanCount = 5 + (isGerente ? 1 : 0);
+
+            // Contatos realizados (confirmados) da semana + atrasados
+            const realizados = kpisMensais.filter(o => {
+                if (!o.data_contato) return false;
+                if ([STATUS.PERDIDO, STATUS.DECLINADO].includes(o.status)) return false;
+                if (!o.ligacao_confirmada) return false;
+                const dataContato = new Date(o.data_contato + 'T00:00:00');
+                const naSemana = dataContato >= inicio && dataContato <= fim;
+                const atrasado = dataContato < hoje;
+                return naSemana || atrasado;
+            });
+            realizados.sort((a, b) => {
+                if (a.data_contato !== b.data_contato) return a.data_contato.localeCompare(b.data_contato);
+                return (a.hora_contato || '').localeCompare(b.hora_contato || '');
+            });
+
+            // Estado do toggle (persistido na sessão)
+            if (typeof window._agendaFiltro === 'undefined') window._agendaFiltro = 'pendentes';
+
+            const buildToggle = () => `
+                <div class="agenda-toggle" id="agendaToggle">
+                    <button class="${window._agendaFiltro === 'pendentes' ? 'active' : ''}" onclick="setAgendaFiltro('pendentes')">
+                        Pendentes <span class="toggle-count">${agendados.length}</span>
+                    </button>
+                    <button class="${window._agendaFiltro === 'realizados' ? 'active' : ''}" onclick="setAgendaFiltro('realizados')">
+                        Realizados <span class="toggle-count">${realizados.length}</span>
+                    </button>
+                </div>`;
+
             let html = `<header class="dashboard-header"><h1>Agenda e Próximos Passos</h1><div class="header-controls">${isGerente ? `<div class="filter-wrapper"><span class="filter-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></span><select class="vendedor-select" id="vendedorSelectAgenda" onchange="filtrarPorVendedor(this.value)">${buildVendedorOptions()}</select></div>` : ''}<div class="filter-wrapper"><span class="filter-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/></svg></span><select class="month-select" onchange="changeMonth(this.value)">${buildMonthOptions()}</select></div><div class="filter-wrapper"><span class="filter-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg></span><select class="day-select" onchange="changeDay(this.value)">${buildDayOptions()}</select></div><div class="header-notification-area"><button class="btn-notification" id="btnNotification" onclick="event.stopPropagation(); toggleNotifications();" aria-label="Notificações"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg><span class="notification-badge" id="notificationBadgeCount"></span></button></div></div></header>`;
-            
-            if (agendados.length === 0) { 
-                html += '<div class="chart-card" style="text-align:center; padding:48px; color:var(--text-muted);">Nenhum agendamento pendente encontrado.</div>'; 
+
+            html += buildToggle();
+
+            const listaAtiva = window._agendaFiltro === 'realizados' ? realizados : agendados;
+            const msgVazia = window._agendaFiltro === 'realizados'
+                ? '📭 Nenhum contato realizado neste período.'
+                : '✨ Nenhum contato pendente para esta semana.';
+
+            if (listaAtiva.length === 0) {
+                html += `<div class="chart-card" style="text-align:center; padding:48px; color:var(--text-muted);">${msgVazia}</div>`;
             } else {
-                const colVendedorAgenda = isGerente ? '<th>Vendedor</th>' : '';
-                // Mudamos o cabeçalho de "Horário" para "Data / Hora"
-                html += `<div class="table-card"><table><thead><tr><th>Cliente</th><th>WhatsApp</th><th>Motivo do Contato</th><th>Produto</th>${colVendedorAgenda}<th>Data / Hora</th><th>Ação</th></tr></thead><tbody>`;
-                
-                agendados.forEach(o => {
+                html += `<div class="table-card"><table id="agendaTable"><thead><tr>
+                    <th style="min-width:120px;">Data / Hora</th>
+                    <th>Cliente</th>
+                    <th>WhatsApp</th>
+                    <th>Motivo do Contato</th>
+                    ${isGerente ? '<th>Vendedor</th>' : ''}
+                    <th style="text-align:center;">Contato</th>
+                </tr></thead><tbody>`;
+
+                listaAtiva.forEach(o => {
                     const nome = escapeHtml(o.clientes?.nome_cliente || 'Cliente');
-                    const whats = (o.clientes?.whatsapp || '').replace(/\D/g, '');
                     const agendRaw = o.observacao_agendamento || '';
                     const linhas = agendRaw.split('\n');
                     const tipo = escapeHtml(linhas[0] || '-');
                     const obsExtra = linhas.length > 1 ? `<div style="font-size:11px; color:var(--text-muted); margin-top:2px; font-weight:400;">${escapeHtml(linhas.slice(1).join(' '))}</div>` : '';
-                    
-                    // 3. FORMATAÇÃO VISUAL DA DATA: Exibe ex: "03/06 às 14:00" de forma limpa
                     const dataObj = new Date(o.data_contato + 'T00:00:00');
                     const dataExibicao = dataObj.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
                     const horaExibicao = o.hora_contato || '--:--';
                     const agendamentoCompleto = `${dataExibicao} às ${horaExibicao}`;
+                    const isRealizado = window._agendaFiltro === 'realizados';
 
-                    html += `<tr class="clickable-row" data-id="${o.id_orcamento}"><td><span class="client-name">${nome}</span></td><td>${escapeHtml(o.clientes?.whatsapp || '-')}</td><td style="font-size:var(--font-xs); color:var(--text-secondary); font-weight:600;">${tipo}${obsExtra}</td><td style="line-height:1.6;">${formatarProdutos(o.modelo_colchao)}</td>${isGerente ? `<td>${escapeHtml(o.usuarios?.nome || '-')}</td>` : ''}<td style="font-weight: 500; white-space: nowrap;">${agendamentoCompleto}</td><td><a href="https://wa.me/55${whats}" target="_blank" class="btn-whatsapp-full" style="padding:8px 14px; font-size:12px;" onclick="event.stopPropagation()">Ligar</a></td></tr>`;
+                    html += `<tr class="clickable-row" data-id="${o.id_orcamento}" ${isRealizado ? 'style="opacity:0.65;"' : ''}>
+                        <td style="font-weight:500; white-space:nowrap; min-width:120px;">${agendamentoCompleto}</td>
+                        <td><span class="client-name">${nome}</span></td>
+                        <td>${escapeHtml(o.clientes?.whatsapp || '-')}</td>
+                        <td style="font-size:var(--font-xs); color:var(--text-secondary); font-weight:600;">${tipo}${obsExtra}</td>
+                        ${isGerente ? `<td>${escapeHtml(o.usuarios?.nome || '-')}</td>` : ''}
+                        <td style="text-align:center; vertical-align:middle;">
+                            ${isRealizado
+                                ? `<span style="color:var(--brand-blue); font-size:18px;" title="Contato realizado">✓</span>`
+                                : `<button class="btn-confirm-contact" data-id="${o.id_orcamento}" title="Confirmar contato realizado" onclick="event.stopPropagation()">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="20 6 9 17 4 12"/></svg>
+                                   </button>`
+                            }
+                        </td>
+                    </tr>`;
                 });
-                html += '</tbody></table></div>';
+                html += `</tbody></table></div>`;
             }
+
             document.getElementById('mainContent').innerHTML = html;
-            document.querySelectorAll('.table-card tbody tr.clickable-row').forEach(row => { row.addEventListener('click', function() { const id = this.getAttribute('data-id'); if (id) abrirDetalhesCliente(id); }); });
+
+            document.querySelectorAll('.table-card tbody tr.clickable-row').forEach(row => {
+                row.addEventListener('click', function() {
+                    const id = this.getAttribute('data-id');
+                    if (id) abrirDetalhesCliente(id);
+                });
+            });
+
+            document.querySelectorAll('.btn-confirm-contact').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    await confirmarContato(btn.getAttribute('data-id'), btn);
+                });
+            });
+
             renderNotificationBadge(buildNotifications().filter(n => n.id !== null).length);
+        }
+
+        function setAgendaFiltro(valor) {
+            window._agendaFiltro = valor;
+            renderAgendaDia();
+        }
+
+        async function confirmarContato(orcamentoId, btnElement) {
+            if (btnElement.classList.contains('loading')) return;
+            btnElement.classList.add('loading');
+            try {
+                const { error } = await db.from('orcamentos')
+                    .update({ ligacao_confirmada: true })
+                    .eq('id_orcamento', orcamentoId);
+                if (error) throw error;
+
+                // Atualiza estado local
+                const idx = kpisMensais.findIndex(o => o.id_orcamento === orcamentoId);
+                if (idx !== -1) kpisMensais[idx].ligacao_confirmada = true;
+
+                // Histórico
+                await db.from('comentarios').insert([{
+                    id_orcamento: orcamentoId,
+                    texto: '✅ Contato confirmado como realizado via agenda.',
+                    tipo: 'Sistema',
+                    autor: currentUser.nome
+                }]);
+
+                // Animação de saída e remoção da linha
+                const row = btnElement.closest('tr');
+                if (row) {
+                    row.style.transition = 'opacity 0.2s ease, transform 0.15s ease';
+                    row.style.opacity = '0';
+                    row.style.transform = 'translateX(8px)';
+                    setTimeout(() => {
+                        const tbody = row.parentNode;
+                        row.remove();
+                        if (tbody && tbody.children.length === 0) {
+                            const isGerente = currentUser.perfil === 'Gerente' || currentUser.perfil === 'Administrador' || currentUser.perfil === 'Admin';
+                            const colspanCount = 5 + (isGerente ? 1 : 0);
+                            const emptyRow = document.createElement('tr');
+                            emptyRow.innerHTML = `<td colspan="${colspanCount}" style="text-align:center; padding:48px; color:var(--text-muted);">✨ Nenhum contato pendente para esta semana.</td>`;
+                            tbody.appendChild(emptyRow);
+                        }
+                    }, 200);
+                }
+
+                showToast('Contato confirmado!', 'success');
+            } catch (err) {
+                showToast('Erro ao confirmar contato: ' + err.message, 'error');
+                btnElement.classList.remove('loading');
+            }
         }
 
         // legacy – kept for compatibility but redirects to new page
