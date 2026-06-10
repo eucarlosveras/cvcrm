@@ -2358,6 +2358,11 @@
         }
 
         async function navigateTo(view) {
+            // Limpa rolagem infinita de clientes ao sair da página
+            if (currentView === 'clientes_lista' && view !== 'clientes_lista') {
+                if (_clientes.observer) { _clientes.observer.disconnect(); _clientes.observer = null; }
+                window._clientesCache = null;
+            }
             previousView = currentView !== 'detalhes_cliente' && currentView !== 'novo_orcamento' ? currentView : previousView;
             currentView = view;
             document.querySelectorAll('.nav-item').forEach(el => { el.classList.remove('active'); el.removeAttribute('aria-current'); });
@@ -3338,116 +3343,105 @@
             return pk;
         }
 
+        // ── Estado da rolagem infinita de clientes ──────────────────
+        const _clientes = {
+            todos: [],        // lista completa após filtro
+            cursor: 0,        // quantos já foram renderizados
+            pageSize: 30,     // linhas por lote
+            loading: false,
+            observer: null,
+            isGerente: false,
+            isVendedor: false,
+            pk: null
+        };
+
         async function renderClientesLista() {
             const main = document.getElementById('mainContent');
             main.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-muted);">Carregando clientes...</div>';
             try {
-                const pk = await detectClientePK();
+                const pk = _clientes.pk || (await detectClientePK());
+                _clientes.pk = pk;
                 const isVendedor = currentUser.perfil === 'Vendedor';
+                const isGerente = currentUser.perfil === 'Gerente' || currentUser.perfil === 'Administrador' || currentUser.perfil === 'Admin';
+                _clientes.isVendedor = isVendedor;
+                _clientes.isGerente = isGerente;
 
-            // Nova lógica de filtragem hierárquica
-                let clienteIds = null;
+                // Monta lista de IDs permitidos por perfil
+                let query = db.from('clientes')
+                    .select(`${pk}, nome_cliente, whatsapp, cpf, email, id_cliente_codigo, orcamentos(id_orcamento, data_criacao, id_usuario, usuarios(nome), status_orcamento(nome))`)
+                    .order('nome_cliente');
 
-            // 1. Identifica os clientes do Vendedor primeiro
-            if (isVendedor) {
-                const { data: orcsVendedor } = await db.from('orcamentos')
-                    .select('id_cliente').eq('id_usuario', currentUser.id_usuario);
-                clienteIds = [...new Set((orcsVendedor || []).map(o => o.id_cliente).filter(Boolean))];
-            }
-
-            // 2. Monta a query principal já puxando os dados aninhados
-            let query = db.from('clientes')
-                .select(`${pk}, nome_cliente, whatsapp, cpf, email, id_cliente_codigo, orcamentos(id_orcamento, data_criacao, id_usuario, usuarios(nome), status_orcamento(nome))`)
-                .order('nome_cliente');
-
-            // 3. Aplica os filtros hierárquicos
-            if (isVendedor) {
-                if (clienteIds && clienteIds.length > 0) {
-                    query = query.in(pk, clienteIds);
-                } else {
-                    query = query.in(pk, ['00000000-0000-0000-0000-000000000000']);
+                if (isVendedor) {
+                    const { data: orcsV } = await db.from('orcamentos').select('id_cliente').eq('id_usuario', currentUser.id_usuario);
+                    const ids = [...new Set((orcsV || []).map(o => o.id_cliente).filter(Boolean))];
+                    query = query.in(pk, ids.length ? ids : ['00000000-0000-0000-0000-000000000000']);
+                } else if (currentUser.perfil === 'Gerente') {
+                    const { data: usrs } = await db.from('usuarios').select('id_usuario').eq('id_loja', currentUser.id_loja);
+                    const idsU = (usrs || []).map(u => u.id_usuario);
+                    const { data: orcsL } = idsU.length
+                        ? await db.from('orcamentos').select('id_cliente').in('id_usuario', idsU)
+                        : { data: [] };
+                    const ids = [...new Set((orcsL || []).map(o => o.id_cliente).filter(Boolean))];
+                    query = query.in(pk, ids.length ? ids : ['00000000-0000-0000-0000-000000000000']);
                 }
-            } else if (currentUser.perfil === 'Gerente') {
-                query = query.eq('id_loja', currentUser.id_loja);
-            }
 
-            // 4. Executa a query final
-            const { data: clientes, error } = await query;
-            if (error) throw error;
-                // Normalise: expose pkValue as c.pkVal for all downstream use
+                const { data: clientes, error } = await query;
+                if (error) throw error;
                 (clientes || []).forEach(c => { c._pk = c[pk]; });
 
-                const isGerente = currentUser.perfil === 'Gerente' || currentUser.perfil === 'Administrador' || currentUser.perfil === 'Admin';
+                // Guarda lista completa e aplica filtro de busca
+                window._clientesCache = clientes || [];
+                _aplicarFiltroClientes();
 
-                // build search state
-                const busca = (window._clienteBusca || '').toLowerCase();
+                renderNotificationBadge && renderNotificationBadge(buildNotifications().filter(n => n.id !== null).length);
+            } catch(e) {
+                main.innerHTML = `<div style="padding:40px;text-align:center;color:#ef4444;">Erro ao carregar clientes: ${escapeHtml(e.message)}</div>`;
+            }
+        }
 
-                let lista = clientes || [];
-                if (busca) lista = lista.filter(c =>
-                    (c.nome_cliente || '').toLowerCase().includes(busca) ||
-                    (c.cpf || '').includes(busca) ||
-                    (c.email || '').toLowerCase().includes(busca) ||
-                    (c.whatsapp || '').includes(busca) ||
-                    (c.id_cliente_codigo || '').toLowerCase().includes(busca)
-                );
+        function _aplicarFiltroClientes() {
+            // Desconecta observer anterior
+            if (_clientes.observer) { _clientes.observer.disconnect(); _clientes.observer = null; }
 
-                const rows = lista.map(c => {
-                    const orcs = c.orcamentos || [];
-                    // sort by date desc
-                    orcs.sort((a,b) => new Date(b.data_criacao) - new Date(a.data_criacao));
-                    const ultimoOrc = orcs[0];
-                    const ultimoContato = ultimoOrc ? new Date(ultimoOrc.data_criacao).toLocaleDateString('pt-BR') : '-';
-                    const vendedor = ultimoOrc?.usuarios?.nome || '-';
-                    const codigo = escapeHtml(c.id_cliente_codigo || String(c._pk || '').slice(0,8) || '-');
+            const busca = (window._clienteBusca || '').toLowerCase().trim();
+            const todos = window._clientesCache || [];
+            _clientes.todos = busca ? todos.filter(c =>
+                (c.nome_cliente || '').toLowerCase().includes(busca) ||
+                (c.cpf || '').includes(busca) ||
+                (c.email || '').toLowerCase().includes(busca) ||
+                (c.whatsapp || '').includes(busca) ||
+                (c.id_cliente_codigo || '').toLowerCase().includes(busca)
+            ) : todos;
+            _clientes.cursor = 0;
 
-                    return `<tr>
-                        <td><span class="cliente-id-badge">${codigo}</span></td>
-                        <td><span class="client-name" onclick="abrirFichaCliente('${c._pk}')" style="cursor:pointer;">${escapeHtml(c.nome_cliente || '-')}</span></td>
-                        <td style="color:var(--text-secondary);">${escapeHtml(c.email || '-')}</td>
-                        <td>${escapeHtml(c.whatsapp || '-')}</td>
-                        ${isGerente ? `<td>${escapeHtml(vendedor)}</td>` : ''}
-                        <td>${ultimoContato}</td>
-                        <td>
-                            <div style="display:flex;gap:4px;align-items:center;">
-                                <button class="btn-action-icon" title="Ver ficha" onclick="abrirFichaCliente('${c._pk}')">
-                                    <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                                </button>
-                                <button class="btn-action-icon" title="Editar" onclick="abrirModalEditarCliente('${c._pk}')">
-                                    <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                                </button>
-                                ${!isVendedor ? `<button class="btn-action-icon danger" title="Excluir" onclick="abrirModalExcluirCliente('${c._pk}','${escapeHtml(c.nome_cliente || '')}')">
-                                    <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
-                                </button>` : ''}
-                                <button class="btn-action-icon green" title="Criar negócio" onclick="abrirModalCriarNegocio('${c._pk}','${escapeHtml(c.nome_cliente || '')}','${escapeHtml(c.cpf || '')}','${escapeHtml(c.whatsapp || '')}','${escapeHtml(c.email || '')}')">
-                                    <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>`;
-                }).join('');
+            const main = document.getElementById('mainContent');
+            const { isGerente, isVendedor } = _clientes;
+            const colspan = isGerente ? 7 : 6;
 
-                const emptyRow = `<tr><td colspan="${isGerente ? 7 : 6}" style="text-align:center;padding:32px;color:var(--text-muted);">Nenhum cliente encontrado.</td></tr>`;
-
-                main.innerHTML = `
-                    <header class="dashboard-header">
-                        <h1>Clientes</h1>
-                        <div class="header-controls">
-                            <div class="header-notification-area">
-                                <button class="btn-notification" onclick="event.stopPropagation();toggleNotifications();" aria-label="Notificações">
-                                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" fill="none" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
-                                    <span class="notification-badge" id="notificationBadgeCount"></span>
-                                </button>
-                            </div>
+            main.innerHTML = `
+                <header class="dashboard-header">
+                    <h1>Clientes</h1>
+                    <div class="header-controls">
+                        <div class="header-notification-area">
+                            <button class="btn-notification" onclick="event.stopPropagation();toggleNotifications();" aria-label="Notificações">
+                                <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" fill="none" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+                                <span class="notification-badge" id="notificationBadgeCount"></span>
+                            </button>
                         </div>
-                    </header>
-                    <div class="table-card">
-                        <div class="clientes-header-bar">
-                            <div class="clientes-search-row">
-                                <input type="text" class="search-input" placeholder="Buscar por nome, CPF, e-mail..." id="inputBuscaClientes" value="${escapeHtml(window._clienteBusca || '')}" oninput="filtrarClientesLista(this.value)" style="width:260px;">
-                            </div>
-                            <span style="font-size:var(--font-xs);color:var(--text-muted);">${lista.length} cliente${lista.length !== 1 ? 's' : ''}</span>
+                    </div>
+                </header>
+                <div class="table-card">
+                    <div class="clientes-header-bar">
+                        <div class="clientes-search-row">
+                            <input type="text" class="search-input" placeholder="Buscar por nome, CPF, e-mail..." id="inputBuscaClientes"
+                                value="${escapeHtml(window._clienteBusca || '')}"
+                                oninput="filtrarClientesLista(this.value)" style="width:260px;">
                         </div>
-                        <div style="overflow-x:auto;">
+                        <span id="clientesCount" style="font-size:var(--font-xs);color:var(--text-muted);">
+                            ${_clientes.todos.length} cliente${_clientes.todos.length !== 1 ? 's' : ''}
+                        </span>
+                    </div>
+                    <div style="overflow-x:auto;">
                         <table>
                             <thead><tr>
                                 <th style="width:100px;">ID</th>
@@ -3458,21 +3452,88 @@
                                 <th>Último Contato</th>
                                 <th style="width:130px;">Ações</th>
                             </tr></thead>
-                            <tbody>${rows || emptyRow}</tbody>
+                            <tbody id="clientesTbody">
+                                ${_clientes.todos.length === 0
+                                    ? `<tr><td colspan="${colspan}" style="text-align:center;padding:32px;color:var(--text-muted);">Nenhum cliente encontrado.</td></tr>`
+                                    : ''}
+                            </tbody>
                         </table>
-                        </div>
-                    </div>`;
+                        <div id="clientesSentinel" style="height:1px;"></div>
+                    </div>
+                </div>`;
 
-                // rebind notification badge
-                renderNotificationBadge && renderNotificationBadge(buildNotifications().filter(n=>n.id!==null).length);
-            } catch(e) {
-                main.innerHTML = `<div style="padding:40px;text-align:center;color:#ef4444;">Erro ao carregar clientes: ${escapeHtml(e.message)}</div>`;
+            if (_clientes.todos.length > 0) {
+                _renderLoteClientes(); // primeiro lote imediato
+                _setupInfiniteScroll();
             }
+        }
+
+        function _rowCliente(c) {
+            const { isGerente, isVendedor } = _clientes;
+            const orcs = c.orcamentos || [];
+            orcs.sort((a, b) => new Date(b.data_criacao) - new Date(a.data_criacao));
+            const ultimoOrc = orcs[0];
+            const ultimoContato = ultimoOrc ? new Date(ultimoOrc.data_criacao).toLocaleDateString('pt-BR') : '-';
+            const vendedor = ultimoOrc?.usuarios?.nome || '-';
+            const codigo = escapeHtml(c.id_cliente_codigo || String(c._pk || '').slice(0, 8) || '-');
+            return `<tr>
+                <td><span class="cliente-id-badge">${codigo}</span></td>
+                <td><span class="client-name" onclick="abrirFichaCliente('${c._pk}')" style="cursor:pointer;">${escapeHtml(c.nome_cliente || '-')}</span></td>
+                <td style="color:var(--text-secondary);">${escapeHtml(c.email || '-')}</td>
+                <td>${escapeHtml(c.whatsapp || '-')}</td>
+                ${isGerente ? `<td>${escapeHtml(vendedor)}</td>` : ''}
+                <td>${ultimoContato}</td>
+                <td>
+                    <div style="display:flex;gap:4px;align-items:center;">
+                        <button class="btn-action-icon" title="Ver ficha" onclick="abrirFichaCliente('${c._pk}')">
+                            <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
+                        <button class="btn-action-icon" title="Editar" onclick="abrirModalEditarCliente('${c._pk}')">
+                            <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                        </button>
+                        ${!isVendedor ? `<button class="btn-action-icon danger" title="Excluir" onclick="abrirModalExcluirCliente('${c._pk}','${escapeHtml(c.nome_cliente || '')}')">
+                            <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+                        </button>` : ''}
+                        <button class="btn-action-icon green" title="Criar negócio" onclick="abrirModalCriarNegocio('${c._pk}','${escapeHtml(c.nome_cliente || '')}','${escapeHtml(c.cpf || '')}','${escapeHtml(c.whatsapp || '')}','${escapeHtml(c.email || '')}')">
+                            <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        </button>
+                    </div>
+                </td>
+            </tr>`;
+        }
+
+        function _renderLoteClientes() {
+            if (_clientes.loading) return;
+            const tbody = document.getElementById('clientesTbody');
+            if (!tbody) return;
+            const { todos, cursor, pageSize } = _clientes;
+            if (cursor >= todos.length) return;
+            _clientes.loading = true;
+            const lote = todos.slice(cursor, cursor + pageSize);
+            tbody.insertAdjacentHTML('beforeend', lote.map(_rowCliente).join(''));
+            _clientes.cursor += lote.length;
+            _clientes.loading = false;
+        }
+
+        function _setupInfiniteScroll() {
+            const sentinel = document.getElementById('clientesSentinel');
+            if (!sentinel) return;
+            _clientes.observer = new IntersectionObserver(entries => {
+                if (entries[0].isIntersecting && _clientes.cursor < _clientes.todos.length) {
+                    _renderLoteClientes();
+                }
+            }, { rootMargin: '200px' });
+            _clientes.observer.observe(sentinel);
         }
 
         function filtrarClientesLista(val) {
             window._clienteBusca = val;
-            renderClientesLista();
+            // Se cache disponível, filtra localmente sem nova query
+            if (window._clientesCache) {
+                _aplicarFiltroClientes();
+            } else {
+                renderClientesLista();
+            }
         }
 
         async function abrirFichaCliente(idCliente) {
