@@ -814,6 +814,30 @@
         .table-card tbody tr.clickable-row { cursor: pointer; transition: background 0.12s; }
         .table-card tbody tr.clickable-row:hover { background: var(--brand-blue-subtle); }
 
+        /* --- ACCORDION PRODUTOS --- */
+        .btn-expand-produtos {
+            display: inline-flex; align-items: center; gap: 4px;
+            margin-top: 4px; font-size: 10px; font-weight: 700;
+            color: var(--brand-blue-dark); background: #eff6ff;
+            border: 1px solid #bfdbfe; padding: 2px 8px;
+            border-radius: 12px; cursor: pointer; transition: all 0.2s;
+        }
+        .btn-expand-produtos:hover { background: #dbeafe; }
+        .btn-expand-produtos svg { transition: transform 0.2s; }
+        .btn-expand-produtos.open svg { transform: rotate(180deg); }
+        .accordion-row { display: none; background: var(--surface-2); }
+        .accordion-row.open { display: table-row; }
+        .accordion-inner {
+            padding: 12px 16px; border-left: 3px solid var(--brand-blue);
+            font-size: var(--font-xs); color: var(--text-secondary);
+        }
+        .accordion-inner ul { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+        .accordion-inner li {
+            display: flex; align-items: center; gap: 8px;
+            padding-bottom: 6px; border-bottom: 1px dashed var(--border-light);
+        }
+        .accordion-inner li:last-child { border-bottom: none; padding-bottom: 0; }
+        body.dark .accordion-inner li { border-color: var(--border-medium); }
         .client-name {
             font-weight: 600; color: var(--brand-blue); cursor: pointer;
             transition: color var(--transition);
@@ -2164,18 +2188,40 @@
                         const nome = o.clientes?.nome_cliente || 'Cliente';
                         const dataRelativa = timeAgo(o.data_criacao);
                         const dataCompleta = o.data_criacao ? new Date(o.data_criacao).toLocaleDateString('pt-BR') : '-';
-                        const statusTexto = o.status_orcamento ? o.status_orcamento.nome : STATUS.CONTATO_INICIAL; 
-
+                        const statusTexto = o.status_orcamento ? o.status_orcamento.nome : STATUS.CONTATO_INICIAL;
                         const idNumerico = o.protocolo && o.protocolo.includes('-') ? o.protocolo.split('-')[1] : (o.protocolo || '');
+
+                        // Accordion: separa produtos
+                        const produtos = o.modelo_colchao ? o.modelo_colchao.split(',').map(p => p.trim()).filter(Boolean) : [];
+                        const primeiroProduto = produtos.length > 0 ? escapeHtml(produtos[0]) : '-';
+                        const qtdExtra = produtos.length - 1;
+                        let tdProduto = `<td style="line-height:1.4; font-size:var(--font-xs); color:var(--text-secondary); max-width:200px; white-space:normal;">${primeiroProduto}`;
+                        if (qtdExtra > 0) {
+                            tdProduto += `<br><button class="btn-expand-produtos" onclick="toggleAccordion(event,'${o.id_orcamento}')">+ ${qtdExtra} item${qtdExtra > 1 ? 'ns' : ''} <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="6 9 12 15 18 9"/></svg></button>`;
+                        }
+                        tdProduto += `</td>`;
+
                         tr.innerHTML = `
                             <td style="text-align:center; font-family:monospace; font-weight:700; font-size:var(--font-sm); color:var(--brand-blue-dark); white-space:nowrap;">${escapeHtml(idNumerico)}</td>
                             <td><span class="client-name">${escapeHtml(nome)}</span></td>
-                            <td style="line-height:1.4; font-size: var(--font-xs); color: var(--text-secondary); max-width: 200px; white-space: normal;">${formatarProdutos(o.modelo_colchao)}</td>                            ${isGerente ? `<td>${escapeHtml(o.usuarios?.nome || '-')}</td>` : ''}
+                            ${tdProduto}
+                            ${isGerente ? `<td>${escapeHtml(o.usuarios?.nome || '-')}</td>` : ''}
                             <td><span class="status-tag ${classToFormatStatus(statusTexto)}">${escapeHtml(statusTexto)}</span></td>
                             <td title="${dataCompleta}">${dataRelativa}</td>
                             <td style="font-weight:700;">R$ ${parseFloat(o.valor_orcado || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                         `;
                         tbody.appendChild(tr);
+
+                        // Linha invisível do accordion (só criada se houver itens extras)
+                        if (qtdExtra > 0) {
+                            const trAcc = document.createElement('tr');
+                            trAcc.id = `acc-${o.id_orcamento}`;
+                            trAcc.className = 'accordion-row';
+                            const listaHtml = produtos.map(p => `<li><span style="color:var(--brand-blue);font-weight:bold;">•</span> ${escapeHtml(p)}</li>`).join('');
+                            const colspan = isGerente ? 7 : 6;
+                            trAcc.innerHTML = `<td colspan="${colspan}" style="padding:0;border-bottom:none;"><div class="accordion-inner"><strong>Todos os itens do protocolo:</strong><ul style="margin-top:8px;">${listaHtml}</ul></div></td>`;
+                            tbody.appendChild(trAcc);
+                        }
                     });
                 }
                 pagination.innerHTML = `<button onclick="changePage(${currentPage - 1})" ${currentPage <= 1 ? 'disabled' : ''}>Anterior</button><span>Página ${currentPage} de ${totalPages}</span><button onclick="changePage(${currentPage + 1})" ${currentPage >= totalPages ? 'disabled' : ''}>Próximo</button>`;
@@ -4053,13 +4099,33 @@
                             </div>
 
                             
-                            ${orc.modelo_colchao ? `
-                            <div class="det-pill-row" style="grid-template-columns:1fr;">
-                                <div class="det-pill">
-                                    <span class="det-pill-label">Produto(s)</span>
-                                    <span class="det-pill-value" style="flex-direction:column; align-items:flex-start; gap:4px; line-height:1.7;">${formatarProdutos(orc.modelo_colchao)}</span>
-                                </div>
-                            </div>` : ''}
+                            ${orc.modelo_colchao ? (() => {
+                                const prods = orc.modelo_colchao.split(',').map(p => p.trim()).filter(Boolean);
+                                const primeiro = escapeHtml(prods[0] || '-');
+                                const extra = prods.length - 1;
+                                const accId = `acc-det-${orc.id_orcamento}`;
+                                const listaHtml = prods.map(p => `<li><span style="color:var(--brand-blue);font-weight:bold;">•</span> ${escapeHtml(p)}</li>`).join('');
+                                return `
+                                <div class="det-pill-row" style="grid-template-columns:1fr;">
+                                    <div class="det-pill">
+                                        <span class="det-pill-label">Produto(s)</span>
+                                        <div style="display:flex; flex-direction:column; gap:6px;">
+                                            <span class="det-pill-value">${primeiro}</span>
+                                            ${extra > 0 ? `
+                                            <button class="btn-expand-produtos" onclick="
+                                                const acc=document.getElementById('${accId}');
+                                                const open=acc.style.display==='block';
+                                                acc.style.display=open?'none':'block';
+                                                this.classList.toggle('open',!open);
+                                            ">+ ${extra} item${extra > 1 ? 'ns' : ''} <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="6 9 12 15 18 9"/></svg></button>
+                                            <div id="${accId}" style="display:none; padding:10px 12px; background:var(--surface-2); border-left:3px solid var(--brand-blue); border-radius:0 var(--radius-sm) var(--radius-sm) 0; font-size:var(--font-xs); color:var(--text-secondary);">
+                                                <strong style="display:block; margin-bottom:6px;">Todos os itens:</strong>
+                                                <ul style="list-style:none; padding:0; display:flex; flex-direction:column; gap:5px;">${listaHtml}</ul>
+                                            </div>` : ''}
+                                        </div>
+                                    </div>
+                                </div>`;
+                            })() : ''}
 
                             
                             ${orc.forma_pagamento || orc.data_entrega ? `
@@ -4229,6 +4295,21 @@
 
         function formatCurrency(value) { let num = value.replace(/\D/g, ''); num = (parseInt(num) || 0).toString(); return 'R$ ' + parseInt(num.slice(0, -2) || '0').toLocaleString('pt-BR') + ',' + num.slice(-2).padStart(2, '0'); }
         function parseCurrency(value) { return parseFloat(value.replace(/[^\d,]/g, '').replace(',', '.')) || 0; }
+
+        function toggleAccordion(event, idOrcamento) {
+            event.stopPropagation();
+            const accordionRow = document.getElementById(`acc-${idOrcamento}`);
+            const btn = event.currentTarget;
+            if (accordionRow.classList.contains('open')) {
+                accordionRow.classList.remove('open');
+                btn.classList.remove('open');
+            } else {
+                document.querySelectorAll('.accordion-row.open').forEach(r => r.classList.remove('open'));
+                document.querySelectorAll('.btn-expand-produtos.open').forEach(b => b.classList.remove('open'));
+                accordionRow.classList.add('open');
+                btn.classList.add('open');
+            }
+        }
 
         function formatarProdutos(modelo_colchao) {
             if (!modelo_colchao) return '-';
