@@ -2109,7 +2109,7 @@
 
             atualizarBadge();
             const notificacoes = buildNotifications();
-            renderNotificationBadge(notificacoes.filter(n => n.id !== null).length);
+            renderNotificationBadge(notificacoes.length);
         }
 
         async function atualizarTabelaPaginadaServer() {
@@ -2479,9 +2479,11 @@
         }
 
         function renderComentariosHtml(comentarios, clienteId) {
-            if (!comentarios || comentarios.length === 0) return '<p style="color:var(--text-muted);">Nenhum comentário registrado.</p>';
+            // Filtra apenas registros manuais da equipe (exclui logs automáticos do sistema)
+            const comentariosManuais = (comentarios || []).filter(c => c.tipo !== 'Sistema');
+            if (comentariosManuais.length === 0) return '<p style="color:var(--text-muted);">Nenhum comentário registrado.</p>';
             const grupos = {};
-            comentarios.forEach((c) => {
+            comentariosManuais.forEach((c) => {
                 const label = getDateLabel(c.data_criacao);
                 if (!grupos[label]) grupos[label] = [];
                 grupos[label].push(c);
@@ -2646,7 +2648,19 @@
                 document.getElementById('novoComentario').value = '';
                 atualizarIndicadorDigitacao();
                 showToast('Histórico registrado!', 'success');
-                await abrirDetalhesCliente(AppState.contextoVenda.clienteAtual.id_orcamento);
+
+                // Recarrega apenas os comentários do banco para atualizar a timeline
+                // sem bloquear toda a interface (evita congelamento do botão Voltar)
+                try {
+                    const { data: novosComentarios } = await db.from('comentarios')
+                        .select('*')
+                        .eq('id_orcamento', AppState.contextoVenda.clienteAtual.id_orcamento)
+                        .order('data_criacao', { ascending: true });
+                    if (novosComentarios) {
+                        AppState.contextoVenda.clienteAtual.comentarios = novosComentarios;
+                    }
+                } catch (_) { /* se falhar, mantém o estado anterior */ }
+                renderDetalhesClientePage();
             } catch (e) {
                 msg.textContent = 'Erro ao salvar: ' + e.message; msg.style.color = '#ef4444';
             } finally {
@@ -2893,16 +2907,14 @@
             });
             // --- FIM DA MELHORIA ---
 
-            // Filtra as não lidas
+            // Filtra as não lidas (somente notificações com id real)
             const naoLidas = notificacoes.filter(n => { 
-                if (n.id === null) return true; 
+                if (n.id === null || n.id === undefined) return false; 
                 if (n.tipo === 'comentario_gerente') return true; // Já vêm filtradas como lida=false do banco
                 return !notificacoesLidas.has(n.id); 
             });
 
-            if (naoLidas.length === 0) {
-                naoLidas.push({ tipo: 'info', texto: 'Nenhum alerta no momento.', id: null, data: '' });
-            }
+            // Retorna as não lidas reais; o dropdown trata a lista vazia separadamente
             return naoLidas;
         }
         function renderNotificationBadge(count) {
@@ -2915,15 +2927,17 @@
         function toggleNotifications() {
             const dropdown = document.getElementById('notificationDropdown');
             const notificacoes = buildNotifications(); 
-            const idsParaMarcar = notificacoes.filter(n => n.id !== null).map(n => n.id);
-            if (idsParaMarcar.length > 0) {
-                marcarTodasNotificacoesLidas(idsParaMarcar);
-                const novasNotificacoes = buildNotifications();
-                renderizarDropdownNotificacoes(novasNotificacoes);
-                renderNotificationBadge(novasNotificacoes.filter(n => n.id !== null).length);
-            } else {
-                renderizarDropdownNotificacoes(notificacoes);
+            // Marca como lidas as notificações de agenda (localStorage) ao abrir
+            const idsAgenda = notificacoes.filter(n => n.tipo !== 'comentario_gerente' && n.id).map(n => n.id);
+            if (idsAgenda.length > 0) {
+                marcarTodasNotificacoesLidas(idsAgenda);
             }
+            // Renderiza com a lista atual (antes de marcar, para mostrar o que havia)
+            renderizarDropdownNotificacoes(notificacoes);
+            // Após marcar, zera o badge das notificações de agenda
+            const restantes = buildNotifications();
+            renderNotificationBadge(restantes.length);
+
             dropdown.classList.toggle('open');
             if (dropdown.classList.contains('open')) {
                 document.addEventListener('click', function closeNotif(e) {
@@ -2939,25 +2953,28 @@
         function renderizarDropdownNotificacoes(notificacoes) {
             const dropdown = document.getElementById('notificationDropdown');
             let html = '<div class="notif-header">Central de Alertas</div>';
+
+            if (!notificacoes || notificacoes.length === 0) {
+                html += '<div class="notif-empty">✓ Nenhum alerta no momento.</div>';
+                dropdown.innerHTML = html;
+                return;
+            }
             
             notificacoes.forEach(n => {
                 let dotClass = 'info';
                 let onclick = '';
                 
-                // Define o estilo e a ação dependendo do tipo de notificação
                 if (n.tipo === 'critical') dotClass = 'critical';
                 else if (n.tipo === 'warning') dotClass = 'warning';
-                else if (n.tipo === 'comentario_gerente') dotClass = 'warning'; // Destaque especial para o gerente
+                else if (n.tipo === 'comentario_gerente') dotClass = 'warning';
 
                 if (n.tipo === 'comentario_gerente') {
-                    // Clique personalizado: marca como lida no banco E abre o orçamento
                     onclick = `onclick="marcarNotificacaoBancoLida('${n.id_notif}', '${n.id}'); document.getElementById('notificationDropdown').classList.remove('open');"`;
                 } else if (n.id) {
-                    // Comportamento padrão para agendamentos
                     onclick = `onclick="marcarNotificacaoLida('${n.id}'); abrirDetalhesCliente('${n.id}'); document.getElementById('notificationDropdown').classList.remove('open');"`;
                 }
 
-                html += `<div class="notif-item" ${onclick} style="${n.id ? 'cursor:pointer;' : 'cursor:default;'}">
+                html += `<div class="notif-item" ${onclick} style="cursor:pointer;">
                             <span class="notif-dot ${dotClass}"></span>
                             <div style="flex:1;">
                                 <div>${n.texto}</div>
@@ -2979,7 +2996,7 @@
                 
                 // Recalcula o badge de notificações
                 const novasNotifs = buildNotifications();
-                renderNotificationBadge(novasNotifs.filter(n => n.id !== null).length);
+                renderNotificationBadge(novasNotifs.length);
                 
                 // Abre a tela do orçamento
                 abrirDetalhesCliente(idOrcamento);
@@ -3167,7 +3184,7 @@
 
             requestAnimationFrame(() => { tentarRenderizarGraficos(total, fechados); });
             atualizarTabelaPaginadaServer();
-            renderNotificationBadge(buildNotifications().filter(n => n.id !== null).length);
+            renderNotificationBadge(buildNotifications().length);
 
         }
 
@@ -3309,7 +3326,7 @@
                 });
             });
 
-            renderNotificationBadge(buildNotifications().filter(n => n.id !== null).length);
+            renderNotificationBadge(buildNotifications().length);
         }
 
         function setAgendaFiltro(valor) {
@@ -3439,7 +3456,7 @@
                 window._clientesCache = clientes || [];
                 _aplicarFiltroClientes();
 
-                renderNotificationBadge && renderNotificationBadge(buildNotifications().filter(n => n.id !== null).length);
+                renderNotificationBadge && renderNotificationBadge(buildNotifications().length);
             } catch(e) {
                 main.innerHTML = `<div style="padding:40px;text-align:center;color:#ef4444;">Erro ao carregar clientes: ${escapeHtml(e.message)}</div>`;
             }
@@ -3689,10 +3706,31 @@
             // Remove aviso anterior se existir
             const avisoAnterior = document.getElementById('avisoEdicaoCliente');
             if (avisoAnterior) avisoAnterior.remove();
+
+            const isVendedor = currentUser.perfil === 'Vendedor';
+            const isGerenteOuAdmin = currentUser.perfil === 'Gerente' || currentUser.perfil === 'Administrador' || currentUser.perfil === 'Admin';
+
+            // Configura visibilidade do campo de transferência
+            const campoTransferencia = document.getElementById('campoTransferenciaCarteira');
+            const selectVendedor = document.getElementById('editClienteVendedor');
+            if (isGerenteOuAdmin && campoTransferencia && selectVendedor) {
+                // Popula o dropdown com os vendedores disponíveis
+                let optsVendedor = '<option value="">— Manter vendedor atual —</option>';
+                const listaFiltrada = currentUser.perfil === 'Gerente'
+                    ? todosVendedores.filter(v => v.id_loja === currentUser.id_loja)
+                    : todosVendedores;
+                listaFiltrada.forEach(v => {
+                    optsVendedor += `<option value="${v.id_usuario}">${escapeHtml(v.nome)}</option>`;
+                });
+                selectVendedor.innerHTML = optsVendedor;
+                campoTransferencia.style.display = 'block';
+            } else if (campoTransferencia) {
+                campoTransferencia.style.display = 'none';
+            }
+
             // Load from DB
             detectClientePK().then(pk => db.from('clientes').select('*').eq(pk, idCliente).single()).then(({data, error}) => {
                 if (error || !data) { showToast('Erro ao carregar cliente.','error'); return; }
-                const isVendedor = currentUser.perfil === 'Vendedor';
                 const campoNome = document.getElementById('editClienteNome');
                 const campoCpf = document.getElementById('editClienteCpf');
                 campoNome.value = data.nome_cliente || '';
@@ -3719,10 +3757,12 @@
         async function salvarEdicaoCliente() {
             const id = document.getElementById('editClienteId').value;
             const isVendedor = currentUser.perfil === 'Vendedor';
+            const isGerenteOuAdmin = currentUser.perfil === 'Gerente' || currentUser.perfil === 'Administrador' || currentUser.perfil === 'Admin';
             const nome = document.getElementById('editClienteNome').value.trim();
             const cpfRaw = document.getElementById('editClienteCpf').value.replace(/\D/g,'');
             const tel = document.getElementById('editClienteTel').value.trim();
             const email = document.getElementById('editClienteEmail').value.trim();
+            const novoVendedorId = isGerenteOuAdmin ? (document.getElementById('editClienteVendedor')?.value || '') : '';
             let valid = true;
             document.getElementById('errEditNome').textContent = '';
             document.getElementById('errEditCpf').textContent = '';
@@ -3749,7 +3789,20 @@
             try {
                 const { error } = await db.from('clientes').update(updatePayload).eq(pk, id);
                 if (error) throw error;
-                showToast('Cliente atualizado com sucesso!', 'success');
+
+                // Transferência de carteira (Gerente/Admin)
+                if (isGerenteOuAdmin && novoVendedorId) {
+                    const { error: errTransf } = await db.from('orcamentos')
+                        .update({ id_usuario: novoVendedorId })
+                        .eq('id_cliente', id);
+                    if (errTransf) throw new Error('Dados salvos, mas erro na transferência: ' + errTransf.message);
+
+                    const vendedor = todosVendedores.find(v => v.id_usuario === novoVendedorId);
+                    showToast(`Cliente transferido para ${vendedor?.nome || 'novo vendedor'} com sucesso!`, 'success');
+                } else {
+                    showToast('Cliente atualizado com sucesso!', 'success');
+                }
+
                 closeModal('modalEditarCliente');
                 // refresh current view
                 if (currentView === 'ficha_cliente') await renderFichaCliente();
@@ -5002,7 +5055,7 @@
             if (id && !notificacoesLidas.has(id)) {
                 notificacoesLidas.add(id);
                 salvarNotificacoesLidas();
-                renderNotificationBadge(buildNotifications().filter(n => n.id !== null).length);
+                renderNotificationBadge(buildNotifications().length);
             }
         }
 
@@ -5076,6 +5129,16 @@
             <label style="margin-top:8px;">E-mail</label>
             <input type="email" id="editClienteEmail" class="form-input" placeholder="cliente@email.com">
             <div class="field-error" id="errEditEmail"></div>
+            <!-- Campo de Transferência de Carteira: visível só para Gerente/Admin -->
+            <div id="campoTransferenciaCarteira" style="display:none; margin-top:12px;">
+                <label>Transferir Carteira para</label>
+                <select id="editClienteVendedor" class="form-input" style="margin-bottom:4px;">
+                    <option value="">— Manter vendedor atual —</option>
+                </select>
+                <div style="font-size:var(--font-xs); color:var(--text-muted); margin-top:3px;">
+                    Todos os orçamentos deste cliente serão transferidos para o vendedor selecionado.
+                </div>
+            </div>
             <div class="modal-btns">
                 <button class="btn-cancelar-modal" onclick="closeModal('modalEditarCliente')">Cancelar</button>
                 <button class="btn-salvar-modal" id="btnSalvarEditCliente" onclick="salvarEdicaoCliente()">
