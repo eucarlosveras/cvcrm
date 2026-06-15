@@ -226,6 +226,122 @@
         body.dark .status-tag.pos-venda          { background: rgba(91,33,182,0.25); color: #c4b5fd; }
         body.dark .status-tag.em-atendimento     { background: rgba(30,64,175,0.25); color: #93c5fd; }
 
+        /* ── VIEW TOGGLE ── */
+        .view-toggle { display:flex; background:var(--surface-2); border:1px solid var(--border-light); border-radius:var(--radius-sm); padding:3px; gap:2px; }
+        .vt-btn { display:flex; align-items:center; gap:6px; padding:7px 14px; border:none; border-radius:calc(var(--radius-sm) - 2px); font-size:var(--font-xs); font-weight:600; cursor:pointer; background:transparent; color:var(--text-muted); transition:all 0.18s ease; font-family:'Inter',sans-serif; }
+        .vt-btn svg { width:13px; height:13px; stroke:currentColor; fill:none; stroke-width:2; flex-shrink:0; }
+        .vt-btn.active { background:var(--card-bg); color:var(--text-primary); box-shadow:var(--shadow-xs); }
+        .vt-btn.active svg { stroke:var(--brand-blue); }
+        body.dark .vt-btn.active { background:var(--sidebar-bg); }
+
+     /* ── KANBAN BOARD ── */
+        #kanbanBoard { display:none; }
+        #kanbanBoard.active { display:block; }
+        #tabelaCarteiraWrapper { display:block; }
+        #tabelaCarteiraWrapper.hidden { display:none; }
+
+        /* Nova Grade Inteligente: Adapta as 3 colunas e cria scroll se a tela for pequena */
+        .kanban-board { 
+            display: grid; 
+            grid-template-columns: repeat(3, minmax(320px, 1fr)); 
+            gap: 16px; 
+            align-items: start; 
+            overflow-x: auto; 
+            padding-bottom: 8px; /* Respiro para a barra de rolagem horizontal */
+        }
+        
+        .kanban-board::-webkit-scrollbar { height: 8px; }
+        .kanban-board::-webkit-scrollbar-thumb { background: var(--border-medium); border-radius: var(--radius-full); }
+
+        .kanban-col { display:flex; flex-direction:column; gap:8px; min-height:300px; }
+        .kanban-col-header { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border-radius:var(--radius-sm); margin-bottom:4px; }
+        .kcol-ci  { background:#e0f2fe; } .kcol-nv  { background:#fef9c3; } .kcol-ad  { background:#ffedd5; } .kcol-fec { background:#d1fae5; } .kcol-pv  { background:#ede9fe; } .kcol-per { background:#fee2e2; }
+        body.dark .kcol-ci  { background:rgba(3,105,161,0.15); }
+        body.dark .kcol-nv  { background:rgba(133,77,14,0.15); }
+        body.dark .kcol-ad  { background:rgba(194,65,12,0.15); }
+        body.dark .kcol-fec { background:rgba(6,95,70,0.2); }
+        body.dark .kcol-pv  { background:rgba(91,33,182,0.2); }
+        body.dark .kcol-per { background:rgba(153,27,27,0.2); }
+        .kcol-title { font-size:var(--font-xs); font-weight:700; text-transform:uppercase; letter-spacing:0.06em; display:flex; align-items:center; gap:7px; }
+        .kcol-dot  { width:7px; height:7px; border-radius:50%; background:currentColor; flex-shrink:0; }
+        .kcol-ci  .kcol-title { color:#0369a1; } .kcol-nv  .kcol-title { color:#854d0e; } .kcol-ad  .kcol-title { color:#c2410c; } .kcol-fec .kcol-title { color:#065f46; } .kcol-pv  .kcol-title { color:#5b21b6; } .kcol-per .kcol-title { color:#991b1b; }
+        body.dark .kcol-ci  .kcol-title { color:#7dd3fc; } body.dark .kcol-nv  .kcol-title { color:#fde047; } body.dark .kcol-ad  .kcol-title { color:#fdba74; } body.dark .kcol-fec .kcol-title { color:#6ee7b7; } body.dark .kcol-pv  .kcol-title { color:#c4b5fd; } body.dark .kcol-per .kcol-title { color:#fca5a5; }
+        .kcol-count { font-size:var(--font-xs); font-weight:800; min-width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; padding:0 4px; }
+        .kcol-ci  .kcol-count { background:#bae6fd; color:#0369a1; } .kcol-nv  .kcol-count { background:#fde68a; color:#854d0e; } .kcol-ad  .kcol-count { background:#fed7aa; color:#c2410c; } .kcol-fec .kcol-count { background:#a7f3d0; color:#065f46; } .kcol-pv  .kcol-count { background:#ddd6fe; color:#5b21b6; } .kcol-per .kcol-count { background:#fecaca; color:#991b1b; }
+
+        /* KANBAN CARD - TOTALMENTE REFATORADO */
+        .kcard { background:var(--card-bg); border:1px solid var(--border-light); border-radius:var(--radius-md); padding:13px 14px; box-shadow:var(--shadow-xs); cursor:pointer; transition:all 0.18s ease; position:relative; display:flex; flex-direction:column; gap:9px; width: 100%; box-sizing: border-box; }
+        .kcard:hover { box-shadow:var(--shadow-md); transform:translateY(-2px); border-color:var(--border-medium); }
+        .kcard.kcard-urgent { border-left:3px solid #ef4444; }
+        .kcard.kcard-warn   { border-left:3px solid var(--accent-orange,#f59e0b); }
+        .kcard.kcard-fresh  { border-left:3px solid var(--brand-blue); }
+        .kcard.kcard-won    { border-left:3px solid var(--accent-green,#10b981); }
+        .kcard.kcard-lost   { border-left:3px solid #ef4444; opacity:.7; }
+        
+        .kcard-top { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; width: 100%; }
+        
+        .kcard-name { 
+            font-weight:700; font-size:var(--font-sm); color:var(--text-primary); line-height:1.3;
+            flex: 1; /* Ocupa o espaço e empurra o protocolo */
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; /* Corta nomes gigantes na 2ª linha */
+            word-break: break-word; 
+        }
+        
+        .kcard-proto { 
+            font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; color:var(--brand-blue); background:rgba(99,102,241,0.08); border:1px solid rgba(99,102,241,0.15); padding:2px 7px; border-radius:var(--radius-xs); 
+            flex-shrink:0; /* Impede de ser esmagado */
+            white-space:nowrap; 
+        }
+        
+        .kcard-product { 
+            font-size:var(--font-xs); color:var(--text-secondary); background:var(--surface-2); padding:4px 9px; border-radius:var(--radius-xs); line-height:1.4; 
+            width: 100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display: block; box-sizing: border-box;
+        }
+        
+        .kcard-bottom { display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap: wrap; width: 100%; }
+        .kcard-value { font-family:'JetBrains Mono',monospace; font-size:var(--font-sm); font-weight:700; color:var(--accent-green,#10b981); }
+        .kcard-meta { display:flex; align-items:center; gap:8px; flex-shrink:0; }
+        .kcard-days { font-size:10px; font-weight:600; display:flex; align-items:center; gap:4px; color:var(--text-muted); white-space:nowrap; }
+        .kcard-days svg { width:11px; height:11px; stroke:currentColor; fill:none; stroke-width:2; }
+        .kcard-days.alert-days { color:#ef4444; } .kcard-days.warn-days { color:var(--accent-orange,#f59e0b); }
+        
+        .kcard-alert-chip { position:absolute; top:-8px; right:10px; background:#ef4444; color:#fff; font-size:9px; font-weight:700; padding:2px 8px; border-radius:var(--radius-full); letter-spacing:.04em; display:flex; align-items:center; gap:3px; white-space:nowrap; z-index: 2; }
+        .kcard-alert-chip svg { width:9px; height:9px; stroke:currentColor; fill:none; stroke-width:2.5; }
+        .kcard-avatar { width:20px; height:20px; border-radius:5px; background:linear-gradient(135deg,var(--brand-blue),var(--brand-blue-dark,#4f46e5)); color:#fff; font-size:9px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+        
+        .kcol-total { font-size:var(--font-xs); font-weight:600; color:var(--text-muted); text-align:center; padding:8px 4px 2px; border-top:1px dashed var(--border-light); margin-top:4px; }
+        .kcol-total strong { color:var(--text-primary); }
+        .kanban-empty { display:flex; align-items:center; justify-content:center; height:80px; border:1.5px dashed var(--border-light); border-radius:var(--radius-md); color:var(--text-muted); font-size:var(--font-xs); }
+        .kanban-loading { display:flex; align-items:center; justify-content:center; height:200px; color:var(--text-muted); font-size:var(--font-sm); gap:10px; }
+
+        /* KANBAN CARD */
+        .kcard { background:var(--card-bg); border:1px solid var(--border-light); border-radius:var(--radius-md); padding:13px 14px; box-shadow:var(--shadow-xs); cursor:pointer; transition:all 0.18s ease; position:relative; display:flex; flex-direction:column; gap:9px; }
+        .kcard:hover { box-shadow:var(--shadow-md); transform:translateY(-2px); border-color:var(--border-medium); }
+        .kcard.kcard-urgent { border-left:3px solid #ef4444; }
+        .kcard.kcard-warn   { border-left:3px solid var(--accent-orange,#f59e0b); }
+        .kcard.kcard-fresh  { border-left:3px solid var(--brand-blue); }
+        .kcard.kcard-won    { border-left:3px solid var(--accent-green,#10b981); }
+        .kcard.kcard-lost   { border-left:3px solid #ef4444; opacity:.7; }
+        .kcard-top { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
+        .kcard-name { font-weight:700; font-size:var(--font-sm); color:var(--text-primary); line-height:1.3; }
+        .kcard-proto { font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; color:var(--brand-blue); background:rgba(99,102,241,0.08); border:1px solid rgba(99,102,241,0.15); padding:2px 7px; border-radius:var(--radius-xs); flex-shrink:0; white-space:nowrap; }
+        .kcard-product { font-size:var(--font-xs); color:var(--text-secondary); background:var(--surface-2); padding:4px 9px; border-radius:var(--radius-xs); line-height:1.4; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .kcard-bottom { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+        .kcard-value { font-family:'JetBrains Mono',monospace; font-size:var(--font-sm); font-weight:700; color:var(--accent-green,#10b981); }
+        .kcard-meta { display:flex; align-items:center; gap:8px; flex-shrink:0; }
+        .kcard-days { font-size:10px; font-weight:600; display:flex; align-items:center; gap:4px; color:var(--text-muted); white-space:nowrap; }
+        .kcard-days svg { width:11px; height:11px; stroke:currentColor; fill:none; stroke-width:2; }
+        .kcard-days.alert-days { color:#ef4444; } .kcard-days.warn-days { color:var(--accent-orange,#f59e0b); }
+        .kcard-alert-chip { position:absolute; top:-8px; right:10px; background:#ef4444; color:#fff; font-size:9px; font-weight:700; padding:2px 8px; border-radius:var(--radius-full); letter-spacing:.04em; display:flex; align-items:center; gap:3px; white-space:nowrap; }
+        .kcard-alert-chip svg { width:9px; height:9px; stroke:currentColor; fill:none; stroke-width:2.5; }
+        .kcard-avatar { width:20px; height:20px; border-radius:5px; background:linear-gradient(135deg,var(--brand-blue),var(--brand-blue-dark,#4f46e5)); color:#fff; font-size:9px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+        .kcol-total { font-size:var(--font-xs); font-weight:600; color:var(--text-muted); text-align:center; padding:8px 4px 2px; border-top:1px dashed var(--border-light); margin-top:4px; }
+        .kcol-total strong { color:var(--text-primary); }
+        .kanban-empty { display:flex; align-items:center; justify-content:center; height:80px; border:1.5px dashed var(--border-light); border-radius:var(--radius-md); color:var(--text-muted); font-size:var(--font-xs); }
+        .kanban-loading { display:flex; align-items:center; justify-content:center; height:200px; color:var(--text-muted); font-size:var(--font-sm); gap:10px; }
+        @media (max-width:900px) { .kanban-board { grid-template-columns:repeat(2,1fr); } }
+        @media (max-width:600px) { .kanban-board { grid-template-columns:1fr; } }
+
         /* ────────────────────────────────────────────────────────
            INPUTS — GLOBAL BASE
         ──────────────────────────────────────────────────────── */
@@ -1666,6 +1782,16 @@
         <nav class="sidebar-nav">
             <button class="nav-item" data-nav="admin_inicio" id="navAdmin" style="display:none;" onclick="navigateTo('admin_inicio')"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg></span> Administração</button>
             <button class="nav-item active" data-nav="inicio" id="navInicioVendas" onclick="navigateTo('inicio')" aria-current="page"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1h-5v-7a1 1 0 00-1-1h-4a1 1 0 00-1 1v7H4a1 1 0 01-1-1V9.5z"/></svg></span> <span id="textNavInicio">Início</span></button>
+<button class="nav-item" data-nav="carteira" onclick="navigateTo('carteira')">
+    <span class="nav-icon">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="3" y="3" width="5" height="18" rx="1"/>
+            <rect x="10" y="3" width="5" height="12" rx="1"/>
+            <rect x="17" y="3" width="5" height="15" rx="1"/>
+        </svg>
+    </span> 
+    Carteira
+</button>
             <button class="nav-item" data-nav="agenda_dia" onclick="navigateTo('agenda_dia')"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><span class="badge-dot" id="badgeAgendaDia"></span></span> Agenda do Dia</button>
             <button class="nav-item" data-nav="clientes_lista" onclick="navigateTo('clientes_lista')"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="7" r="4"/><path d="M1 21v-2a4 4 0 014-4h8a4 4 0 014 4v2"/><circle cx="17" cy="9" r="3"/><path d="M23 21v-2a3 3 0 00-2-2.7"/></svg></span> Clientes</button>
             <button class="nav-item" data-nav="metas" id="navMetas" style="display:none;" onclick="navigateTo('metas')"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg></span> Metas</button>
@@ -1797,15 +1923,11 @@
         const ITEMS_PER_PAGE = 10;
 
         const STATUS = {
-            CONTATO_INICIAL: 'Contato Inicial',
-            NEGOCIACAO: 'Negociação de Valores',
-            AGUARDANDO: 'Aguardando Decisão',
-            VENDIDO: 'Vendido',
-            FECHADO: 'Fechado',
-            PERDIDO: 'Perdido',
-            DECLINADO: 'Declinado',
-            POS_VENDA: 'Pós-Venda',
-            EM_NEGOCIACAO: 'Em Negociação'
+	CONTATO_INICIAL: 'Contato Inicial',
+  	NEGOCIACAO: 'Negociação',
+    	EM_FECHAMENTO: 'Em Fechamento',
+    	FECHADO: 'Fechado',
+    	PERDIDO: 'Perdido'
         };
 
         // O nosso Cofre (Estado Global da Aplicação)
@@ -1866,6 +1988,7 @@
         
         let currentFilter = 'todos';
         let currentView = 'inicio';
+        let kanbanAtivo = false;
         let previousView = 'inicio';
         let currentMonth = new Date().getMonth() + 1;
         let currentYear = new Date().getFullYear();
@@ -2404,48 +2527,56 @@
         }
 
         async function navigateTo(view) {
-            // Limpa rolagem infinita de clientes ao sair da página
-            if (currentView === 'clientes_lista' && view !== 'clientes_lista') {
-                if (_clientes.observer) { _clientes.observer.disconnect(); _clientes.observer = null; }
-                window._clientesCache = null;
-            }
-            previousView = currentView !== 'detalhes_cliente' && currentView !== 'novo_orcamento' ? currentView : previousView;
-            currentView = view;
-            document.querySelectorAll('.nav-item').forEach(el => { el.classList.remove('active'); el.removeAttribute('aria-current'); });
-            const target = document.querySelector(`[data-nav="${view}"]`);
-            if (target) { target.classList.add('active'); target.setAttribute('aria-current', 'page'); }
-            currentPage = 1;
-            const searchInput = document.getElementById('searchInput');
-            if (searchInput) searchInput.value = '';
-            searchTerm = '';
-            searchProtocolo = '';
-            const searchProtInput = document.getElementById('searchProtocoloInput');
-            if (searchProtInput) searchProtInput.value = '';
+   	 // Limpa rolagem infinita de clientes ao sair da página
+  	  if (currentView === 'clientes_lista' && view !== 'clientes_lista') {
+        if (_clientes.observer) { _clientes.observer.disconnect(); _clientes.observer = null; }
+    	    window._clientesCache = null;
+  	  }
+    
+ 	   previousView = currentView !== 'detalhes_cliente' && currentView !== 'novo_orcamento' ? currentView : previousView;
+  	  currentView = view;
+    
+	    document.querySelectorAll('.nav-item').forEach(el => { el.classList.remove('active'); el.removeAttribute('aria-current'); });
+ 	   const target = document.querySelector(`[data-nav="${view}"]`);
+ 	   if (target) { target.classList.add('active'); target.setAttribute('aria-current', 'page'); }
+    
+  	  currentPage = 1;
+	    const searchInput = document.getElementById('searchInput');
+	    if (searchInput) searchInput.value = '';
+  	  searchTerm = '';
+	    searchProtocolo = '';
+	    const searchProtInput = document.getElementById('searchProtocoloInput');
+  	  if (searchProtInput) searchProtInput.value = '';
 
-            if (view === 'inicio') {
-                await carregarKpisEDashboard();
-                renderInicio();
-            }
-            else if (view === 'admin_inicio') renderAdminInicio(document.getElementById('mainContent'));
-            else if (view === 'admin_usuarios') renderAdminUsuarios(document.getElementById('mainContent'));
-            else if (view === 'agenda_dia') {
-                await carregarKpisEDashboard();
-                renderAgendaDia();
-            }
-            else if (view === 'clientes') {
-                await carregarKpisEDashboard();
-                renderClientes();
-            }
-            else if (view === 'metas') renderMetas();
-            else if (view === 'detalhes_cliente') {
-                const fab = document.getElementById('fabButton');
-                if (fab) fab.style.display = 'none';
-                renderDetalhesClientePage();
-            }
-            else if (view === 'novo_orcamento') renderNovoOrcamentoPage();
-            else if (view === 'clientes_lista') await renderClientesLista();
-            else if (view === 'ficha_cliente') await renderFichaCliente();
-        }
+	    // --- ROTEAMENTO ---
+ 	   if (view === 'inicio') {
+ 	       await carregarKpisEDashboard();
+  	      renderInicio();
+ 	   }
+ 	   else if (view === 'carteira') {
+  	      await carregarKpisEDashboard(); // Garante que os dados mais novos venham do banco
+        	renderCarteiraPage();           // Chama a nova página do Kanban que criamos
+    	}
+    	else if (view === 'admin_inicio') renderAdminInicio(document.getElementById('mainContent'));
+    	else if (view === 'admin_usuarios') renderAdminUsuarios(document.getElementById('mainContent'));
+    	else if (view === 'agenda_dia') {
+        	await carregarKpisEDashboard();
+        	renderAgendaDia();
+    	}
+    	else if (view === 'clientes') {
+        	await carregarKpisEDashboard();
+        	renderClientes();
+    	}
+    	else if (view === 'metas') renderMetas();
+    	else if (view === 'detalhes_cliente') {
+        	const fab = document.getElementById('fabButton');
+        	if (fab) fab.style.display = 'none';
+        	renderDetalhesClientePage();
+    	}
+    	else if (view === 'novo_orcamento') renderNovoOrcamentoPage();
+    	else if (view === 'clientes_lista') await renderClientesLista();
+    	else if (view === 'ficha_cliente') await renderFichaCliente();
+	}
 
         function getMetaVendedor(idVendedor) {
             const user = (todosUsuarios && todosUsuarios.length > 0 ? todosUsuarios : todosVendedores).find(u => u.id_usuario === idVendedor);
@@ -2742,42 +2873,110 @@
             </div>`;
         }
 
-        async function filtrarPorLoja(val) { selectedLoja = val; selectedVendedor = 'todos'; currentPage = 1; await carregarKpisEDashboard(); atualizarTabelaPaginadaServer(); renderInicio(); }
-        async function filtrarPorVendedor(val) { selectedVendedor = val; currentPage = 1; await carregarKpisEDashboard(); atualizarTabelaPaginadaServer(); renderInicio(); }
-        async function changeMonth(val) { const [year, month] = val.split('-').map(Number); currentYear = year; currentMonth = month; currentDay = null; await carregarKpisEDashboard(); atualizarTabelaPaginadaServer(); renderInicio(); }
-        async function changeDay(val) { currentDay = val === 'todos' ? null : parseInt(val); await carregarKpisEDashboard(); atualizarTabelaPaginadaServer(); renderInicio(); }
+       async function filtrarPorLoja(val) { 
+    selectedLoja = val; 
+    selectedVendedor = 'todos'; 
+    currentPage = 1; 
+    await carregarKpisEDashboard(); 
+    
+    if (currentView === 'carteira') {
+        renderCarteiraPage();
+    } else if (currentView === 'inicio') {
+        renderInicio();
+    } 
+}
+
+async function filtrarPorVendedor(val) { 
+    selectedVendedor = val; 
+    currentPage = 1; 
+    await carregarKpisEDashboard(); 
+    
+    if (currentView === 'carteira') {
+        renderCarteiraPage();
+    } else if (currentView === 'inicio') {
+        renderInicio();
+    } 
+}
+        async function changeMonth(val) { 
+    const [year, month] = val.split('-').map(Number); 
+    currentYear = year; 
+    currentMonth = month; 
+    currentDay = null; 
+    await carregarKpisEDashboard(); 
+
+    if (currentView === 'carteira') {
+        renderCarteiraPage();
+    } else if (currentView === 'inicio') {
+        renderInicio();
+    } 
+}
+
+async function changeDay(val) { 
+    currentDay = val === 'todos' ? null : parseInt(val); 
+    await carregarKpisEDashboard(); 
+
+    if (currentView === 'carteira') {
+        renderCarteiraPage();
+    } else if (currentView === 'inicio') {
+        renderInicio();
+    } 
+}
 
         function handleSearch() {
-            searchTerm = document.getElementById('searchInput')?.value || '';
-            currentPage = 1;
-            atualizarTabelaPaginadaServer();
-            const tagContainer = document.getElementById('searchTagContainer');
-            if (tagContainer) {
-                tagContainer.innerHTML = searchTerm ? `<span class="search-tag">🔍 "${escapeHtml(searchTerm)}" <span class="remove-search" onclick="clearSearch()" aria-label="Limpar busca">✕</span></span>` : '';
-            }
-        }
-        function handleSearchProtocolo() {
-            searchProtocolo = document.getElementById('searchProtocoloInput')?.value?.trim() || '';
-            currentPage = 1;
-            atualizarTabelaPaginadaServer();
-        }
-        function clearSearch() {
-            searchTerm = '';
-            searchProtocolo = '';
-            const inp = document.getElementById('searchInput');
-            if (inp) inp.value = '';
-            const inpProt = document.getElementById('searchProtocoloInput');
-            if (inpProt) inpProt.value = '';
-            currentPage = 1;
-            atualizarTabelaPaginadaServer();
-            const tagContainer = document.getElementById('searchTagContainer');
-            if (tagContainer) tagContainer.innerHTML = '';
-        }
-        function handleSearchClientes() {
-            searchTerm = document.getElementById('searchInputClientes')?.value || '';
-            renderClientes();
-        }
-        function selectFilter(filter) { currentFilter = filter; currentPage = 1; atualizarTabelaPaginadaServer(); }
+    searchTerm = document.getElementById('searchInput')?.value || '';
+    currentPage = 1;
+    const tagContainer = document.getElementById('searchTagContainer');
+    if (tagContainer) {
+        tagContainer.innerHTML = searchTerm ? `<span class="search-tag">🔍 "${escapeHtml(searchTerm)}" <span class="remove-search" onclick="clearSearch()" aria-label="Limpar busca">✕</span></span>` : '';
+    }
+    
+    // Atualiza apenas a tela ativa
+    if (currentView === 'carteira') {
+        renderKanbanBoard();
+    } else if (currentView === 'inicio') {
+        atualizarTabelaPaginadaServer();
+    }
+}
+
+function handleSearchProtocolo() {
+    searchProtocolo = document.getElementById('searchProtocoloInput')?.value?.trim() || '';
+    currentPage = 1;
+    
+    if (currentView === 'carteira') {
+        renderKanbanBoard();
+    } else if (currentView === 'inicio') {
+        atualizarTabelaPaginadaServer();
+    }
+}
+
+function clearSearch() {
+    searchTerm = '';
+    searchProtocolo = '';
+    const inp = document.getElementById('searchInput');
+    if (inp) inp.value = '';
+    const inpProt = document.getElementById('searchProtocoloInput');
+    if (inpProt) inpProt.value = '';
+    currentPage = 1;
+    const tagContainer = document.getElementById('searchTagContainer');
+    if (tagContainer) tagContainer.innerHTML = '';
+    
+    if (currentView === 'carteira') {
+        renderKanbanBoard();
+    } else if (currentView === 'inicio') {
+        atualizarTabelaPaginadaServer();
+    }
+}
+
+function selectFilter(filter) { 
+    currentFilter = filter; 
+    currentPage = 1; 
+    
+    if (currentView === 'carteira') {
+        renderKanbanBoard();
+    } else if (currentView === 'inicio') {
+        atualizarTabelaPaginadaServer();
+    }
+}
 
         function buildProdutosOptionsDatalist() {
             if (todosProdutos.length === 0) return '';
@@ -3008,9 +3207,15 @@
         }
 
         function classToFormatStatus(status) {
-            const map = { 'Contato Inicial': 'contato-inicial', 'Negociação de Valores': 'negociacao-valores', 'Aguardando Decisão': 'aguardando-decisao', 'Vendido': 'vendido', 'Fechado': 'fechado', 'Perdido': 'perdido', 'Declinado': 'declinado', 'Pós-Venda': 'pos-venda', 'Em Negociação': 'em-atendimento' };
-            return map[status] || 'em-atendimento';
-        }
+          const map = { 
+           'Contato Inicial': 'contato-inicial', 
+           'Negociação': 'negociacao-valores',  
+           'Em Fechamento': 'aguardando-decisao', 
+           'Fechado': 'fechado', 
+           'Perdido': 'perdido' 
+     };
+    return map[status] || 'em-atendimento';
+  }
 
         function renderInicio() {
     const main = document.getElementById('mainContent');
@@ -3157,20 +3362,30 @@
         
         const colVendedor = isGerente ? '<th>Vendedor</th>' : '';
         const searchTagHtml = searchTerm ? `<span class="search-tag">🔍 "${escapeHtml(searchTerm)}" <span class="remove-search" onclick="clearSearch()" aria-label="Limpar busca">✕</span></span>` : '';
-            const tabelaHtml = `<div class="table-card"><div class="table-card-header"><h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/></svg> Carteira de Negociações</h3><div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-            <div id="searchTagContainer">${searchTagHtml}</div>
-            <input type="text" class="search-input" placeholder="Buscar cliente..." id="searchInput" onchange="handleSearch()" onkeyup="if(event.key === 'Enter') handleSearch()" value="${escapeHtml(searchTerm)}" aria-label="Buscar cliente">
-            <input type="text" class="search-input" placeholder="Buscar protocolo..." id="searchProtocoloInput" onchange="handleSearchProtocolo()" onkeyup="if(event.key === 'Enter') handleSearchProtocolo()" value="${escapeHtml(searchProtocolo)}" aria-label="Buscar por protocolo" style="width:160px;">
-            <select class="form-input" style="width:auto; padding:8px 16px; border-radius:20px; font-size:var(--font-sm);" id="listFilterSelect" onchange="selectFilter(this.value)" aria-label="Filtrar por status">
-                <option value="todos" ${currentFilter === 'todos' ? 'selected' : ''}>Todos</option>
-                <option value="Contato Inicial" ${currentFilter === STATUS.CONTATO_INICIAL ? 'selected' : ''}>Contato Inicial</option>
-                <option value="Negociação de Valores" ${currentFilter === STATUS.NEGOCIACAO ? 'selected' : ''}>Negociação de Valores</option>
-                <option value="Aguardando Decisão" ${currentFilter === STATUS.AGUARDANDO ? 'selected' : ''}>Aguardando Decisão</option>
-                <option value="Vendido" ${currentFilter === STATUS.VENDIDO ? 'selected' : ''}>Vendido</option>
-                <option value="Perdido" ${currentFilter === STATUS.PERDIDO ? 'selected' : ''}>Perdido</option>
-                <option value="Pós-Venda" ${currentFilter === STATUS.POS_VENDA ? 'selected' : ''}>Pós-Venda</option>
-            </select>
-            </div></div><table><thead><tr><th style="width:90px;">Protocolo</th><th>Cliente</th><th>Produto</th>${colVendedor}<th>Status</th><th>Data</th><th>Valor</th></tr></thead><tbody id="tableBody"></tbody></table><div class="pagination" id="paginationContainer"></div></div>`;
+            const tabelaHtml = `
+            <div class="table-card">
+              <div class="table-card-header">
+                <h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/></svg> Carteira de Negociações</h3>
+                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                  <div id="searchTagContainer">${searchTagHtml}</div>
+                  <input type="text" class="search-input" placeholder="Buscar cliente..." id="searchInput" onchange="handleSearch()" onkeyup="if(event.key === 'Enter') handleSearch()" value="${escapeHtml(searchTerm)}" aria-label="Buscar cliente">
+                  <input type="text" class="search-input" placeholder="Buscar protocolo..." id="searchProtocoloInput" onchange="handleSearchProtocolo()" onkeyup="if(event.key === 'Enter') handleSearchProtocolo()" value="${escapeHtml(searchProtocolo)}" aria-label="Buscar por protocolo" style="width:160px;">
+                  <select class="form-input" style="width:auto; padding:8px 16px; border-radius:20px; font-size:var(--font-sm);" id="listFilterSelect" onchange="selectFilter(this.value)" aria-label="Filtrar por status">
+                     <option value="todos" ${currentFilter === 'todos' ? 'selected' : ''}>Todos</option>
+                     <option value="Contato Inicial" ${currentFilter === STATUS.CONTATO_INICIAL ? 'selected' : ''}>Contato Inicial</option>
+                     <option value="Negociação" ${currentFilter === STATUS.NEGOCIACAO ? 'selected' : ''}>Negociação</option>
+                     <option value="Em Fechamento" ${currentFilter === STATUS.EM_FECHAMENTO ? 'selected' : ''}>Em Fechamento</option>
+                    <option value="Fechado" ${currentFilter === STATUS.FECHADO ? 'selected' : ''}>Fechado</option>
+                    <option value="Perdido" ${currentFilter === STATUS.PERDIDO ? 'selected' : ''}>Perdido</option>
+                </select> 
+                        
+                </div>
+              </div>
+              <div id="tabelaCarteiraWrapper">
+                <table><thead><tr><th style="width:90px;">Protocolo</th><th>Cliente</th><th>Produto</th>${colVendedor}<th>Status</th><th>Data</th><th>Valor</th></tr></thead><tbody id="tableBody"></tbody></table>
+                <div class="pagination" id="paginationContainer"></div>
+              </div>
+            </div>`;
 
             let chartsRowHtml = '';
             if (isGerente) {
@@ -3183,10 +3398,55 @@
             main.innerHTML = `${headerHtml}${progressHtml}<section class="kpi-row">${kpiHtml}</section>${chartsRowHtml}${tabelaHtml}`;
 
             requestAnimationFrame(() => { tentarRenderizarGraficos(total, fechados); });
-            atualizarTabelaPaginadaServer();
+           
+                atualizarTabelaPaginadaServer();
             renderNotificationBadge(buildNotifications().length);
 
         }
+
+async function renderCarteiraPage() {
+    const main = document.getElementById('mainContent');
+    const isGerente = currentUser.perfil === 'Gerente' || currentUser.perfil === 'Administrador' || currentUser.perfil === 'Admin';
+
+    // Mantém o mesmo padrão de cabeçalho e filtros do seu sistema
+    main.innerHTML = `
+        <header class="dashboard-header">
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+                <h1 style="margin: 0;">Pipeline de Vendas</h1>
+                <span style="font-size: 13px; color: var(--text-muted); font-weight: 500;">Visão Geral do Funil</span>
+            </div>
+            <div class="header-controls">
+                ${renderFiltrosData(isGerente)}
+                <div class="header-notification-area">
+                    <button class="btn-notification" id="btnNotification" onclick="event.stopPropagation(); toggleNotifications();" aria-label="Notificações">
+                        <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+                        <span class="notification-badge" id="notificationBadgeCount"></span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <div style="margin-bottom: 16px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+            <div id="searchTagContainer"></div>
+            <input type="text" class="search-input" placeholder="Buscar cliente..." id="searchInput" onchange="handleSearch()" onkeyup="if(event.key === 'Enter') handleSearch()" value="${escapeHtml(searchTerm)}">
+            <input type="text" class="search-input" placeholder="Buscar protocolo..." id="searchProtocoloInput" onchange="handleSearchProtocolo()" onkeyup="if(event.key === 'Enter') handleSearchProtocolo()" value="${escapeHtml(searchProtocolo)}" style="width:160px;">
+            <select class="form-input" style="width:auto; padding:8px 16px; border-radius:20px; font-size:var(--font-sm);" id="listFilterSelect" onchange="selectFilter(this.value)">
+                 <option value="todos" ${currentFilter === 'todos' ? 'selected' : ''}>Todos os Status</option>
+                 <option value="Contato Inicial" ${currentFilter === STATUS.CONTATO_INICIAL ? 'selected' : ''}>Contato Inicial</option>
+                 <option value="Negociação" ${currentFilter === STATUS.NEGOCIACAO ? 'selected' : ''}>Negociação</option>
+                 <option value="Em Fechamento" ${currentFilter === STATUS.EM_FECHAMENTO ? 'selected' : ''}>Em Fechamento</option>
+                 <option value="Fechado" ${currentFilter === STATUS.FECHADO ? 'selected' : ''}>Fechado</option>
+                 <option value="Perdido" ${currentFilter === STATUS.PERDIDO ? 'selected' : ''}>Perdido</option>
+            </select>
+        </div>
+
+        <div id="kanbanBoard" class="active"></div>
+    `;
+
+    // Executa a sua função nativa do arquivo para renderizar as colunas e os cards
+    await renderKanbanBoard();
+    renderNotificationBadge(buildNotifications().length);
+}
 
         function obterSemanaAtual() {
             const hoje = new Date();
@@ -3719,9 +3979,31 @@
                 const listaFiltrada = currentUser.perfil === 'Gerente'
                     ? todosVendedores.filter(v => v.id_loja === currentUser.id_loja)
                     : todosVendedores;
-                listaFiltrada.forEach(v => {
-                    optsVendedor += `<option value="${v.id_usuario}">${escapeHtml(v.nome)}</option>`;
-                });
+
+                // Para Admin: agrupa por loja para facilitar identificação
+                if (currentUser.perfil !== 'Gerente') {
+                    const lojaMap = {};
+                    listaLojas.forEach(l => { lojaMap[l.id_loja] = l.nome_loja; });
+                    // Agrupa por loja
+                    const porLoja = {};
+                    listaFiltrada.forEach(v => {
+                        const nomeLoja = lojaMap[v.id_loja] || 'Sem Loja';
+                        if (!porLoja[nomeLoja]) porLoja[nomeLoja] = [];
+                        porLoja[nomeLoja].push(v);
+                    });
+                    Object.keys(porLoja).sort().forEach(nomeLoja => {
+                        optsVendedor += `<optgroup label="${escapeHtml(nomeLoja)}">`;
+                        porLoja[nomeLoja].forEach(v => {
+                            optsVendedor += `<option value="${v.id_usuario}">${escapeHtml(v.nome)}</option>`;
+                        });
+                        optsVendedor += '</optgroup>';
+                    });
+                } else {
+                    listaFiltrada.forEach(v => {
+                        optsVendedor += `<option value="${v.id_usuario}">${escapeHtml(v.nome)}</option>`;
+                    });
+                }
+
                 selectVendedor.innerHTML = optsVendedor;
                 campoTransferencia.style.display = 'block';
             } else if (campoTransferencia) {
@@ -4974,6 +5256,196 @@
 
         function changePage(page) { currentPage = page; atualizarTabelaPaginadaServer(); }
 
+        /* ═══════════════════════════════════════════
+           TOGGLE TABELA ↔ KANBAN
+        ═══════════════════════════════════════════ */
+        function switchCarteiraView(view) {
+            kanbanAtivo = (view === 'kanban');
+
+            const tabelaWrapper = document.getElementById('tabelaCarteiraWrapper');
+            const kanbanBoard   = document.getElementById('kanbanBoard');
+            const btnTabela     = document.getElementById('btnViewTabela');
+            const btnKanban     = document.getElementById('btnViewKanban');
+
+            if (!tabelaWrapper || !kanbanBoard) return;
+
+            if (kanbanAtivo) {
+                tabelaWrapper.classList.add('hidden');
+                kanbanBoard.classList.add('active');
+                btnTabela?.classList.remove('active');
+                btnKanban?.classList.add('active');
+                renderKanbanBoard();
+            } else {
+                kanbanBoard.classList.remove('active');
+                tabelaWrapper.classList.remove('hidden');
+                btnTabela?.classList.add('active');
+                btnKanban?.classList.remove('active');
+                atualizarTabelaPaginadaServer();
+            }
+        }
+
+        async function renderKanbanBoard() {
+            const board = document.getElementById('kanbanBoard');
+            if (!board) return;
+            board.innerHTML = `<div class="kanban-loading"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite"><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" opacity=".3"/><path d="M21 12a9 9 0 01-9 9"/></svg> Carregando pipeline...</div>`;
+
+            try {
+                const isGerente = currentUser.perfil === 'Gerente' || currentUser.perfil === 'Administrador' || currentUser.perfil === 'Admin';
+
+                // Busca TODOS os orçamentos em aberto (sem paginação — kanban precisa do total)
+                let query = db.from('orcamentos')
+                    .select('id_orcamento, protocolo, data_criacao, valor_orcado, modelo_colchao, data_contato, hora_contato, usuarios(nome, id_loja), clientes(nome_cliente), status_orcamento(nome)')
+                    .not('id_status', 'is', null);
+
+                if (currentUser.perfil === 'Gerente') {
+                    query = query.eq('usuarios.id_loja', currentUser.id_loja);
+                } else if (currentUser.perfil === 'Vendedor') {
+                    query = query.eq('id_usuario', currentUser.id_usuario);
+                } else {
+                    if (selectedVendedor !== 'todos') {
+                        query = query.eq('id_usuario', selectedVendedor);
+                    } else if (selectedLoja !== 'todas') {
+                        const ids = todosVendedores.filter(v => v.id_loja === selectedLoja).map(v => v.id_usuario);
+                        if (ids.length > 0) query = query.in('id_usuario', ids);
+                    }
+                }
+
+                if (searchTerm) query = query.ilike('clientes.nome_cliente', `%${searchTerm}%`);
+
+                // 1. APLICA O FILTRO DE STATUS DIRETO NO BANCO
+                if (currentFilter !== 'todos') {
+                    const uuidsPermitidos = mapStatusUUID
+                        .filter(s => s.nome === currentFilter)
+                        .map(s => s.id_status);
+                    
+                    if (uuidsPermitidos.length > 0) {
+                        query = query.in('id_status', uuidsPermitidos);
+                    }
+                }
+
+                query = query.order('data_criacao', { ascending: false }).limit(300);
+
+                const { data, error } = await query;
+                if (error) throw error;
+
+                const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+
+                // Agrupa por coluna (Apenas funil ativo)
+                const colunas = [
+                    { key: 'ci',  label: 'Contato Inicial',  cls: 'kcol-ci',  statuses: [STATUS.CONTATO_INICIAL] },
+                    { key: 'nv',  label: 'Negociação',       cls: 'kcol-nv',  statuses: [STATUS.NEGOCIACAO] },
+                    { key: 'ad',  label: 'Em Fechamento',    cls: 'kcol-ad',  statuses: [STATUS.EM_FECHAMENTO] }
+           
+                ];
+
+                // Se filtro de status ativo, restringe colunas
+                const filtroAtivo = currentFilter !== 'todos';
+
+                let html = '<div class="kanban-board">';
+
+               colunas.forEach(col => {
+                    const items = (data || []).filter(o => {
+                        const st = o.status_orcamento?.nome || STATUS.CONTATO_INICIAL;
+                        return col.statuses.includes(st);
+                    });
+
+                    // Pula coluna se filtro ativo e não é a coluna certa
+                    if (filtroAtivo && items.length === 0) return;
+
+                    const total = items.reduce((s, o) => s + parseFloat(o.valor_orcado || 0), 0);
+                    
+                    // Pega o nome exato do status (para salvar no banco depois do arrasto)
+                    const statusDestino = col.statuses[0];
+
+                    // 1. O contêiner da coluna precisa saber qual é o status dele (data-status)
+                    html += `<div class="kanban-col" data-status="${statusDestino}">
+                        <div class="kanban-col-header ${col.cls}">
+                            <div class="kcol-title"><span class="kcol-dot"></span>${col.label}</div>
+                            <span class="kcol-count" id="count-${statusDestino.replace(/\s+/g, '-')}">${items.length}</span>
+                        </div>`;
+
+                    // 2. Criamos a "zona de aterrissagem" (onde o card será solto)
+                    html += `<div class="kanban-cards" ondragover="allowDrop(event)" ondrop="dropCard(event, '${statusDestino}')" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)" style="flex: 1; display: flex; flex-direction: column; gap: 12px; padding-top: 12px;">`;
+
+                    if (items.length === 0) {
+                        html += `<div class="kanban-empty">Nenhum orçamento</div>`;
+                    } else {
+                        items.forEach(o => {
+                            const nome = o.clientes?.nome_cliente || 'Cliente';
+                            const vendedor = o.usuarios?.nome || '';
+                            const inicial = vendedor ? vendedor.charAt(0).toUpperCase() : '?';
+                            const idNumerico = o.protocolo && o.protocolo.includes('-') ? o.protocolo.split('-')[1] : (o.protocolo || '—');
+                            const produto = o.modelo_colchao ? o.modelo_colchao.split(',')[0].trim() : '—';
+                            const valor = parseFloat(o.valor_orcado || 0).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+
+                            const dataCriacao = new Date(o.data_criacao);
+                            const diasAtras = Math.floor((hoje - dataCriacao) / 86400000);
+                            let borderClass = 'kcard-fresh';
+                            let alertChip = '';
+                            let daysClass = 'ok-days';
+                            let clockIcon = `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
+
+                            const isFechado = o.status_orcamento?.nome === STATUS.FECHADO;
+                            const isPerdido = o.status_orcamento?.nome === STATUS.PERDIDO;
+
+                            if (isFechado) {
+                                borderClass = 'kcard-won';
+                                clockIcon = `<svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`;
+                            } else if (isPerdido) {
+                                borderClass = 'kcard-lost';
+                            } else if (diasAtras >= 5) {
+                                borderClass = 'kcard-urgent';
+                                daysClass = 'alert-days';
+                                alertChip = `<div class="kcard-alert-chip"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>${diasAtras}d sem contato</div>`;
+                            } else if (o.data_contato) {
+                                const dc = new Date(o.data_contato + 'T00:00:00');
+                                if (dc <= hoje) { borderClass = 'kcard-warn'; daysClass = 'warn-days'; }
+                            }
+
+                            const diasLabel = isFechado ? `há ${diasAtras}d` : diasAtras === 0 ? 'Hoje' : diasAtras === 1 ? 'Ontem' : `há ${diasAtras}d`;
+
+                            // 3. Tornamos o Card "arrastável" (draggable="true")
+                            html += `
+                            <div class="kcard ${borderClass}" draggable="true" ondragstart="dragStart(event, '${o.id_orcamento}')" onclick="abrirDetalhesCliente('${o.id_orcamento}')" id="card-${o.id_orcamento}">
+                                ${alertChip}
+                                <div class="kcard-top">
+                                    <div class="kcard-name">${escapeHtml(nome)}</div>
+                                    <span class="kcard-proto">${escapeHtml(idNumerico)}</span>
+                                </div>
+                                <div class="kcard-product">${escapeHtml(produto)}</div>
+                                <div class="kcard-bottom">
+                                    <span class="kcard-value">R$ ${valor}</span>
+                                    <div class="kcard-meta">
+                                        <div class="kcard-days ${daysClass}">${clockIcon}${diasLabel}</div>
+                                        ${isGerente ? `<div class="kcard-avatar" title="${escapeHtml(vendedor)}">${inicial}</div>` : ''}
+                                    </div>
+                                </div>
+                            </div>`;
+                        });
+                    }
+
+                    const totalFmt = total.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+                    
+                    // Fecha a zona de drop e depois a coluna inteira
+                    html += `</div>
+                             <div class="kcol-total"><strong>R$ ${totalFmt}</strong> em ${items.length} orçamento${items.length !== 1 ? 's' : ''}</div>
+                             </div>`;
+                });
+
+                html += '</div>';
+                
+                // 2. MENSAGEM AMIGÁVEL SE FILTRAR POR FECHADO/PERDIDO NO KANBAN
+                if (currentFilter === 'Fechado' || currentFilter === 'Perdido') {
+                    html = '<div style="padding: 40px; margin-top: 20px; text-align: center; color: var(--text-muted); background: var(--card-bg); border-radius: var(--radius-md); border: 1.5px dashed var(--border-light);"><strong>Estes cards não aparecem no funil ativo.</strong><br>Volte o filtro para "Todos os Status" ou consulte a aba Início (Tabela) para ver o histórico completo.</div>';
+                }
+
+                board.innerHTML = html;
+
+            } catch (e) {
+                board.innerHTML = `<div style="padding:24px; text-align:center; color:#ef4444;">Erro ao carregar pipeline: ${e.message}</div>`;
+            }
+        }
+
         function validateField(idInput, idErro) { const el = document.getElementById(idInput); const err = document.getElementById(idErro); if (!el || !err) return; const val = el.value.trim(); if (!val) { err.textContent = 'Obrigatório'; el.style.borderColor = '#ef4444'; return false; } else { err.textContent = ''; el.style.borderColor = 'var(--border-light)'; return true; } }
 
         function renderAdminInicio(main) {
@@ -5113,6 +5585,85 @@
         });
 
         checkSession();
+
+	// ═══════════════════════════════════════════
+// FUNÇÕES DE ARRASTAR E SOLTAR (DRAG & DROP)
+// ═══════════════════════════════════════════
+
+function dragStart(event, idOrcamento) {
+    // Guarda o ID do card que está sendo arrastado
+    event.dataTransfer.setData('text/plain', idOrcamento);
+    event.dataTransfer.effectAllowed = 'move';
+    
+    // Deixa o card original levemente transparente enquanto você arrasta
+    setTimeout(() => {
+        event.target.style.opacity = '0.4';
+    }, 0);
+}
+
+function allowDrop(event) {
+    // Esse comando é OBRIGATÓRIO. Ele avisa o navegador que essa área aceita receber itens.
+    event.preventDefault();
+}
+
+function dragEnter(event) {
+    event.preventDefault();
+    // Feedback visual: acende levemente o fundo da coluna quando o card passa por cima
+    event.currentTarget.style.background = 'rgba(99,102,241,0.05)';
+    event.currentTarget.style.borderRadius = '8px';
+}
+
+function dragLeave(event) {
+    // Apaga o fundo da coluna se o card sair dela sem ser solto
+    event.currentTarget.style.background = '';
+}
+
+async function dropCard(event, statusNomeDestino) {
+    event.preventDefault();
+    event.currentTarget.style.background = ''; // Limpa o fundo aceso
+    
+    // 1. Pega o ID do orçamento que guardamos no início do arraste
+    const idOrcamento = event.dataTransfer.getData('text/plain');
+    if (!idOrcamento) return;
+
+    // 2. Acha a "Chave" (UUID) verdadeira desse status no Supabase
+    const statusObj = mapStatusUUID.find(s => s.nome === statusNomeDestino);
+    if (!statusObj) {
+        showToast('Erro: Status destino não encontrado no banco de dados.', 'error');
+        renderKanbanBoard(); 
+        return;
+    }
+
+    showToast('Atualizando pipeline...', 'info');
+
+    try {
+        // 3. Salva a nova etapa direto no Supabase
+        const { error } = await db.from('orcamentos')
+            .update({ id_status: statusObj.id_status })
+            .eq('id_orcamento', idOrcamento);
+
+        if (error) throw error;
+
+        // 4. Atualiza a memória local para não precisar baixar tudo do banco de novo
+        const index = kpisMensais.findIndex(o => String(o.id_orcamento) === String(idOrcamento));
+        if (index !== -1) {
+            kpisMensais[index].status = statusObj.nome;
+            if(kpisMensais[index].status_orcamento) {
+                 kpisMensais[index].status_orcamento.nome = statusObj.nome;
+            }
+        }
+
+        showToast('Orçamento movido com sucesso!', 'success');
+        
+        // 5. Recarrega o Kanban para os cards se organizarem nas colunas certas
+        renderKanbanBoard();
+
+    } catch (error) {
+        showToast('Erro ao mover card: ' + error.message, 'error');
+        renderKanbanBoard(); // Se der erro, redesenha a tela para o card voltar pro lugar original
+    }
+}
+
     </script>
     <!-- Modal: Editar Cliente -->
     <div class="modal-overlay" id="modalEditarCliente" onclick="if(event.target===this)closeModal('modalEditarCliente')">
