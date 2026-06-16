@@ -2120,11 +2120,47 @@
             }
         }
 
+        let _notifChannel = null; // referência global para poder destruir no logout
+
         function initAppAfterLogin() {
             document.getElementById('sidebar').style.display = 'flex';
             document.getElementById('mainContent').style.display = 'flex';
             configurarPermissoes();
             carregarDadosIniciais();
+            iniciarSubscriptionNotificacoes();
+        }
+
+        function iniciarSubscriptionNotificacoes() {
+            // Destrói canal anterior se houver (ex: re-login sem reload)
+            if (_notifChannel) { db.removeChannel(_notifChannel); _notifChannel = null; }
+
+            _notifChannel = db
+                .channel('notificacoes-realtime-' + currentUser.id_usuario)
+                .on(
+                    'postgres_changes',
+                    {
+                        event: 'INSERT',
+                        schema: 'public',
+                        table: 'notificacoes',
+                        filter: `id_usuario=eq.${currentUser.id_usuario}`
+                    },
+                    (payload) => {
+                        // Só processa se a notificação ainda não estiver na lista (idempotência)
+                        const jaExiste = notificacoesBanco.some(n => String(n.id) === String(payload.new.id));
+                        if (jaExiste) return;
+
+                        notificacoesBanco.push(payload.new);
+                        const notificacoes = buildNotifications();
+                        renderNotificationBadge(notificacoes.length);
+
+                        // Atualiza o dropdown se ele estiver aberto no momento
+                        const dropdown = document.getElementById('notificationDropdown');
+                        if (dropdown && dropdown.classList.contains('open')) {
+                            renderNotificationsDropdown();
+                        }
+                    }
+                )
+                .subscribe();
         }
 
         async function configurarPermissoes() {
@@ -2170,6 +2206,8 @@
         }
 
         async function logout() {
+            // Encerra a subscription de notificações antes de sair
+            if (_notifChannel) { db.removeChannel(_notifChannel); _notifChannel = null; }
             // Destrói a sessão real no Supabase antes de limpar a tela
             await db.auth.signOut();
             currentUser = null;
@@ -2178,40 +2216,20 @@
 
      async function carregarKpisEDashboard() {
             if (!currentUser) return;
+            // NOVO CÓDIGO LEVE E ESCALÁVEL
             const isAdmin = currentUser.perfil === 'Administrador' || currentUser.perfil === 'Admin';
             try {
-                // 1. Select inicial COM ordenação e limite alto para evitar o teto do Supabase
-                let query = db.from('orcamentos')
-                    .select('id_orcamento, valor_orcado, id_usuario, data_criacao, data_contato, hora_contato, observacao_agendamento, modelo_colchao, ligacao_confirmada, clientes(nome_cliente, whatsapp), status_orcamento(nome), usuarios!inner(id_loja, nome)')
-                    .order('data_criacao', { ascending: false })
-                    .limit(5000);
-                
-                // 2. Lógica de filtro hierárquica corrigida para o Admin
-                if (currentUser.perfil === 'Vendedor') {
-                    query = query.eq('id_usuario', currentUser.id_usuario);
-                } 
-                else if (currentUser.perfil === 'Gerente') {
-                    query = query.eq('usuarios.id_loja', currentUser.id_loja);
-                    if (selectedVendedor !== 'todos') query = query.eq('id_usuario', selectedVendedor);
-                }
-                else {
-                    // Visão do Administrador
-                    if (selectedVendedor !== 'todos') {
-                        query = query.eq('id_usuario', selectedVendedor);
-                    } else if (selectedLoja !== 'todas') {
-                        const idsLoja = todosVendedores.filter(v => v.id_loja === selectedLoja).map(v => v.id_usuario);
-                        if (idsLoja.length > 0) query = query.in('id_usuario', idsLoja);
-                        else query = query.eq('id_usuario', '00000000-0000-0000-0000-000000000000');
-                    }
-                }
-
-                const { data, error } = await query;
-                if (!error) {
-                    kpisMensais = (data || []).map(o => ({
-                        ...o,
-                        status: o.status_orcamento ? o.status_orcamento.nome : STATUS.CONTATO_INICIAL
-                    }));
-                }
+                // Chama a função direto no banco, passando apenas os filtros
+                const { data: kpisData, error: rpcError } = await db.rpc('calcular_kpis_dashboard', {
+                    p_mes: currentMonth,
+                    p_ano: currentYear,
+                    p_id_usuario: currentUser.id_usuario,
+                    p_perfil: currentUser.perfil,
+                    p_id_loja: currentUser.id_loja
+                });
+                if (rpcError) throw rpcError;
+                // Salvamos o resultado mastigado no objeto global
+                AppState.kpisMensaisResumo = kpisData;
 
                 // ---- INÍCIO DA BUSCA DE ALERTAS NO BANCO ----
                 const { data: notifs, error: errNotif } = await db
@@ -2560,8 +2578,7 @@
     	else if (view === 'admin_inicio') renderAdminInicio(document.getElementById('mainContent'));
     	else if (view === 'admin_usuarios') renderAdminUsuarios(document.getElementById('mainContent'));
     	else if (view === 'agenda_dia') {
-        	await carregarKpisEDashboard();
-        	renderAgendaDia();
+        	await renderAgendaDia();
     	}
     	else if (view === 'clientes') {
         	await carregarKpisEDashboard();
@@ -3236,12 +3253,13 @@ function selectFilter(filter) {
         return isMesAnoCorreto;
     });
 
-    // 2. CÁLCULOS COM OS DADOS FILTRADOS (agora tudo zera sozinho na virada!)
-    const total = dados.length;
-    const fechadosArr = dados.filter(o => o.status === STATUS.FECHADO || o.status === STATUS.VENDIDO);
-    const fechados = fechadosArr.length;
-    const negociacao = dados.filter(o => [STATUS.EM_NEGOCIACAO, STATUS.CONTATO_INICIAL, STATUS.NEGOCIACAO, STATUS.AGUARDANDO].includes(o.status)).length;
-    const valorVendido = fechadosArr.reduce((s, o) => s + parseFloat(o.valor_orcado || 0), 0);
+    // 2. CÁLCULOS — pega os dados já calculados do nosso estado
+    const resumo = AppState.kpisMensaisResumo || {};
+    const total = resumo.total_oportunidades || 0;
+    const fechados = resumo.vendas_fechadas_qtd || 0;
+    const negociacao = resumo.em_tratativa || 0;
+    const valorVendido = resumo.vendas_fechadas_valor || 0;
+    const fechadosArr = []; // gráfico de top produtos depende do array detalhado (virá de outra fonte futuramente)
     const conversao = total ? Math.round((fechados / total) * 100) : 0;
     const metaAtual = calcularMetaTotal();
     const percMetaExato = metaAtual ? Math.round((valorVendido / metaAtual) * 100) : 0;
@@ -3461,52 +3479,83 @@ async function renderCarteiraPage() {
             return { inicio: segunda, fim: domingo };
         }
 
-        window.addEventListener('focus', () => {
-            if (currentView === 'agenda_dia') renderAgendaDia();
+        window.addEventListener('focus', async () => {
+            if (currentView === 'agenda_dia') await renderAgendaDia();
         });
 
-        function renderAgendaDia() {
+        async function renderAgendaDia() {
+            showLoader();
             const { inicio, fim } = obterSemanaAtual();
-
-            // Filtro: semana corrente OU atrasados (data anterior a hoje) + não confirmados + sem Perdido/Declinado
             const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
-            let agendados = kpisMensais.filter(o => {
-                if (!o.data_contato) return false;
-                if ([STATUS.PERDIDO, STATUS.DECLINADO].includes(o.status)) return false;
-                if (o.ligacao_confirmada) return false;
-                const dataContato = new Date(o.data_contato + 'T00:00:00');
-                const naSemana = dataContato >= inicio && dataContato <= fim;
-                const atrasado = dataContato < hoje;
-                return naSemana || atrasado;
-            });
-
-            // Ordenação cronológica crescente
-            agendados.sort((a, b) => {
-                if (a.data_contato !== b.data_contato)
-                    return a.data_contato.localeCompare(b.data_contato);
-                return (a.hora_contato || '').localeCompare(b.hora_contato || '');
-            });
-
-            const isGerente = currentUser.perfil === 'Gerente' || currentUser.perfil === 'Administrador' || currentUser.perfil === 'Admin';
-            const colspanCount = 5 + (isGerente ? 1 : 0);
-
-            // Contatos realizados (confirmados) da semana + atrasados
-            const realizados = kpisMensais.filter(o => {
-                if (!o.data_contato) return false;
-                if ([STATUS.PERDIDO, STATUS.DECLINADO].includes(o.status)) return false;
-                if (!o.ligacao_confirmada) return false;
-                const dataContato = new Date(o.data_contato + 'T00:00:00');
-                const naSemana = dataContato >= inicio && dataContato <= fim;
-                const atrasado = dataContato < hoje;
-                return naSemana || atrasado;
-            });
-            realizados.sort((a, b) => {
-                if (a.data_contato !== b.data_contato) return a.data_contato.localeCompare(b.data_contato);
-                return (a.hora_contato || '').localeCompare(b.hora_contato || '');
-            });
+            const hojeStr = hoje.toISOString().split('T')[0];
+            const inicioStr = inicio.toISOString().split('T')[0];
 
             // Estado do toggle (persistido na sessão)
             if (typeof window._agendaFiltro === 'undefined') window._agendaFiltro = 'pendentes';
+
+            let agendados = [];
+            let realizados = [];
+
+            try {
+                // Query direta e independente — não depende mais de kpisMensais
+                let query = db.from('orcamentos')
+                    .select('id_orcamento, valor_orcado, id_usuario, data_contato, hora_contato, observacao_agendamento, modelo_colchao, ligacao_confirmada, clientes(nome_cliente, whatsapp), status_orcamento(nome), usuarios(nome, id_loja)')
+                    .not('data_contato', 'is', null)
+                    .not('id_status', 'is', null);
+
+                // Regras de visibilidade por perfil
+                if (currentUser.perfil === 'Vendedor') {
+                    query = query.eq('id_usuario', currentUser.id_usuario);
+                } else if (currentUser.perfil === 'Gerente') {
+                    query = query.eq('usuarios.id_loja', currentUser.id_loja);
+                    if (selectedVendedor !== 'todos') query = query.eq('id_usuario', selectedVendedor);
+                } else {
+                    // Administrador
+                    if (selectedVendedor !== 'todos') query = query.eq('id_usuario', selectedVendedor);
+                }
+
+                const { data: rawData, error } = await query;
+                if (error) throw error;
+
+                // Normaliza o campo status para bater com as constantes STATUS.*
+                const todos = (rawData || []).map(o => ({
+                    ...o,
+                    status: o.status_orcamento ? o.status_orcamento.nome : STATUS.CONTATO_INICIAL
+                }));
+
+                const ordenarCronologicamente = (a, b) => {
+                    if (a.data_contato !== b.data_contato) return a.data_contato.localeCompare(b.data_contato);
+                    return (a.hora_contato || '').localeCompare(b.hora_contato || '');
+                };
+
+                agendados = todos.filter(o => {
+                    if ([STATUS.PERDIDO, STATUS.DECLINADO].includes(o.status)) return false;
+                    if (o.ligacao_confirmada) return false;
+                    const dataContato = new Date(o.data_contato + 'T00:00:00');
+                    const naSemana = dataContato >= inicio && dataContato <= fim;
+                    const atrasado = dataContato < hoje;
+                    return naSemana || atrasado;
+                }).sort(ordenarCronologicamente);
+
+                realizados = todos.filter(o => {
+                    if ([STATUS.PERDIDO, STATUS.DECLINADO].includes(o.status)) return false;
+                    if (!o.ligacao_confirmada) return false;
+                    const dataContato = new Date(o.data_contato + 'T00:00:00');
+                    const naSemana = dataContato >= inicio && dataContato <= fim;
+                    const atrasado = dataContato < hoje;
+                    return naSemana || atrasado;
+                }).sort(ordenarCronologicamente);
+
+            } catch (err) {
+                showToast('Erro ao carregar a agenda: ' + err.message, 'error');
+                hideLoader();
+                return;
+            }
+
+            hideLoader();
+
+            const isGerente = currentUser.perfil === 'Gerente' || currentUser.perfil === 'Administrador' || currentUser.perfil === 'Admin';
+            const colspanCount = 5 + (isGerente ? 1 : 0);
 
             const buildToggle = () => `
                 <div class="agenda-toggle" id="agendaToggle">
@@ -3589,9 +3638,9 @@ async function renderCarteiraPage() {
             renderNotificationBadge(buildNotifications().length);
         }
 
-        function setAgendaFiltro(valor) {
+        async function setAgendaFiltro(valor) {
             window._agendaFiltro = valor;
-            renderAgendaDia();
+            await renderAgendaDia();
         }
 
         async function confirmarContato(orcamentoId, btnElement) {
