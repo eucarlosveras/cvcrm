@@ -2224,7 +2224,7 @@
                     p_mes: currentMonth,
                     p_ano: currentYear,
                     p_id_usuario: currentUser.id_usuario,
-                    p_perfil: currentUser.perfil,
+                    p_perfil: (currentUser.perfil || '').toLowerCase() === 'terminal' ? 'Gerente' : currentUser.perfil,
                     p_id_loja: currentUser.id_loja
                 });
                 if (rpcError) throw rpcError;
@@ -2271,6 +2271,11 @@
                     if (selectedVendedor !== 'todos') query = query.eq('id_usuario', selectedVendedor);
                 } else if (currentUser.perfil === 'Vendedor') {
                     query = query.eq('id_usuario', currentUser.id_usuario);
+                } else if ((currentUser.perfil || '').toLowerCase() === 'terminal') {
+                    query = query.eq('usuarios.id_loja', currentUser.id_loja);
+                    if (window._terminalVendedorFiltro && window._terminalVendedorFiltro !== 'todos') {
+                        query = query.eq('id_usuario', window._terminalVendedorFiltro);
+                    }
                 } else {
                     if (selectedVendedor !== 'todos') {
                         query = query.eq('id_usuario', selectedVendedor);
@@ -2374,6 +2379,7 @@
             try {
                 let query = db.from('orcamentos').select('*, clientes!inner(nome_cliente, whatsapp), usuarios(nome), status_orcamento(nome)');
                 if (currentUser.perfil === 'Vendedor') query = query.eq('id_usuario', currentUser.id_usuario);
+                else if ((currentUser.perfil || '').toLowerCase() === 'terminal') query = query.eq('usuarios.id_loja', currentUser.id_loja);
                 else if (selectedVendedor !== 'todos') query = query.eq('id_usuario', selectedVendedor);
                 
                 if (currentMonth && currentYear && !currentDay) {
@@ -2507,7 +2513,7 @@
 }
 
         async function carregarHistoricoFaturamento() {
-            if (!currentUser || currentUser.perfil !== 'Vendedor') { historicoFaturamento = []; return; }
+            if (!currentUser || (currentUser.perfil !== 'Vendedor' && (currentUser.perfil || '').toLowerCase() !== 'terminal')) { historicoFaturamento = []; return; }
             const hoje = new Date(); historicoFaturamento = [];
             try {
                 const uuidsFechados = mapStatusUUID.filter(s => [STATUS.FECHADO, STATUS.VENDIDO].includes(s.nome)).map(s => s.id_status);
@@ -2539,7 +2545,7 @@
         }
 
         function atualizarBadge() {
-            const pendentes = kpisMensais.filter(o => [STATUS.EM_NEGOCIACAO, STATUS.CONTATO_INICIAL, STATUS.NEGOCIACAO, STATUS.AGUARDANDO].includes(o.status)).length;
+            const pendentes = kpisMensais.filter(o => [STATUS.CONTATO_INICIAL, STATUS.NEGOCIACAO, STATUS.EM_FECHAMENTO].includes(o.status)).length;
             const badge = document.getElementById('badgeAgendaDia');
             if (badge) badge.classList.toggle('visible', pendentes > 0);
         }
@@ -2602,6 +2608,7 @@
         
        function calcularMetaTotal() {
             if (currentUser.perfil === 'Vendedor') return getMetaVendedor(currentUser.id_usuario);
+            if ((currentUser.perfil || '').toLowerCase() === 'terminal') return todosVendedores.filter(v => v.id_loja === currentUser.id_loja).reduce((s, v) => s + getMetaVendedor(v.id_usuario), 0);
             
             let filtrados = todosVendedores;
             if (currentUser.perfil === 'Gerente') {
@@ -3425,6 +3432,7 @@ function selectFilter(filter) {
 async function renderCarteiraPage() {
     const main = document.getElementById('mainContent');
     const isGerente = currentUser.perfil === 'Gerente' || currentUser.perfil === 'Administrador' || currentUser.perfil === 'Admin';
+    const isTerminal = (currentUser.perfil || '').toLowerCase() === 'terminal';
 
     // Mantém o mesmo padrão de cabeçalho e filtros do seu sistema
     main.innerHTML = `
@@ -3456,6 +3464,9 @@ async function renderCarteiraPage() {
                  <option value="Fechado" ${currentFilter === STATUS.FECHADO ? 'selected' : ''}>Fechado</option>
                  <option value="Perdido" ${currentFilter === STATUS.PERDIDO ? 'selected' : ''}>Perdido</option>
             </select>
+${isTerminal ? `<select class="form-input" style="width:auto; padding:8px 16px; border-radius:20px; font-size:var(--font-sm);" id="terminalVendedorFilter" onchange="terminalFiltrarVendedor(this.value)">
+                <option value="todos">Todos os Vendedores</option>
+            </select>` : ''}
         </div>
 
         <div id="kanbanBoard" class="active"></div>
@@ -3464,6 +3475,22 @@ async function renderCarteiraPage() {
     // Executa a sua função nativa do arquivo para renderizar as colunas e os cards
     await renderKanbanBoard();
     renderNotificationBadge(buildNotifications().length);
+
+    // Popular filtro de vendedor para Terminal e restaurar valor selecionado
+    if (isTerminal) {
+        const sel = document.getElementById('terminalVendedorFilter');
+        if (sel) {
+            const vendedoresLoja = todosUsuarios.filter(u => u.id_loja === currentUser.id_loja && u.perfil === 'Vendedor' && u.status === 'Ativo');
+            vendedoresLoja.sort((a,b) => a.nome.localeCompare(b.nome)).forEach(v => {
+                const opt = document.createElement('option');
+                opt.value = v.id_usuario;
+                opt.textContent = v.nome;
+                sel.appendChild(opt);
+            });
+            // Restaura seleção após re-render do Kanban
+            sel.value = window._terminalVendedorFiltro || 'todos';
+        }
+    }
 }
 
         function obterSemanaAtual() {
@@ -3506,7 +3533,7 @@ async function renderCarteiraPage() {
                 // Regras de visibilidade por perfil
                 if (currentUser.perfil === 'Vendedor') {
                     query = query.eq('id_usuario', currentUser.id_usuario);
-                } else if (currentUser.perfil === 'Gerente') {
+                } else if (currentUser.perfil === 'Gerente' || (currentUser.perfil || '').toLowerCase() === 'terminal') {
                     query = query.eq('usuarios.id_loja', currentUser.id_loja);
                     if (selectedVendedor !== 'todos') query = query.eq('id_usuario', selectedVendedor);
                 } else {
@@ -3733,7 +3760,7 @@ async function renderCarteiraPage() {
             try {
                 const pk = _clientes.pk || (await detectClientePK());
                 _clientes.pk = pk;
-                const isVendedor = currentUser.perfil === 'Vendedor';
+                const isVendedor = currentUser.perfil === 'Vendedor' || (currentUser.perfil || '').toLowerCase() === 'terminal';
                 const isGerente = currentUser.perfil === 'Gerente' || currentUser.perfil === 'Administrador' || currentUser.perfil === 'Admin';
                 _clientes.isVendedor = isVendedor;
                 _clientes.isGerente = isGerente;
@@ -4016,7 +4043,7 @@ async function renderCarteiraPage() {
             const avisoAnterior = document.getElementById('avisoEdicaoCliente');
             if (avisoAnterior) avisoAnterior.remove();
 
-            const isVendedor = currentUser.perfil === 'Vendedor';
+            const isVendedor = currentUser.perfil === 'Vendedor' || (currentUser.perfil || '').toLowerCase() === 'terminal';
             const isGerenteOuAdmin = currentUser.perfil === 'Gerente' || currentUser.perfil === 'Administrador' || currentUser.perfil === 'Admin';
 
             // Configura visibilidade do campo de transferência
@@ -4087,7 +4114,7 @@ async function renderCarteiraPage() {
 
         async function salvarEdicaoCliente() {
             const id = document.getElementById('editClienteId').value;
-            const isVendedor = currentUser.perfil === 'Vendedor';
+            const isVendedor = currentUser.perfil === 'Vendedor' || (currentUser.perfil || '').toLowerCase() === 'terminal';
             const isGerenteOuAdmin = currentUser.perfil === 'Gerente' || currentUser.perfil === 'Administrador' || currentUser.perfil === 'Admin';
             const nome = document.getElementById('editClienteNome').value.trim();
             const cpfRaw = document.getElementById('editClienteCpf').value.replace(/\D/g,'');
@@ -4151,7 +4178,7 @@ async function renderCarteiraPage() {
         }
 
         async function confirmarExcluirCliente() {
-            if (currentUser.perfil === 'Vendedor') {
+            if (currentUser.perfil === 'Vendedor' || (currentUser.perfil || '').toLowerCase() === 'terminal') {
                 showToast('Você não tem permissão para excluir clientes.', 'error');
                 closeModal('modalExcluirCliente');
                 return;
@@ -4391,8 +4418,9 @@ async function renderCarteiraPage() {
             const orc = AppState.contextoVenda.clienteAtual; 
             const id = orc.id_orcamento;
             const isGerente = currentUser.perfil === 'Gerente' || currentUser.perfil === 'Administrador' || currentUser.perfil === 'Admin';
+            const isTerminal = (currentUser.perfil || '').toLowerCase() === 'terminal';
             const main = document.getElementById('mainContent');
-            const isOpenStatus = [STATUS.EM_NEGOCIACAO, STATUS.CONTATO_INICIAL, STATUS.NEGOCIACAO, STATUS.AGUARDANDO].includes(orc.status);
+            const isOpenStatus = [STATUS.CONTATO_INICIAL, STATUS.NEGOCIACAO, STATUS.EM_FECHAMENTO].includes(orc.status);
             
             const comentarios = orc.comentarios || []; 
             const comentariosHtml = renderComentariosHtml(comentarios, id);
@@ -4473,6 +4501,13 @@ async function renderCarteiraPage() {
                                     <span class="det-pill-value">${ultimoContato}</span>
                                 </div>
                             </div>
+                            ${(isGerente || (currentUser.perfil || '').toLowerCase() === 'terminal') && orc.usuarios?.nome ? `
+                            <div class="det-pill-row" style="grid-template-columns:1fr;">
+                                <div class="det-pill">
+                                    <span class="det-pill-label">Vendedor Responsável</span>
+                                    <span class="det-pill-value" style="font-weight:600;">${escapeHtml(orc.usuarios.nome)}</span>
+                                </div>
+                            </div>` : ''}
 
                             
                             <div class="det-pill-row" style="grid-template-columns:1fr;">
@@ -4777,7 +4812,7 @@ async function renderCarteiraPage() {
         function atualizarBotoesLixeira() { const btns = document.getElementById('produtosContainer').querySelectorAll('.btn-remove-item'); if (btns.length === 1) { btns[0].style.opacity = '0.3'; btns[0].style.pointerEvents = 'none'; } else { btns.forEach(b => { b.style.opacity = '1'; b.style.pointerEvents = 'auto'; }); } }
         function calcTotalModal() { let total = 0; document.querySelectorAll('.input-por').forEach(inp => { total += parseCurrency(inp.value); }); document.getElementById('displayTotalModal').textContent = 'R$ ' + total.toLocaleString('pt-BR', { minimumFractionDigits: 2 }); return total; }
 
-        function abrirNovoOrcamento() { if (currentUser?.perfil !== 'Vendedor') return; navigateTo('novo_orcamento'); }
+        function abrirNovoOrcamento() { const p = (currentUser?.perfil || '').toLowerCase(); if (p !== 'vendedor' && p !== 'terminal') return; navigateTo('novo_orcamento'); }
 
         // Protocolo gerado automaticamente pelo banco via nextval('protocolo_seq')
 
@@ -4919,6 +4954,48 @@ async function renderCarteiraPage() {
             adicionarProdutoRow();
             calcTotalModal();
             setTimeout(() => { const modNome = document.getElementById('modNome'); if(modNome) modNome.focus(); }, 100);
+
+            // Passo B: se Terminal, injeta e popula o campo "Quem está atendendo?" no card de Dados do Cliente
+            if ((currentUser.perfil || '').toLowerCase() === 'terminal') {
+                // 1. Cria o bloco do campo
+                const atendenteDiv = document.createElement('div');
+                atendenteDiv.className = 'form-group';
+                atendenteDiv.style.cssText = 'padding:14px 16px; background:var(--brand-blue-subtle); border:2px solid var(--brand-blue); border-radius:var(--radius-md); margin-bottom:16px;';
+                atendenteDiv.innerHTML = `
+                    <label for="modAtendente" style="font-size:var(--font-xs); font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--brand-blue); margin-bottom:8px; display:block;">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:-2px; margin-right:5px;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        Quem está atendendo? *
+                    </label>
+                    <select id="modAtendente" class="form-input" style="font-weight:600;">
+                        <option value="">— Selecione o vendedor —</option>
+                    </select>
+                    <div class="field-error" id="errAtendente" style="color:#ef4444; font-size:12px; margin-top:4px;"></div>
+                `;
+
+                // 2. Insere como primeiro elemento dentro da primeira section (Dados do Cliente)
+                const secaoCliente = main.querySelector('.novo-orcamento-section');
+                if (secaoCliente) {
+                    const sectionHeader = secaoCliente.querySelector('.section-header');
+                    sectionHeader ? sectionHeader.insertAdjacentElement('afterend', atendenteDiv)
+                                 : secaoCliente.prepend(atendenteDiv);
+                }
+
+                // 3. Busca os vendedores da mesma loja e popula o select
+                const sel = document.getElementById('modAtendente');
+                const { data: vendedoresLoja } = await db
+                    .from('usuarios')
+                    .select('id_usuario, nome')
+                    .eq('id_loja', currentUser.id_loja)
+                    .eq('perfil', 'Vendedor')
+                    .eq('status', 'Ativo')
+                    .order('nome');
+                (vendedoresLoja || []).forEach(v => {
+                    const opt = document.createElement('option');
+                    opt.value = v.id_usuario;
+                    opt.textContent = v.nome;
+                    sel.appendChild(opt);
+                });
+            }
         }
 
         async function salvarOrcamento() {
@@ -4950,6 +5027,13 @@ async function renderCarteiraPage() {
                 }
                 
                 if (!whats) { document.getElementById('errWhats').textContent = 'Obrigatório'; valid = false; }
+
+                // Passo C: Terminal — valida obrigatoriedade do atendente
+                const atendenteEl = document.getElementById('modAtendente');
+                if (atendenteEl && !atendenteEl.value) {
+                    document.getElementById('errAtendente').textContent = 'Selecione quem está atendendo';
+                    valid = false;
+                }
                                 
                 const produtoRows = document.querySelectorAll('.produto-row');
                 if (produtoRows.length === 0) {
@@ -5036,7 +5120,10 @@ async function renderCarteiraPage() {
                 // 1. Montamos o payload SEM o protocolo ainda
                 const payload = {
                     id_cliente: idCliente,
-                    id_usuario: currentUser.id_usuario,
+                    id_usuario: (() => {
+                        const atendenteEl = document.getElementById('modAtendente');
+                        return (atendenteEl && atendenteEl.value) ? atendenteEl.value : currentUser.id_usuario;
+                    })(),
                     id_status: idStatus,
                     id_nivel_interesse: idInteresse,
                     valor_orcado: valorTotal,
@@ -5283,7 +5370,7 @@ async function renderCarteiraPage() {
 
         function voltarDetalhes() {
             const fab = document.getElementById('fabButton');
-            if (fab && currentUser?.perfil === 'Vendedor') fab.style.display = 'flex';
+            if (fab && (currentUser?.perfil === 'Vendedor' || (currentUser.perfil || '').toLowerCase() === 'terminal')) fab.style.display = 'flex';
             currentView = previousView;
             navigateTo(currentView);
         }
@@ -5333,6 +5420,14 @@ async function renderCarteiraPage() {
             }
         }
 
+        // Estado do filtro de vendedor para Terminal
+        window._terminalVendedorFiltro = window._terminalVendedorFiltro || 'todos';
+
+        function terminalFiltrarVendedor(idVendedor) {
+            window._terminalVendedorFiltro = idVendedor;
+            renderKanbanBoard();
+        }
+
         async function renderKanbanBoard() {
             const board = document.getElementById('kanbanBoard');
             if (!board) return;
@@ -5350,6 +5445,8 @@ async function renderCarteiraPage() {
                     query = query.eq('usuarios.id_loja', currentUser.id_loja);
                 } else if (currentUser.perfil === 'Vendedor') {
                     query = query.eq('id_usuario', currentUser.id_usuario);
+                } else if ((currentUser.perfil || '').toLowerCase() === 'terminal') {
+                    query = query.eq('usuarios.id_loja', currentUser.id_loja);
                 } else {
                     if (selectedVendedor !== 'todos') {
                         query = query.eq('id_usuario', selectedVendedor);
@@ -5466,7 +5563,7 @@ async function renderCarteiraPage() {
                                     <span class="kcard-value">R$ ${valor}</span>
                                     <div class="kcard-meta">
                                         <div class="kcard-days ${daysClass}">${clockIcon}${diasLabel}</div>
-                                        ${isGerente ? `<div class="kcard-avatar" title="${escapeHtml(vendedor)}">${inicial}</div>` : ''}
+                                        ${(isGerente || (currentUser.perfil || '').toLowerCase() === 'terminal') ? `<div class="kcard-avatar" title="${escapeHtml(vendedor)}">${inicial}</div>` : ''}
                                     </div>
                                 </div>
                             </div>`;
