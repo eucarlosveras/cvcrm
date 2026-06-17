@@ -5539,13 +5539,24 @@ ${isTerminal ? `<select class="form-input" style="width:auto; padding:8px 16px; 
                                 clockIcon = `<svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`;
                             } else if (isPerdido) {
                                 borderClass = 'kcard-lost';
+                            } else if (o.data_contato) {
+                                // FOCO 1 e 2: A agenda do vendedor tem prioridade absoluta
+                                const dc = new Date(o.data_contato + 'T00:00:00');
+                                if (dc < hoje) {
+                                    // Foco 1: Contato vencido — vendedor perdeu o prazo
+                                    borderClass = 'kcard-urgent';
+                                    daysClass = 'alert-days';
+                                    const diasAtraso = Math.floor((hoje - dc) / 86400000);
+                                    alertChip = `<div class="kcard-alert-chip"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Retorno atrasado ${diasAtraso}d</div>`;
+                                } else {
+                                    // Foco 2: Contato agendado no futuro — negócio sob controle
+                                    borderClass = 'kcard-fresh';
+                                }
                             } else if (diasAtras >= 5) {
+                                // FOCO 3: Sem nenhuma agenda e já faz muitos dias — abandono real
                                 borderClass = 'kcard-urgent';
                                 daysClass = 'alert-days';
-                                alertChip = `<div class="kcard-alert-chip"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>${diasAtras}d sem contato</div>`;
-                            } else if (o.data_contato) {
-                                const dc = new Date(o.data_contato + 'T00:00:00');
-                                if (dc <= hoje) { borderClass = 'kcard-warn'; daysClass = 'warn-days'; }
+                                alertChip = `<div class="kcard-alert-chip"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>${diasAtras}d no funil</div>`;
                             }
 
                             const diasLabel = isFechado ? `há ${diasAtras}d` : diasAtras === 0 ? 'Hoje' : diasAtras === 1 ? 'Ontem' : `há ${diasAtras}d`;
