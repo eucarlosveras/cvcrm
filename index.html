@@ -1874,7 +1874,7 @@
         <div class="modal-card" style="max-width:420px;">
             <h3 id="modalUsuarioTitle">Novo Usuário</h3>
             <label for="adminModNome">Nome Completo</label><input type="text" id="adminModNome" placeholder="Ex: João da Silva">
-            <label for="adminModEmail">E-mail (Opcional)</label><input type="email" id="adminModEmail" placeholder="vendedor@loja.com.br">
+            <label for="adminModEmail">E-mail</label><input type="email" id="adminModEmail" placeholder="vendedor@loja.com.br">
             
             <label for="adminModLoja">Loja Base</label>
             <select id="adminModLoja" class="form-input" style="margin-bottom:4px;">
@@ -2426,8 +2426,12 @@
             const senha = document.getElementById('adminModSenha').value;
             const err = document.getElementById('errAdminUsuario');
 
-            if (!nome || !email || !senha) {
-                err.textContent = 'Preencha Nome, E-mail e Senha.';
+            if (!nome || !email) {
+                err.textContent = 'Preencha Nome e E-mail.';
+                return;
+            }
+            if (!senha && !idUsuarioEmEdicao) {
+                err.textContent = 'Defina uma senha inicial para o novo usuário.';
                 return;
             }
             if (!loja) {
@@ -2439,21 +2443,33 @@
             btn.classList.add('saving'); btn.disabled = true; err.textContent = '';
 
             try {
-                const payload = { nome, email, loja, perfil, status, senha };
-                console.log("Payload sendo enviado para a Edge Function:", JSON.stringify(payload));
-                const { data, error } = await db.functions.invoke('criar-usuario', {
-                    body: payload
-                });
+                if (idUsuarioEmEdicao) {
+                    // EDICAO: atualiza direto na tabela usuarios
+                    const updatePayload = { nome, email, id_loja: loja, perfil, status };
+                    const { error: updateError } = await db.from('usuarios')
+                        .update(updatePayload)
+                        .eq('id_usuario', idUsuarioEmEdicao);
+                    if (updateError) throw updateError;
+                    showToast('Usuário atualizado com sucesso!', 'success');
+                } else {
+                    // CRIACAO: chama Edge Function que cria no Auth + insere em usuarios
+                    const payload = { nome, email, loja, perfil, status, senha };
+                    console.log("Payload sendo enviado para a Edge Function:", JSON.stringify(payload));
+                    const { data, error } = await db.functions.invoke('criar-usuario', {
+                        body: payload
+                    });
+                    if (error) throw new Error(error.message);
+                    showToast('Usuário criado com sucesso!', 'success');
+                }
 
-                if (error) throw new Error(error.message);
-
-                showToast('Usuário criado com sucesso!', 'success');
+                idUsuarioEmEdicao = null;
                 closeModal('modalUsuarioAdmin');
-                
+
                 const { data: usuarios } = await db.from('usuarios').select('*').order('nome');
                 todosUsuarios = usuarios || [];
+                todosVendedores = todosUsuarios.filter(u => u.perfil === 'Vendedor');
                 renderAdminUsuarios(document.getElementById('mainContent'));
-                
+
             } catch (e) {
                 err.textContent = 'Erro: ' + e.message;
             } finally {
