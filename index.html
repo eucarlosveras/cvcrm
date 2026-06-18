@@ -3445,55 +3445,47 @@ function selectFilter(filter) {
 
         }
 
-async function renderCarteiraPage() {
-    const main = document.getElementById('mainContent');
-    const isGerente = currentUser.perfil === 'Gerente' || currentUser.perfil === 'Administrador' || currentUser.perfil === 'Admin';
-    const isTerminal = (currentUser.perfil || '').toLowerCase() === 'terminal';
-
-    // Mantém o mesmo padrão de cabeçalho e filtros do seu sistema
-    main.innerHTML = `
-        <header class="dashboard-header">
-            <div style="display: flex; flex-direction: column; gap: 4px;">
-                <h1 style="margin: 0;">Pipeline de Vendas</h1>
-                <span style="font-size: 13px; color: var(--text-muted); font-weight: 500;">Visão Geral do Funil</span>
-            </div>
-            <div class="header-controls">
-                ${renderFiltrosData(isGerente)}
-                <div class="header-notification-area">
-                    <button class="btn-notification" id="btnNotification" onclick="event.stopPropagation(); toggleNotifications();" aria-label="Notificações">
-                        <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
-                        <span class="notification-badge" id="notificationBadgeCount"></span>
-                    </button>
-                </div>
-            </div>
-        </header>
-
-        <div style="margin-bottom: 16px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-            <div id="searchTagContainer"></div>
-            <input type="text" class="search-input" placeholder="Buscar cliente..." id="searchInput" onchange="handleSearch()" onkeyup="if(event.key === 'Enter') handleSearch()" value="${escapeHtml(searchTerm)}">
-            <input type="text" class="search-input" placeholder="Buscar protocolo..." id="searchProtocoloInput" onchange="handleSearchProtocolo()" onkeyup="if(event.key === 'Enter') handleSearchProtocolo()" value="${escapeHtml(searchProtocolo)}" style="width:160px;">
-            <select class="form-input" style="width:auto; padding:8px 16px; border-radius:20px; font-size:var(--font-sm);" id="listFilterSelect" onchange="selectFilter(this.value)">
-                 <option value="todos" ${currentFilter === 'todos' ? 'selected' : ''}>Todos os Status</option>
-                 <option value="Contato Inicial" ${currentFilter === STATUS.CONTATO_INICIAL ? 'selected' : ''}>Contato Inicial</option>
-                 <option value="Negociação" ${currentFilter === STATUS.NEGOCIACAO ? 'selected' : ''}>Negociação</option>
-                 <option value="Em Fechamento" ${currentFilter === STATUS.EM_FECHAMENTO ? 'selected' : ''}>Em Fechamento</option>
-                 <option value="Fechado" ${currentFilter === STATUS.FECHADO ? 'selected' : ''}>Fechado</option>
-                 <option value="Perdido" ${currentFilter === STATUS.PERDIDO ? 'selected' : ''}>Perdido</option>
-            </select>
-        </div>
-
-        <div id="kanbanBoard" class="active"></div>
-    `;
-
-    // Executa a sua função nativa do arquivo para renderizar as colunas e os cards
-    await renderKanbanBoard();
-    renderNotificationBadge(buildNotifications().length);
-    
-	// Restaura seleção após re-render do Kanban
-            sel.value = window._terminalVendedorFiltro || 'todos';
-        }
-    }
-}
+			async function renderCarteiraPage() {
+			    const main = document.getElementById('mainContent');
+			    const isGerente = currentUser.perfil === 'Gerente' || currentUser.perfil === 'Administrador' || currentUser.perfil === 'Admin';
+			
+			    main.innerHTML = `
+			        <header class="dashboard-header">
+			            <div style="display: flex; flex-direction: column; gap: 4px;">
+			                <h1 style="margin: 0;">Pipeline de Vendas</h1>
+			                <span style="font-size: 13px; color: var(--text-muted); font-weight: 500;">Visão Geral do Funil</span>
+			            </div>
+			            <div class="header-controls">
+			                ${renderFiltrosData(isGerente)}
+			                <div class="header-notification-area">
+			                    <button class="btn-notification" id="btnNotification" onclick="event.stopPropagation(); toggleNotifications();" aria-label="Notificações">
+			                        <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+			                        <span class="notification-badge" id="notificationBadgeCount"></span>
+			                    </button>
+			                </div>
+			            </div>
+			        </header>
+			
+			        <div style="margin-bottom: 16px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+			            <div id="searchTagContainer"></div>
+			            <input type="text" class="search-input" placeholder="Buscar cliente..." id="searchInput" onchange="handleSearch()" onkeyup="if(event.key === 'Enter') handleSearch()" value="${escapeHtml(searchTerm)}">
+			            <input type="text" class="search-input" placeholder="Buscar protocolo..." id="searchProtocoloInput" onchange="handleSearchProtocolo()" onkeyup="if(event.key === 'Enter') handleSearchProtocolo()" value="${escapeHtml(searchProtocolo)}" style="width:160px;">
+			            <select class="form-input" style="width:auto; padding:8px 16px; border-radius:20px; font-size:var(--font-sm);" id="listFilterSelect" onchange="selectFilter(this.value)">
+			                 <option value="todos" ${currentFilter === 'todos' ? 'selected' : ''}>Todos os Status</option>
+			                 <option value="Contato Inicial" ${currentFilter === STATUS.CONTATO_INICIAL ? 'selected' : ''}>Contato Inicial</option>
+			                 <option value="Negociação" ${currentFilter === STATUS.NEGOCIACAO ? 'selected' : ''}>Negociação</option>
+			                 <option value="Em Fechamento" ${currentFilter === STATUS.EM_FECHAMENTO ? 'selected' : ''}>Em Fechamento</option>
+			                 <option value="Fechado" ${currentFilter === STATUS.FECHADO ? 'selected' : ''}>Fechado</option>
+			                 <option value="Perdido" ${currentFilter === STATUS.PERDIDO ? 'selected' : ''}>Perdido</option>
+			            </select>
+			        </div>
+			
+			        <div id="kanbanBoard" class="active"></div>
+			    `;
+			
+			    await renderKanbanBoard();
+			    renderNotificationBadge(buildNotifications().length);
+			}
 
         function obterSemanaAtual() {
             const hoje = new Date();
