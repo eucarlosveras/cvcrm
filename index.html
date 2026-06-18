@@ -5002,14 +5002,7 @@ ${isTerminal ? `<select class="form-input" style="width:auto; padding:8px 16px; 
                 }
                 
                 if (!whats) { document.getElementById('errWhats').textContent = 'Obrigatório'; valid = false; }
-
-                // Passo C: Terminal — valida obrigatoriedade do atendente
-                const atendenteEl = document.getElementById('modAtendente');
-                if (atendenteEl && !atendenteEl.value) {
-                    document.getElementById('errAtendente').textContent = 'Selecione quem está atendendo';
-                    valid = false;
-                }
-                                
+                              
                 const produtoRows = document.querySelectorAll('.produto-row');
                 if (produtoRows.length === 0) {
                     document.getElementById('errItens').textContent = 'Adicione pelo menos um produto';
