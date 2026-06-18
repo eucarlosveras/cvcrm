@@ -5086,23 +5086,20 @@ ${isTerminal ? `<select class="form-input" style="width:auto; padding:8px 16px; 
                     dataCriacaoFinal = `${dataOrcamento}T12:00:00.000Z`;
                 }
                 // 1. Montamos o payload SEM o protocolo ainda
-                const payload = {
-                    id_cliente: idCliente,
-                    id_usuario: (() => {
-                        const atendenteEl = document.getElementById('modAtendente');
-                        return (atendenteEl && atendenteEl.value) ? atendenteEl.value : currentUser.id_usuario;
-                    })(),
-                    id_status: idStatus,
-                    id_nivel_interesse: idInteresse,
-                    valor_orcado: valorTotal,
-                    modelo_colchao: produtosList.map(p => p.nome).join(', '),
-                    data_criacao: dataCriacaoFinal,
-                    data_contato: dataContato || null,
-                    hora_contato: horaContato || null,
-                    observacao_agendamento: motivoContato || null,
-                    observacoes: observacoes,
-                    origem: origem
-                };
+				const payload = {
+				    id_cliente: idCliente, // <--- NÃO ESQUEÇA DESTA LINHA!
+				    id_usuario: currentUser.id_usuario,
+				    id_status: idStatus,
+				    id_nivel_interesse: idInteresse,
+				    valor_orcado: valorTotal,
+				    modelo_colchao: produtosList.map(p => p.nome).join(', '),
+				    data_criacao: dataCriacaoFinal,
+				    data_contato: dataContato || null,
+				    hora_contato: horaContato || null,
+				    observacao_agendamento: motivoContato || null,
+				    observacoes: observacoes,
+				    origem: origem
+				};
                 // 2. INSERT simples — o banco gera o protocolo via nextval()
                 const { data: newOrc, error: errOrc } = await db.from('orcamentos')
                     .insert(payload)
