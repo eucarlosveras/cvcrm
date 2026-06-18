@@ -307,6 +307,7 @@
         
         .kcard-alert-chip { position:absolute; top:-8px; right:10px; background:#ef4444; color:#fff; font-size:9px; font-weight:700; padding:2px 8px; border-radius:var(--radius-full); letter-spacing:.04em; display:flex; align-items:center; gap:3px; white-space:nowrap; z-index: 2; }
         .kcard-alert-chip svg { width:9px; height:9px; stroke:currentColor; fill:none; stroke-width:2.5; }
+        .kcard-alert-chip.chip-warn { background:var(--accent-orange,#f59e0b); }
         .kcard-avatar { width:20px; height:20px; border-radius:5px; background:linear-gradient(135deg,var(--brand-blue),var(--brand-blue-dark,#4f46e5)); color:#fff; font-size:9px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
         
         .kcol-total { font-size:var(--font-xs); font-weight:600; color:var(--text-muted); text-align:center; padding:8px 4px 2px; border-top:1px dashed var(--border-light); margin-top:4px; }
@@ -334,6 +335,7 @@
         .kcard-days.alert-days { color:#ef4444; } .kcard-days.warn-days { color:var(--accent-orange,#f59e0b); }
         .kcard-alert-chip { position:absolute; top:-8px; right:10px; background:#ef4444; color:#fff; font-size:9px; font-weight:700; padding:2px 8px; border-radius:var(--radius-full); letter-spacing:.04em; display:flex; align-items:center; gap:3px; white-space:nowrap; }
         .kcard-alert-chip svg { width:9px; height:9px; stroke:currentColor; fill:none; stroke-width:2.5; }
+        .kcard-alert-chip.chip-warn { background:var(--accent-orange,#f59e0b); }
         .kcard-avatar { width:20px; height:20px; border-radius:5px; background:linear-gradient(135deg,var(--brand-blue),var(--brand-blue-dark,#4f46e5)); color:#fff; font-size:9px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
         .kcol-total { font-size:var(--font-xs); font-weight:600; color:var(--text-muted); text-align:center; padding:8px 4px 2px; border-top:1px dashed var(--border-light); margin-top:4px; }
         .kcol-total strong { color:var(--text-primary); }
@@ -5454,7 +5456,7 @@ ${isTerminal ? `<select class="form-input" style="width:auto; padding:8px 16px; 
 
                 // Busca TODOS os orçamentos em aberto (sem paginação — kanban precisa do total)
                 let query = db.from('orcamentos')
-                    .select('id_orcamento, protocolo, data_criacao, valor_orcado, modelo_colchao, data_contato, hora_contato, usuarios(nome, id_loja), clientes(nome_cliente), status_orcamento(nome)')
+                    .select('id_orcamento, protocolo, data_criacao, valor_orcado, modelo_colchao, data_contato, hora_contato, ligacao_confirmada, usuarios(nome, id_loja), clientes(nome_cliente), status_orcamento(nome)')
                     .not('id_status', 'is', null);
 
                 if (currentUser.perfil === 'Gerente') {
@@ -5559,11 +5561,18 @@ ${isTerminal ? `<select class="form-input" style="width:auto; padding:8px 16px; 
                                 // FOCO 1 e 2: A agenda do vendedor tem prioridade absoluta
                                 const dc = new Date(o.data_contato + 'T00:00:00');
                                 if (dc < hoje) {
-                                    // Foco 1: Contato vencido — vendedor perdeu o prazo
-                                    borderClass = 'kcard-urgent';
-                                    daysClass = 'alert-days';
-                                    const diasAtraso = Math.floor((hoje - dc) / 86400000);
-                                    alertChip = `<div class="kcard-alert-chip"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Retorno atrasado ${diasAtraso}d</div>`;
+                                    if (o.ligacao_confirmada) {
+                                        // Contato foi realizado, mas vendedor ainda não agendou o próximo passo
+                                        borderClass = 'kcard-warn';
+                                        daysClass = 'warn-days';
+                                        alertChip = `<div class="kcard-alert-chip chip-warn"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Agendar próximo passo</div>`;
+                                    } else {
+                                        // Foco 1: Contato vencido — vendedor não tentou contato ainda
+                                        borderClass = 'kcard-urgent';
+                                        daysClass = 'alert-days';
+                                        const diasAtraso = Math.floor((hoje - dc) / 86400000);
+                                        alertChip = `<div class="kcard-alert-chip"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Retorno atrasado ${diasAtraso}d</div>`;
+                                    }
                                 } else {
                                     // Foco 2: Contato agendado no futuro — negócio sob controle
                                     borderClass = 'kcard-fresh';
