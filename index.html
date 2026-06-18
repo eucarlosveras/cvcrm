@@ -4971,47 +4971,6 @@ ${isTerminal ? `<select class="form-input" style="width:auto; padding:8px 16px; 
             calcTotalModal();
             setTimeout(() => { const modNome = document.getElementById('modNome'); if(modNome) modNome.focus(); }, 100);
 
-            // Passo B: se Terminal, injeta e popula o campo "Quem está atendendo?" no card de Dados do Cliente
-            if ((currentUser.perfil || '').toLowerCase() === 'terminal') {
-                // 1. Cria o bloco do campo
-                const atendenteDiv = document.createElement('div');
-                atendenteDiv.className = 'form-group';
-                atendenteDiv.style.cssText = 'padding:14px 16px; background:var(--brand-blue-subtle); border:2px solid var(--brand-blue); border-radius:var(--radius-md); margin-bottom:16px;';
-                atendenteDiv.innerHTML = `
-                    <label for="modAtendente" style="font-size:var(--font-xs); font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--brand-blue); margin-bottom:8px; display:block;">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:-2px; margin-right:5px;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                        Quem está atendendo? *
-                    </label>
-                    <select id="modAtendente" class="form-input" style="font-weight:600;">
-                        <option value="">— Selecione o vendedor —</option>
-                    </select>
-                    <div class="field-error" id="errAtendente" style="color:#ef4444; font-size:12px; margin-top:4px;"></div>
-                `;
-
-                // 2. Insere como primeiro elemento dentro da primeira section (Dados do Cliente)
-                const secaoCliente = main.querySelector('.novo-orcamento-section');
-                if (secaoCliente) {
-                    const sectionHeader = secaoCliente.querySelector('.section-header');
-                    sectionHeader ? sectionHeader.insertAdjacentElement('afterend', atendenteDiv)
-                                 : secaoCliente.prepend(atendenteDiv);
-                }
-
-                // 3. Busca os vendedores da mesma loja e popula o select
-                const sel = document.getElementById('modAtendente');
-                const { data: vendedoresLoja } = await db
-                    .from('usuarios')
-                    .select('id_usuario, nome')
-                    .eq('id_loja', currentUser.id_loja)
-                    .eq('perfil', 'Vendedor')
-                    .eq('status', 'Ativo')
-                    .order('nome');
-                (vendedoresLoja || []).forEach(v => {
-                    const opt = document.createElement('option');
-                    opt.value = v.id_usuario;
-                    opt.textContent = v.nome;
-                    sel.appendChild(opt);
-                });
-            }
         }
 
         async function salvarOrcamento() {
