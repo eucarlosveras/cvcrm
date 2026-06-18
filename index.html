@@ -307,7 +307,6 @@
         
         .kcard-alert-chip { position:absolute; top:-8px; right:10px; background:#ef4444; color:#fff; font-size:9px; font-weight:700; padding:2px 8px; border-radius:var(--radius-full); letter-spacing:.04em; display:flex; align-items:center; gap:3px; white-space:nowrap; z-index: 2; }
         .kcard-alert-chip svg { width:9px; height:9px; stroke:currentColor; fill:none; stroke-width:2.5; }
-        .kcard-alert-chip.chip-warn { background:var(--accent-orange,#f59e0b); }
         .kcard-avatar { width:20px; height:20px; border-radius:5px; background:linear-gradient(135deg,var(--brand-blue),var(--brand-blue-dark,#4f46e5)); color:#fff; font-size:9px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
         
         .kcol-total { font-size:var(--font-xs); font-weight:600; color:var(--text-muted); text-align:center; padding:8px 4px 2px; border-top:1px dashed var(--border-light); margin-top:4px; }
@@ -335,7 +334,6 @@
         .kcard-days.alert-days { color:#ef4444; } .kcard-days.warn-days { color:var(--accent-orange,#f59e0b); }
         .kcard-alert-chip { position:absolute; top:-8px; right:10px; background:#ef4444; color:#fff; font-size:9px; font-weight:700; padding:2px 8px; border-radius:var(--radius-full); letter-spacing:.04em; display:flex; align-items:center; gap:3px; white-space:nowrap; }
         .kcard-alert-chip svg { width:9px; height:9px; stroke:currentColor; fill:none; stroke-width:2.5; }
-        .kcard-alert-chip.chip-warn { background:var(--accent-orange,#f59e0b); }
         .kcard-avatar { width:20px; height:20px; border-radius:5px; background:linear-gradient(135deg,var(--brand-blue),var(--brand-blue-dark,#4f46e5)); color:#fff; font-size:9px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
         .kcol-total { font-size:var(--font-xs); font-weight:600; color:var(--text-muted); text-align:center; padding:8px 4px 2px; border-top:1px dashed var(--border-light); margin-top:4px; }
         .kcol-total strong { color:var(--text-primary); }
@@ -1876,7 +1874,7 @@
         <div class="modal-card" style="max-width:420px;">
             <h3 id="modalUsuarioTitle">Novo Usuário</h3>
             <label for="adminModNome">Nome Completo</label><input type="text" id="adminModNome" placeholder="Ex: João da Silva">
-            <label for="adminModEmail">E-mail</label><input type="email" id="adminModEmail" placeholder="vendedor@loja.com.br">
+            <label for="adminModEmail">E-mail (Opcional)</label><input type="email" id="adminModEmail" placeholder="vendedor@loja.com.br">
             
             <label for="adminModLoja">Loja Base</label>
             <select id="adminModLoja" class="form-input" style="margin-bottom:4px;">
@@ -2428,12 +2426,8 @@
             const senha = document.getElementById('adminModSenha').value;
             const err = document.getElementById('errAdminUsuario');
 
-            if (!nome || !email) {
-                err.textContent = 'Preencha Nome e E-mail.';
-                return;
-            }
-            if (!senha && !idUsuarioEmEdicao) {
-                err.textContent = 'Defina uma senha inicial para o novo usuário.';
+            if (!nome || !email || !senha) {
+                err.textContent = 'Preencha Nome, E-mail e Senha.';
                 return;
             }
             if (!loja) {
@@ -2445,33 +2439,21 @@
             btn.classList.add('saving'); btn.disabled = true; err.textContent = '';
 
             try {
-                if (idUsuarioEmEdicao) {
-                    // EDICAO: atualiza direto na tabela usuarios
-                    const updatePayload = { nome, email, id_loja: loja, perfil, status };
-                    const { error: updateError } = await db.from('usuarios')
-                        .update(updatePayload)
-                        .eq('id_usuario', idUsuarioEmEdicao);
-                    if (updateError) throw updateError;
-                    showToast('Usuário atualizado com sucesso!', 'success');
-                } else {
-                    // CRIACAO: chama Edge Function que cria no Auth + insere em usuarios
-                    const payload = { nome, email, loja, perfil, status, senha };
-                    console.log("Payload sendo enviado para a Edge Function:", JSON.stringify(payload));
-                    const { data, error } = await db.functions.invoke('criar-usuario', {
-                        body: payload
-                    });
-                    if (error) throw new Error(error.message);
-                    showToast('Usuário criado com sucesso!', 'success');
-                }
+                const payload = { nome, email, loja, perfil, status, senha };
+                console.log("Payload sendo enviado para a Edge Function:", JSON.stringify(payload));
+                const { data, error } = await db.functions.invoke('criar-usuario', {
+                    body: payload
+                });
 
-                idUsuarioEmEdicao = null;
+                if (error) throw new Error(error.message);
+
+                showToast('Usuário criado com sucesso!', 'success');
                 closeModal('modalUsuarioAdmin');
-
+                
                 const { data: usuarios } = await db.from('usuarios').select('*').order('nome');
                 todosUsuarios = usuarios || [];
-                todosVendedores = todosUsuarios.filter(u => u.perfil === 'Vendedor');
                 renderAdminUsuarios(document.getElementById('mainContent'));
-
+                
             } catch (e) {
                 err.textContent = 'Erro: ' + e.message;
             } finally {
@@ -5545,6 +5527,7 @@ ${isTerminal ? `<select class="form-input" style="width:auto; padding:8px 16px; 
                             const dataCriacao = new Date(o.data_criacao);
                             const diasAtras = Math.floor((hoje - dataCriacao) / 86400000);
                             let borderClass = 'kcard-fresh';
+                            let alertChip = '';
                             let daysClass = 'ok-days';
                             let clockIcon = `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
 
@@ -5556,6 +5539,13 @@ ${isTerminal ? `<select class="form-input" style="width:auto; padding:8px 16px; 
                                 clockIcon = `<svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`;
                             } else if (isPerdido) {
                                 borderClass = 'kcard-lost';
+                            } else if (diasAtras >= 5) {
+                                borderClass = 'kcard-urgent';
+                                daysClass = 'alert-days';
+                                alertChip = `<div class="kcard-alert-chip"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>${diasAtras}d sem contato</div>`;
+                            } else if (o.data_contato) {
+                                const dc = new Date(o.data_contato + 'T00:00:00');
+                                if (dc <= hoje) { borderClass = 'kcard-warn'; daysClass = 'warn-days'; }
                             }
 
                             const diasLabel = isFechado ? `há ${diasAtras}d` : diasAtras === 0 ? 'Hoje' : diasAtras === 1 ? 'Ontem' : `há ${diasAtras}d`;
@@ -5563,6 +5553,7 @@ ${isTerminal ? `<select class="form-input" style="width:auto; padding:8px 16px; 
                             // 3. Tornamos o Card "arrastável" (draggable="true")
                             html += `
                             <div class="kcard ${borderClass}" draggable="true" ondragstart="dragStart(event, '${o.id_orcamento}')" onclick="abrirDetalhesCliente('${o.id_orcamento}')" id="card-${o.id_orcamento}">
+                                ${alertChip}
                                 <div class="kcard-top">
                                     <div class="kcard-name">${escapeHtml(nome)}</div>
                                     <span class="kcard-proto">${escapeHtml(idNumerico)}</span>
