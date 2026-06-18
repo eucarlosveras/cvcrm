@@ -3480,9 +3480,6 @@ async function renderCarteiraPage() {
                  <option value="Fechado" ${currentFilter === STATUS.FECHADO ? 'selected' : ''}>Fechado</option>
                  <option value="Perdido" ${currentFilter === STATUS.PERDIDO ? 'selected' : ''}>Perdido</option>
             </select>
-${isTerminal ? `<select class="form-input" style="width:auto; padding:8px 16px; border-radius:20px; font-size:var(--font-sm);" id="terminalVendedorFilter" onchange="terminalFiltrarVendedor(this.value)">
-                <option value="todos">Todos os Vendedores</option>
-            </select>` : ''}
         </div>
 
         <div id="kanbanBoard" class="active"></div>
@@ -3491,19 +3488,8 @@ ${isTerminal ? `<select class="form-input" style="width:auto; padding:8px 16px; 
     // Executa a sua função nativa do arquivo para renderizar as colunas e os cards
     await renderKanbanBoard();
     renderNotificationBadge(buildNotifications().length);
-
-    // Popular filtro de vendedor para Terminal e restaurar valor selecionado
-    if (isTerminal) {
-        const sel = document.getElementById('terminalVendedorFilter');
-        if (sel) {
-            const vendedoresLoja = todosUsuarios.filter(u => u.id_loja === currentUser.id_loja && u.perfil === 'Vendedor' && u.status === 'Ativo');
-            vendedoresLoja.sort((a,b) => a.nome.localeCompare(b.nome)).forEach(v => {
-                const opt = document.createElement('option');
-                opt.value = v.id_usuario;
-                opt.textContent = v.nome;
-                sel.appendChild(opt);
-            });
-            // Restaura seleção após re-render do Kanban
+    
+	// Restaura seleção após re-render do Kanban
             sel.value = window._terminalVendedorFiltro || 'todos';
         }
     }
