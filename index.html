@@ -5456,7 +5456,7 @@ ${isTerminal ? `<select class="form-input" style="width:auto; padding:8px 16px; 
 
                 // Busca TODOS os orçamentos em aberto (sem paginação — kanban precisa do total)
                 let query = db.from('orcamentos')
-                    .select('id_orcamento, protocolo, data_criacao, valor_orcado, modelo_colchao, data_contato, hora_contato, ligacao_confirmada, usuarios(nome, id_loja), clientes(nome_cliente), status_orcamento(nome)')
+                    .select('id_orcamento, protocolo, data_criacao, valor_orcado, modelo_colchao, data_contato, hora_contato, usuarios(nome, id_loja), clientes(nome_cliente), status_orcamento(nome)')
                     .not('id_status', 'is', null);
 
                 if (currentUser.perfil === 'Gerente') {
@@ -5545,7 +5545,6 @@ ${isTerminal ? `<select class="form-input" style="width:auto; padding:8px 16px; 
                             const dataCriacao = new Date(o.data_criacao);
                             const diasAtras = Math.floor((hoje - dataCriacao) / 86400000);
                             let borderClass = 'kcard-fresh';
-                            let alertChip = '';
                             let daysClass = 'ok-days';
                             let clockIcon = `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
 
@@ -5557,31 +5556,6 @@ ${isTerminal ? `<select class="form-input" style="width:auto; padding:8px 16px; 
                                 clockIcon = `<svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`;
                             } else if (isPerdido) {
                                 borderClass = 'kcard-lost';
-                            } else if (o.data_contato) {
-                                // FOCO 1 e 2: A agenda do vendedor tem prioridade absoluta
-                                const dc = new Date(o.data_contato + 'T00:00:00');
-                                if (dc < hoje) {
-                                    if (o.ligacao_confirmada) {
-                                        // Contato foi realizado, mas vendedor ainda não agendou o próximo passo
-                                        borderClass = 'kcard-warn';
-                                        daysClass = 'warn-days';
-                                        alertChip = `<div class="kcard-alert-chip chip-warn"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Agendar próximo passo</div>`;
-                                    } else {
-                                        // Foco 1: Contato vencido — vendedor não tentou contato ainda
-                                        borderClass = 'kcard-urgent';
-                                        daysClass = 'alert-days';
-                                        const diasAtraso = Math.floor((hoje - dc) / 86400000);
-                                        alertChip = `<div class="kcard-alert-chip"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Retorno atrasado ${diasAtraso}d</div>`;
-                                    }
-                                } else {
-                                    // Foco 2: Contato agendado no futuro — negócio sob controle
-                                    borderClass = 'kcard-fresh';
-                                }
-                            } else if (diasAtras >= 5) {
-                                // FOCO 3: Sem nenhuma agenda e já faz muitos dias — abandono real
-                                borderClass = 'kcard-urgent';
-                                daysClass = 'alert-days';
-                                alertChip = `<div class="kcard-alert-chip"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>${diasAtras}d no funil</div>`;
                             }
 
                             const diasLabel = isFechado ? `há ${diasAtras}d` : diasAtras === 0 ? 'Hoje' : diasAtras === 1 ? 'Ontem' : `há ${diasAtras}d`;
@@ -5589,7 +5563,6 @@ ${isTerminal ? `<select class="form-input" style="width:auto; padding:8px 16px; 
                             // 3. Tornamos o Card "arrastável" (draggable="true")
                             html += `
                             <div class="kcard ${borderClass}" draggable="true" ondragstart="dragStart(event, '${o.id_orcamento}')" onclick="abrirDetalhesCliente('${o.id_orcamento}')" id="card-${o.id_orcamento}">
-                                ${alertChip}
                                 <div class="kcard-top">
                                     <div class="kcard-name">${escapeHtml(nome)}</div>
                                     <span class="kcard-proto">${escapeHtml(idNumerico)}</span>
