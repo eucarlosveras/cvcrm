@@ -1912,6 +1912,54 @@
         </div>
     </div>
 
+    <!-- ── MODAL AJUSTAR PROPOSTA ─────────────────────────────────────────── -->
+    <div class="modal-overlay" id="modalAjusteProposta" onclick="if(event.target===this)closeModal('modalAjusteProposta')">
+        <div class="modal-card" style="max-width:540px; width:96%;">
+
+            <h3 style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                Ajustar Proposta
+            </h3>
+            <p id="ajustePropostaSubtitle" style="font-size:var(--font-xs);color:var(--text-muted);margin-bottom:18px;"></p>
+
+            <!-- container de linhas de produto (reutiliza .produto-row do novo orçamento) -->
+            <div id="ajusteProdutosContainer" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px;"></div>
+
+            <!-- botão adicionar linha -->
+            <button type="button" class="btn-add-item-premium" style="margin-bottom:12px;" onclick="ajusteAdicionarLinha()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Adicionar linha de produto
+            </button>
+
+            <!-- total -->
+            <div class="total-modal-box" style="margin-bottom:14px;">
+                <span>Total</span>
+                <span class="valor-total" id="ajusteDisplayTotal">R$ 0,00</span>
+            </div>
+
+            <!-- motivo (opcional) -->
+            <div class="form-group" style="margin-bottom:6px;">
+                <label style="font-size:12px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.05em;">
+                    Motivo da Alteração
+                    <span style="font-weight:400;text-transform:none;">(opcional)</span>
+                </label>
+                <input type="text" id="ajusteMotivo" class="form-input" style="margin-top:6px;font-size:13px;"
+                    placeholder="Ex: Cliente trocou o modelo, desconto negociado...">
+            </div>
+
+            <div class="field-error" id="ajustePropostaMsg" style="margin-top:8px;"></div>
+
+            <div class="modal-btns">
+                <button class="btn-cancelar-modal" onclick="closeModal('modalAjusteProposta')">Cancelar</button>
+                <button class="btn-salvar-modal" id="btnSalvarAjuste" onclick="salvarAjusteProposta()">
+                    <span class="btn-spinner"></span>
+                    <span class="btn-text">Salvar Alteração</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    <!-- ── FIM MODAL AJUSTAR PROPOSTA ──────────────────────────────────────── -->
+
     <div class="notification-dropdown" id="notificationDropdown"></div>
 
     <script>
@@ -2863,6 +2911,225 @@
                 }
             }
         }
+
+        // ─── AJUSTAR PROPOSTA ────────────────────────────────────────────────
+
+        /** Monta as <option> do select de produtos para o modal de ajuste */
+        function _ajusteBuildSelectOpts(valorSelecionado) {
+            let opts = '<option value="">Selecione um produto</option>';
+            todosProdutos.forEach(p => {
+                const texto = p.codigo ? `${p.codigo} - ${p.nome}` : p.nome;
+                const sel = texto === valorSelecionado ? ' selected' : '';
+                opts += `<option value="${escapeHtml(texto)}"${sel}>${escapeHtml(texto)}</option>`;
+            });
+            return opts;
+        }
+
+        /** Recalcula o total somando todos os inputs .ajuste-input-por */
+        function ajusteRecalcularTotal() {
+            let total = 0;
+            document.querySelectorAll('#ajusteProdutosContainer .ajuste-input-por').forEach(inp => {
+                total += parseCurrency(inp.value);
+            });
+            const el = document.getElementById('ajusteDisplayTotal');
+            if (el) el.textContent = 'R$ ' + total.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+            return total;
+        }
+
+        /** Atualiza visibilidade dos botões de lixeira no modal de ajuste */
+        function _ajusteAtualizarLixeiras() {
+            const btns = document.querySelectorAll('#ajusteProdutosContainer .btn-remove-item');
+            const disable = btns.length === 1;
+            btns.forEach(b => { b.style.opacity = disable ? '0.3' : '1'; b.style.pointerEvents = disable ? 'none' : 'auto'; });
+        }
+
+        /** Cria e appenda uma linha de produto ao container do modal de ajuste */
+        function ajusteAdicionarLinha(nomePre = '', valorDePre = '', valorPorPre = '') {
+            const container = document.getElementById('ajusteProdutosContainer');
+            const row = document.createElement('div');
+            row.className = 'produto-row';
+            row.innerHTML = `
+                <div class="produto-row-top">
+                    <select class="form-input prod-nome">
+                        ${_ajusteBuildSelectOpts(nomePre)}
+                    </select>
+                    <button type="button" class="btn-remove-item" onclick="this.closest('.produto-row').remove(); ajusteRecalcularTotal(); _ajusteAtualizarLixeiras();" title="Remover item">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+                    </button>
+                </div>
+                <div class="produto-row-bottom">
+                    <div>
+                        <div class="produto-row-label">De</div>
+                        <input type="text" class="form-input input-de font-data ajuste-input-de" placeholder="R$ 0,00" inputmode="decimal"
+                            value="${escapeHtml(valorDePre)}"
+                            oninput="this.value = formatCurrency(this.value);">
+                    </div>
+                    <div>
+                        <div class="produto-row-label">Por</div>
+                        <input type="text" class="form-input input-por font-data ajuste-input-por" placeholder="R$ 0,00" inputmode="decimal"
+                            value="${escapeHtml(valorPorPre)}"
+                            oninput="this.value = formatCurrency(this.value); ajusteRecalcularTotal();">
+                    </div>
+                </div>`;
+            container.appendChild(row);
+            _ajusteAtualizarLixeiras();
+            ajusteRecalcularTotal();
+        }
+
+        /** Abre o modal populando as linhas com base nos dados atuais do orçamento */
+        function abrirAjusteProposta() {
+            const orc = AppState.contextoVenda.clienteAtual;
+            if (!orc) return;
+
+            const isVendedor = currentUser.perfil === 'Vendedor';
+            const isOpenStatus = [STATUS.CONTATO_INICIAL, STATUS.NEGOCIACAO, STATUS.EM_FECHAMENTO].includes(orc.status);
+            const isGerente = currentUser.perfil === 'Gerente' || currentUser.perfil === 'Administrador' || currentUser.perfil === 'Admin';
+
+            // Trava de segurança para Vendedor em orçamentos fechados/perdidos
+            if (isVendedor && !isOpenStatus) {
+                showToast('Propostas fechadas ou perdidas não podem ser editadas.', 'error');
+                return;
+            }
+
+            // Limpa container e campos
+            document.getElementById('ajusteProdutosContainer').innerHTML = '';
+            document.getElementById('ajusteMotivo').value = '';
+            document.getElementById('ajustePropostaMsg').textContent = '';
+
+            // Subtitle contextual
+            const alertaStatus = (!isOpenStatus && isGerente)
+                ? `⚠️ Atenção: este orçamento está "${orc.status}". A alteração ficará registrada no histórico.`
+                : `Editando proposta · ${escapeHtml(orc.clientes?.nome_cliente || 'cliente')} · ${escapeHtml(orc.status)}`;
+            document.getElementById('ajustePropostaSubtitle').textContent = alertaStatus;
+
+            // Workaround: reconstrói linhas a partir da string modelo_colchao
+            const produtosStr = orc.modelo_colchao || '';
+            const produtos = produtosStr.split(',').map(p => p.trim()).filter(Boolean);
+            const valorTotal = parseFloat(orc.valor_orcado || 0);
+            const umSoProduto = produtos.length === 1;
+
+            if (produtos.length === 0) {
+                // Nenhum produto salvo: cria linha em branco
+                ajusteAdicionarLinha();
+            } else {
+                produtos.forEach((nome, i) => {
+                    // Se só há 1 produto, pré-popula o "POR" com o total
+                    const valorPor = (umSoProduto && i === 0)
+                        ? 'R$ ' + valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })
+                        : '';
+                    ajusteAdicionarLinha(nome, '', valorPor);
+                });
+            }
+
+            openModal('modalAjusteProposta');
+        }
+
+        /** Persiste as alterações no Supabase e atualiza estado local */
+        async function salvarAjusteProposta() {
+            const orc = AppState.contextoVenda.clienteAtual;
+            if (!orc) return;
+
+            const container = document.getElementById('ajusteProdutosContainer');
+            const rows = container.querySelectorAll('.produto-row');
+            const msgEl = document.getElementById('ajustePropostaMsg');
+            msgEl.textContent = '';
+
+            // Coleta produtos e valores
+            const itens = [];
+            let valorTotal = 0;
+            let valido = true;
+
+            rows.forEach(row => {
+                const nome = (row.querySelector('.prod-nome')?.value || '').trim();
+                const por  = parseCurrency(row.querySelector('.ajuste-input-por')?.value || '0');
+                if (nome) {
+                    itens.push({ nome, por });
+                    valorTotal += por;
+                } else {
+                    valido = false;
+                }
+            });
+
+            if (!valido || itens.length === 0) {
+                msgEl.textContent = 'Selecione um produto em todas as linhas antes de salvar.';
+                msgEl.style.color = '#ef4444';
+                return;
+            }
+
+            const novosProdutos = itens.map(i => i.nome).join(', ');
+            const motivo        = document.getElementById('ajusteMotivo').value.trim();
+
+            // Valores antigos para auditoria
+            const valorAntigo    = parseFloat(orc.valor_orcado || 0);
+            const valorAntigoFmt = valorAntigo.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const valorNovoFmt   = valorTotal.toLocaleString('pt-BR',  { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+            // Spinner
+            const btn = document.getElementById('btnSalvarAjuste');
+            btn.querySelector('.btn-spinner').style.display = 'inline-block';
+            btn.querySelector('.btn-text').textContent = 'Salvando...';
+            btn.disabled = true;
+
+            try {
+                // 1. UPDATE orcamentos
+                const { error: errUpdate } = await db
+                    .from('orcamentos')
+                    .update({ modelo_colchao: novosProdutos, valor_orcado: valorTotal })
+                    .eq('id_orcamento', orc.id_orcamento);
+                if (errUpdate) throw errUpdate;
+
+                // 2. INSERT auditoria na timeline (formato rico com timestamp)
+                const dataHoraAtual = new Date().toLocaleString('pt-BR', {
+                    day: '2-digit', month: '2-digit', year: 'numeric',
+                    hour: '2-digit', minute: '2-digit'
+                });
+                const linhaMotivo = motivo ? `📝 Motivo: ${motivo}` : '';
+                const textoAuditoria = [
+                    `🔄 Proposta Atualizada na Mesa`,
+                    `💰 Valor: de R$ ${valorAntigoFmt} para R$ ${valorNovoFmt}`,
+                    `🛏️ Itens: ${novosProdutos}`,
+                    linhaMotivo,
+                    ``,
+                    `🕐 Ajuste realizado em ${dataHoraAtual}`
+                ].filter(l => l !== undefined && !(l === '' && !linhaMotivo)).join('\n').replace(/\n\n+$/, '');
+
+                const { error: errLog } = await db.from('comentarios').insert([{
+                    id_orcamento: orc.id_orcamento,
+                    texto: textoAuditoria,
+                    tipo: 'Sistema',
+                    autor: currentUser.nome
+                }]);
+                if (errLog) console.warn('Auditoria falhou (proposta já salva):', errLog);
+
+                // 3. Atualiza estado local
+                AppState.contextoVenda.clienteAtual.modelo_colchao = novosProdutos;
+                AppState.contextoVenda.clienteAtual.valor_orcado   = valorTotal;
+
+                // Recarrega comentários para refletir o log na timeline
+                try {
+                    const { data: novosComentarios } = await db
+                        .from('comentarios')
+                        .select('*')
+                        .eq('id_orcamento', orc.id_orcamento)
+                        .order('data_criacao', { ascending: true });
+                    if (novosComentarios) AppState.contextoVenda.clienteAtual.comentarios = novosComentarios;
+                } catch (_) { /* mantém estado anterior */ }
+
+                showToast('Proposta ajustada com sucesso!', 'success');
+                closeModal('modalAjusteProposta');
+                renderDetalhesClientePage();
+
+            } catch (e) {
+                msgEl.textContent = 'Erro ao salvar: ' + (e.message || e);
+                msgEl.style.color = '#ef4444';
+            } finally {
+                btn.querySelector('.btn-spinner').style.display = 'none';
+                btn.querySelector('.btn-text').textContent = 'Salvar Alteração';
+                btn.disabled = false;
+            }
+        }
+
+        // ─── FIM AJUSTAR PROPOSTA ─────────────────────────────────────────────
 
         function buildLojaOptions() {
             let opts = `<option value="todas">Todas as lojas</option>`;
@@ -4561,17 +4828,28 @@ function selectFilter(filter) {
                                 <textarea id="obsFixaCliente" class="form-input" style="resize:none; min-height:72px; font-size:13px;" placeholder="Ex: Cliente prefere contato de manhã..." onblur="salvarObservacaoFixa('${orc.id_orcamento}')">${escapeHtml(orc.observacoes || '')}</textarea>
                             </div>
 
-                            ${isOpenStatus && !isGerente ? `
-                            <div style="display:flex; gap:8px; margin-top:16px; padding-top:16px; border-top:1px solid var(--border-light);">
-                                <button class="btn-fechar-hero" style="flex:1; justify-content:center;" onclick="abrirConfirmaFechamento('${orc.id_orcamento}')">
-                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                                    Fechar Venda
-                                </button>
-                                <button class="btn-perder-hero" style="flex:1; justify-content:center;" onclick="abrirMotivoPerda('${orc.id_orcamento}')">
-                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-                                    Marcar Perdida
-                                </button>
-                            </div>` : ''}
+                            ${(() => {
+                                const isVendedor = currentUser.perfil === 'Vendedor';
+                                const podeAjustar = isGerente || !isVendedor || isOpenStatus;
+                                const btnAjuste = podeAjustar ? `
+                                <button class="btn-primary-action" style="width:100%;justify-content:center;margin-top:0;" onclick="abrirAjusteProposta()">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                    Ajustar Proposta
+                                </button>` : '';
+                                const btnsFechamento = (isOpenStatus && !isGerente) ? `
+                                <div style="display:flex;gap:8px;margin-top:8px;">
+                                    <button class="btn-fechar-hero" style="flex:1;justify-content:center;" onclick="abrirConfirmaFechamento('${orc.id_orcamento}')">
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                                        Fechar Venda
+                                    </button>
+                                    <button class="btn-perder-hero" style="flex:1;justify-content:center;" onclick="abrirMotivoPerda('${orc.id_orcamento}')">
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                                        Marcar Perdida
+                                    </button>
+                                </div>` : '';
+                                if (!btnAjuste && !btnsFechamento) return '';
+                                return `<div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border-light);">${btnAjuste}${btnsFechamento}</div>`;
+                            })()}
                         </section>
                     </div>
 
@@ -4804,8 +5082,24 @@ function selectFilter(filter) {
 
         function removerProdutoRow(btn) { btn.closest('.produto-row').remove(); calcTotalModal(); atualizarBotoesLixeira(); }
         function atualizarBotoesLixeira() { const btns = document.getElementById('produtosContainer').querySelectorAll('.btn-remove-item'); if (btns.length === 1) { btns[0].style.opacity = '0.3'; btns[0].style.pointerEvents = 'none'; } else { btns.forEach(b => { b.style.opacity = '1'; b.style.pointerEvents = 'auto'; }); } }
-        function calcTotalModal() { let total = 0; document.querySelectorAll('.input-por').forEach(inp => { total += parseCurrency(inp.value); }); document.getElementById('displayTotalModal').textContent = 'R$ ' + total.toLocaleString('pt-BR', { minimumFractionDigits: 2 }); return total; }
-
+        function calcTotalModal() { 
+    let total = 0; 
+    const container = document.getElementById('produtosContainer');
+    
+    // Só faz a soma se estiver dentro da página de Novo Orçamento
+    if (container) {
+        container.querySelectorAll('.input-por').forEach(inp => { 
+            total += parseCurrency(inp.value); 
+        }); 
+    }
+    
+    const display = document.getElementById('displayTotalModal');
+    if (display) {
+        display.textContent = 'R$ ' + total.toLocaleString('pt-BR', { minimumFractionDigits: 2 }); 
+    }
+    
+    return total; 
+}
         function abrirNovoOrcamento() { const p = (currentUser?.perfil || '').toLowerCase(); if (p !== 'vendedor' && p !== 'terminal') return; navigateTo('novo_orcamento'); }
 
         // Protocolo gerado automaticamente pelo banco via nextval('protocolo_seq')
@@ -4981,7 +5275,7 @@ function selectFilter(filter) {
                 
                 if (!whats) { document.getElementById('errWhats').textContent = 'Obrigatório'; valid = false; }
                               
-                const produtoRows = document.querySelectorAll('.produto-row');
+                const produtoRows = document.getElementById('produtosContainer').querySelectorAll('.produto-row');
                 if (produtoRows.length === 0) {
                     document.getElementById('errItens').textContent = 'Adicione pelo menos um produto';
                     valid = false;
@@ -5230,10 +5524,12 @@ function selectFilter(filter) {
                 if (modoFechamentoSelecionado === 'entrega') {
                     const dataEntregaObj = new Date(dataEntrega + 'T00:00:00');
                     const dataEntregaFormatada = dataEntregaObj.toLocaleDateString('pt-BR');
+                    const valorFechadoFmt = parseFloat(AppState.contextoVenda.clienteAtual?.valor_orcado || 0)
+                        .toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
                     await db.from('comentarios').insert([{
                         id_orcamento: id,
-                        texto: `🎉 Venda fechada com sucesso! Produto será ENTREGUE. Entrega prevista para: ${dataEntregaFormatada}.`,
+                        texto: `🏆 Venda Fechada! (R$ ${valorFechadoFmt})\n📦 Modalidade: Entrega\n📅 Previsão de Entrega: ${dataEntregaFormatada}`,
                         tipo: 'Sistema',
                         autor: currentUser.nome
                     }]);
@@ -5258,9 +5554,12 @@ function selectFilter(filter) {
 
                 } else {
                     // Retirada na loja
+                    const valorFechadoFmt = parseFloat(AppState.contextoVenda.clienteAtual?.valor_orcado || 0)
+                        .toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
                     await db.from('comentarios').insert([{
                         id_orcamento: id,
-                        texto: `🎉 Venda fechada com sucesso! Produto RETIRADO NA LOJA pelo cliente.`,
+                        texto: `🏆 Venda Fechada! (R$ ${valorFechadoFmt})\n📦 Modalidade: Retirada na Loja`,
                         tipo: 'Sistema',
                         autor: currentUser.nome
                     }]);
@@ -5650,7 +5949,7 @@ function selectFilter(filter) {
 
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
-                const modais = ['modalMotivoPerda', 'modalConfirmaFechamento', 'modalEditarMeta', 'modalExcluirComentario', 'modalUsuarioAdmin', 'modalExcluirUsuarioAdmin', 'modalEditarCliente', 'modalExcluirCliente', 'modalCriarNegocio'];
+                const modais = ['modalMotivoPerda', 'modalConfirmaFechamento', 'modalEditarMeta', 'modalExcluirComentario', 'modalUsuarioAdmin', 'modalExcluirUsuarioAdmin', 'modalEditarCliente', 'modalExcluirCliente', 'modalCriarNegocio', 'modalAjusteProposta'];
                 for (const id of modais) {
                     if (document.getElementById(id) && document.getElementById(id).classList.contains('open')) {
                         closeModal(id);
