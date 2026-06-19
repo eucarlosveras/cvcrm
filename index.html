@@ -1310,7 +1310,12 @@
             background: var(--surface-2); padding: 2px 7px; border-radius: var(--radius-full);
         }
         body.dark .comment-item .comment-tipo { background: var(--surface-3); }
-        .comment-item .comment-body { font-size: var(--font-sm); color: var(--text-secondary); margin-top: 3px; }
+        .comment-item .comment-body { 
+         font-size: var(--font-sm); 
+        color: var(--text-secondary); 
+        margin-top: 3px; 
+        white-space: pre-wrap; 
+        }
         .comment-item .comment-time { font-size: 10px; color: var(--text-muted); margin-top: 3px; }
         .comment-item .comment-actions { position: absolute; top: 8px; right: 8px; display: none; gap: 5px; }
         .comment-item:hover .comment-actions { display: flex; }
@@ -2698,16 +2703,17 @@
         }
 
         function renderComentariosHtml(comentarios, clienteId) {
-            // Filtra apenas registros manuais da equipe (exclui logs automáticos do sistema)
-            const comentariosManuais = (comentarios || []).filter(c => c.tipo !== 'Sistema');
-            if (comentariosManuais.length === 0) return '<p style="color:var(--text-muted);">Nenhum comentário registrado.</p>';
-            const grupos = {};
-            comentariosManuais.forEach((c) => {
-                const label = getDateLabel(c.data_criacao);
-                if (!grupos[label]) grupos[label] = [];
-                grupos[label].push(c);
-            });
-            let html = '';
+    // REMOVIDO O FILTRO QUE BARRAVA O TIPO 'SISTEMA'
+    const listaComentarios = comentarios || [];
+    if (listaComentarios.length === 0) return '<p style="color:var(--text-muted);">Nenhum comentário registrado.</p>';
+    
+    const grupos = {};
+    listaComentarios.forEach((c) => {
+        const label = getDateLabel(c.data_criacao);
+        if (!grupos[label]) grupos[label] = [];
+        grupos[label].push(c);
+    });
+    let html = '';
             Object.keys(grupos).forEach(label => {
                 html += `<div class="timeline-group-header"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> ${escapeHtml(label)}</div>`;
                 grupos[label].forEach(c => {
