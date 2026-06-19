@@ -2284,6 +2284,37 @@
                 // Salvamos o resultado mastigado no objeto global
                 AppState.kpisMensaisResumo = kpisData;
 
+	// --- NOVA BUSCA DETALHADA PARA GRÁFICOS E NOTIFICAÇÕES ---
+                let queryDetalhes = db.from('orcamentos')
+                    .select('id_orcamento, id_usuario, valor_orcado, modelo_colchao, data_criacao, data_contato, hora_contato, ligacao_confirmada, clientes(nome_cliente), status_orcamento(nome)');
+
+                const start = new Date(currentYear, currentMonth - 1, 1).toISOString();
+                const end = new Date(currentYear, currentMonth, 0, 23, 59, 59).toISOString();
+                queryDetalhes = queryDetalhes.gte('data_criacao', start).lte('data_criacao', end);
+
+                if (currentUser.perfil === 'Gerente' || (currentUser.perfil || '').toLowerCase() === 'terminal') {
+                    const ids = todosVendedores.filter(v => v.id_loja === currentUser.id_loja).map(v => v.id_usuario);
+                    if (ids.length > 0) queryDetalhes = queryDetalhes.in('id_usuario', ids);
+                    if (selectedVendedor !== 'todos') queryDetalhes = queryDetalhes.eq('id_usuario', selectedVendedor);
+                } else if (currentUser.perfil === 'Vendedor') {
+                    queryDetalhes = queryDetalhes.eq('id_usuario', currentUser.id_usuario);
+                } else {
+                    if (selectedVendedor !== 'todos') {
+                        queryDetalhes = queryDetalhes.eq('id_usuario', selectedVendedor);
+                    } else if (selectedLoja !== 'todas') {
+                        const ids = todosVendedores.filter(v => v.id_loja === selectedLoja).map(v => v.id_usuario);
+                        if (ids.length > 0) queryDetalhes = queryDetalhes.in('id_usuario', ids);
+                    }
+                }
+
+                const { data: detalhesData } = await queryDetalhes;
+                kpisMensais = (detalhesData || []).map(o => ({
+                    ...o,
+                    status: o.status_orcamento ? o.status_orcamento.nome : 'Contato Inicial'
+                }));
+
+                // --------------------------------------------------------
+
                 // ---- INÍCIO DA BUSCA DE ALERTAS NO BANCO ----
                 const { data: notifs, error: errNotif } = await db
                     .from('notificacoes')
@@ -3555,7 +3586,7 @@ function selectFilter(filter) {
     const fechados = resumo.vendas_fechadas_qtd || 0;
     const negociacao = resumo.em_tratativa || 0;
     const valorVendido = resumo.vendas_fechadas_valor || 0;
-    const fechadosArr = []; // gráfico de top produtos depende do array detalhado (virá de outra fonte futuramente)
+    const fechadosArr = dados.filter(o => o.status === STATUS.FECHADO || o.status === 'Vendido');
     const conversao = total ? Math.round((fechados / total) * 100) : 0;
     const metaAtual = calcularMetaTotal();
     const percMetaExato = metaAtual ? Math.round((valorVendido / metaAtual) * 100) : 0;
