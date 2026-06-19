@@ -3432,11 +3432,10 @@ function selectFilter(filter) {
             const isEmAberto = (s) => ![STATUS.PERDIDO, STATUS.DECLINADO].includes(s);
             
             const agendadosHoje = kpisMensais.filter(o => o.data_contato === hoje && isEmAberto(o.status));
-            const atrasados = kpisMensais.filter(o => o.data_contato && o.data_contato < hoje && isEmAberto(o.status));
-            
+                        
             // Notificações de agenda
             agendadosHoje.forEach(o => notificacoes.push({ tipo: 'info', texto: `Contato agendado hoje: <strong>${escapeHtml(o.clientes?.nome_cliente || 'Cliente')}</strong>`, id: o.id_orcamento, data: o.hora_contato || 'horário não definido' }));
-            atrasados.forEach(o => notificacoes.push({ tipo: 'critical', texto: `Contato atrasado: <strong>${escapeHtml(o.clientes?.nome_cliente || 'Cliente')}</strong>`, id: o.id_orcamento, data: o.data_contato || 'data não definida' }));
+            
             
             // --- INÍCIO DA MELHORIA: INJETAR ALERTAS DO BANCO ---
             notificacoesBanco.forEach(n => {
