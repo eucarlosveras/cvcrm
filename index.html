@@ -236,111 +236,137 @@
 
      /* ── KANBAN BOARD ── */
         #kanbanBoard { display:none; }
-        #kanbanBoard.active { display:block; }
+        #kanbanBoard.active { display:block; width:100%; overflow:hidden; }
         #tabelaCarteiraWrapper { display:block; }
         #tabelaCarteiraWrapper.hidden { display:none; }
 
-        /* Nova Grade Inteligente: Adapta as 3 colunas e cria scroll se a tela for pequena */
-        .kanban-board { 
-            display: grid; 
-            grid-template-columns: repeat(3, minmax(320px, 1fr)); 
-            gap: 16px; 
-            align-items: start; 
-            overflow-x: auto; 
-            padding-bottom: 8px; /* Respiro para a barra de rolagem horizontal */
+        /* ── KANBAN BOARD: 5 colunas responsivas ─────────────────────
+           Monitores   → repeat(5, 1fr): todas cabem, sem scroll horizontal
+           Notebooks   → min-width de coluna respeita legibilidade; se não couber, scroll aparece
+           Tablets/mob → colapsa para 2 e depois 1 coluna
+        ──────────────────────────────────────────────────────── */
+        .kanban-board {
+            display: grid;
+            /* 5 colunas de tamanho igual, sem mínimo fixo — o grid decide quanto cabe */
+            grid-template-columns: repeat(5, 1fr);
+            gap: 6px;
+            align-items: start;
+            overflow-x: hidden;
         }
-        
-        .kanban-board::-webkit-scrollbar { height: 8px; }
-        .kanban-board::-webkit-scrollbar-thumb { background: var(--border-medium); border-radius: var(--radius-full); }
+        /* Tablets: 2 colunas */
+        @media (max-width: 900px) {
+            .kanban-board { grid-template-columns: repeat(2, 1fr); overflow-x: auto; }
+        }
+        /* Mobile: coluna única */
+        @media (max-width: 600px) {
+            .kanban-board { grid-template-columns: 1fr; }
+        }
 
-        .kanban-col { display:flex; flex-direction:column; gap:8px; min-height:300px; }
-        .kanban-col-header { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border-radius:var(--radius-sm); margin-bottom:4px; }
-        .kcol-ci  { background:#e0f2fe; } .kcol-nv  { background:#fef9c3; } .kcol-ad  { background:#ffedd5; } .kcol-fec { background:#d1fae5; } .kcol-pv  { background:#ede9fe; } .kcol-per { background:#fee2e2; }
+        /* ── COLUNAS ──────────────────────────────────────────────── */
+        .kanban-col { display:flex; flex-direction:column; gap:6px; min-height:200px; min-width:0; overflow:hidden; }
+        .kanban-col-header { display:flex; align-items:center; justify-content:space-between; padding:7px 10px; border-radius:var(--radius-sm); margin-bottom:4px; gap:6px; white-space:nowrap; }
+        .kcol-ci  { background:#eef8ff; } .kcol-nv  { background:#fefce8; } .kcol-ad  { background:#fff7ed; } .kcol-fec { background:#f0fdf9; } .kcol-pv  { background:#f5f3ff; } .kcol-per { background:#fff1f1; }
         body.dark .kcol-ci  { background:rgba(3,105,161,0.15); }
         body.dark .kcol-nv  { background:rgba(133,77,14,0.15); }
         body.dark .kcol-ad  { background:rgba(194,65,12,0.15); }
         body.dark .kcol-fec { background:rgba(6,95,70,0.2); }
         body.dark .kcol-pv  { background:rgba(91,33,182,0.2); }
         body.dark .kcol-per { background:rgba(153,27,27,0.2); }
-        .kcol-title { font-size:var(--font-xs); font-weight:700; text-transform:uppercase; letter-spacing:0.06em; display:flex; align-items:center; gap:7px; }
-        .kcol-dot  { width:7px; height:7px; border-radius:50%; background:currentColor; flex-shrink:0; }
+        .kcol-title { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.04em; display:flex; align-items:center; gap:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; opacity:0.85; }
+        .kcol-dot  { width:6px; height:6px; border-radius:50%; background:currentColor; flex-shrink:0; opacity:0.7; }
         .kcol-ci  .kcol-title { color:#0369a1; } .kcol-nv  .kcol-title { color:#854d0e; } .kcol-ad  .kcol-title { color:#c2410c; } .kcol-fec .kcol-title { color:#065f46; } .kcol-pv  .kcol-title { color:#5b21b6; } .kcol-per .kcol-title { color:#991b1b; }
         body.dark .kcol-ci  .kcol-title { color:#7dd3fc; } body.dark .kcol-nv  .kcol-title { color:#fde047; } body.dark .kcol-ad  .kcol-title { color:#fdba74; } body.dark .kcol-fec .kcol-title { color:#6ee7b7; } body.dark .kcol-pv  .kcol-title { color:#c4b5fd; } body.dark .kcol-per .kcol-title { color:#fca5a5; }
-        .kcol-count { font-size:var(--font-xs); font-weight:800; min-width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; padding:0 4px; }
+        .kcol-count { font-size:10px; font-weight:700; min-width:18px; height:18px; border-radius:var(--radius-full); display:flex; align-items:center; justify-content:center; padding:0 5px; opacity:0.9; }
         .kcol-ci  .kcol-count { background:#bae6fd; color:#0369a1; } .kcol-nv  .kcol-count { background:#fde68a; color:#854d0e; } .kcol-ad  .kcol-count { background:#fed7aa; color:#c2410c; } .kcol-fec .kcol-count { background:#a7f3d0; color:#065f46; } .kcol-pv  .kcol-count { background:#ddd6fe; color:#5b21b6; } .kcol-per .kcol-count { background:#fecaca; color:#991b1b; }
 
-        /* KANBAN CARD - TOTALMENTE REFATORADO */
-        .kcard { background:var(--card-bg); border:1px solid var(--border-light); border-radius:var(--radius-md); padding:13px 14px; box-shadow:var(--shadow-xs); cursor:pointer; transition:all 0.18s ease; position:relative; display:flex; flex-direction:column; gap:9px; width: 100%; box-sizing: border-box; }
-        .kcard:hover { box-shadow:var(--shadow-md); transform:translateY(-2px); border-color:var(--border-medium); }
-        .kcard.kcard-urgent { border-left:3px solid #ef4444; }
-        .kcard.kcard-warn   { border-left:3px solid var(--accent-orange,#f59e0b); }
-        .kcard.kcard-fresh  { border-left:3px solid var(--brand-blue); }
-        .kcard.kcard-won    { border-left:3px solid var(--accent-green,#10b981); }
-        .kcard.kcard-lost   { border-left:3px solid #ef4444; opacity:.7; }
-        
-        .kcard-top { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; width: 100%; }
-        
-        .kcard-name { 
-            font-weight:700; font-size:var(--font-sm); color:var(--text-primary); line-height:1.3;
-            flex: 1; /* Ocupa o espaço e empurra o protocolo */
-            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; /* Corta nomes gigantes na 2ª linha */
-            word-break: break-word; 
+        /* ── KANBAN CARD ──────────────────────────────────────────── */
+        .kcard {
+            background: var(--card-bg);
+            border: 1px solid var(--divider);
+            border-radius: var(--radius-sm);
+            padding: 8px 8px;
+            box-shadow: none;
+            cursor: pointer;
+            transition: all 0.18s ease;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            width: 100%;
+            box-sizing: border-box;
+            min-width: 0;
         }
-        
-        .kcard-proto { 
-            font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; color:var(--brand-blue); background:rgba(99,102,241,0.08); border:1px solid rgba(99,102,241,0.15); padding:2px 7px; border-radius:var(--radius-xs); 
-            flex-shrink:0; /* Impede de ser esmagado */
-            white-space:nowrap; 
-        }
-        
-        .kcard-product { 
-            font-size:var(--font-xs); color:var(--text-secondary); background:var(--surface-2); padding:4px 9px; border-radius:var(--radius-xs); line-height:1.4; 
-            width: 100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display: block; box-sizing: border-box;
-        }
-        
-        .kcard-bottom { display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap: wrap; width: 100%; }
-        .kcard-value { font-family:'JetBrains Mono',monospace; font-size:var(--font-sm); font-weight:700; color:var(--accent-green,#10b981); }
-        .kcard-meta { display:flex; align-items:center; gap:8px; flex-shrink:0; }
-        .kcard-days { font-size:10px; font-weight:600; display:flex; align-items:center; gap:4px; color:var(--text-muted); white-space:nowrap; }
-        .kcard-days svg { width:11px; height:11px; stroke:currentColor; fill:none; stroke-width:2; }
-        .kcard-days.alert-days { color:#ef4444; } .kcard-days.warn-days { color:var(--accent-orange,#f59e0b); }
-        
-        .kcard-alert-chip { position:absolute; top:-8px; right:10px; background:#ef4444; color:#fff; font-size:9px; font-weight:700; padding:2px 8px; border-radius:var(--radius-full); letter-spacing:.04em; display:flex; align-items:center; gap:3px; white-space:nowrap; z-index: 2; }
-        .kcard-alert-chip svg { width:9px; height:9px; stroke:currentColor; fill:none; stroke-width:2.5; }
-        .kcard-avatar { width:20px; height:20px; border-radius:5px; background:linear-gradient(135deg,var(--brand-blue),var(--brand-blue-dark,#4f46e5)); color:#fff; font-size:9px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-        
-        .kcol-total { font-size:var(--font-xs); font-weight:600; color:var(--text-muted); text-align:center; padding:8px 4px 2px; border-top:1px dashed var(--border-light); margin-top:4px; }
-        .kcol-total strong { color:var(--text-primary); }
-        .kanban-empty { display:flex; align-items:center; justify-content:center; height:80px; border:1.5px dashed var(--border-light); border-radius:var(--radius-md); color:var(--text-muted); font-size:var(--font-xs); }
-        .kanban-loading { display:flex; align-items:center; justify-content:center; height:200px; color:var(--text-muted); font-size:var(--font-sm); gap:10px; }
+        .kcard:hover { box-shadow:var(--shadow-xs); border-color:var(--border-medium); background:var(--surface-2); }
+        .kcard.kcard-urgent { border-left:2px solid #f87171; }
+        .kcard.kcard-warn   { border-left:2px solid #fbbf24; }
+        .kcard.kcard-fresh  { border-left:2px solid #818cf8; }
+        .kcard.kcard-won    { border-left:2px solid #34d399; }
+        .kcard.kcard-lost   { border-left:2px solid #f87171; opacity:.55; }
 
-        /* KANBAN CARD */
-        .kcard { background:var(--card-bg); border:1px solid var(--border-light); border-radius:var(--radius-md); padding:13px 14px; box-shadow:var(--shadow-xs); cursor:pointer; transition:all 0.18s ease; position:relative; display:flex; flex-direction:column; gap:9px; }
-        .kcard:hover { box-shadow:var(--shadow-md); transform:translateY(-2px); border-color:var(--border-medium); }
-        .kcard.kcard-urgent { border-left:3px solid #ef4444; }
-        .kcard.kcard-warn   { border-left:3px solid var(--accent-orange,#f59e0b); }
-        .kcard.kcard-fresh  { border-left:3px solid var(--brand-blue); }
-        .kcard.kcard-won    { border-left:3px solid var(--accent-green,#10b981); }
-        .kcard.kcard-lost   { border-left:3px solid #ef4444; opacity:.7; }
-        .kcard-top { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
-        .kcard-name { font-weight:700; font-size:var(--font-sm); color:var(--text-primary); line-height:1.3; }
-        .kcard-proto { font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; color:var(--brand-blue); background:rgba(99,102,241,0.08); border:1px solid rgba(99,102,241,0.15); padding:2px 7px; border-radius:var(--radius-xs); flex-shrink:0; white-space:nowrap; }
-        .kcard-product { font-size:var(--font-xs); color:var(--text-secondary); background:var(--surface-2); padding:4px 9px; border-radius:var(--radius-xs); line-height:1.4; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-        .kcard-bottom { display:flex; align-items:center; justify-content:space-between; gap:8px; }
-        .kcard-value { font-family:'JetBrains Mono',monospace; font-size:var(--font-sm); font-weight:700; color:var(--accent-green,#10b981); }
-        .kcard-meta { display:flex; align-items:center; gap:8px; flex-shrink:0; }
-        .kcard-days { font-size:10px; font-weight:600; display:flex; align-items:center; gap:4px; color:var(--text-muted); white-space:nowrap; }
-        .kcard-days svg { width:11px; height:11px; stroke:currentColor; fill:none; stroke-width:2; }
+        .kcard-top { display:flex; align-items:flex-start; justify-content:space-between; gap:6px; width:100%; min-width:0; }
+
+        /* Nome do cliente: 2 linhas máximo, depois reticências */
+        .kcard-name {
+            font-weight: 600;
+            font-size: 11px;
+            color: var(--text-primary);
+            line-height: 1.25;
+            flex: 1;
+            min-width: 0;               /* crucial: permite que o flex-child encolha */
+            display: -webkit-box;
+            -webkit-line-clamp: 1;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        /* Tag de protocolo: compacta mas legível */
+        .kcard-proto {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 9px;
+            font-weight: 500;
+            color: var(--text-muted);
+            background: var(--surface-2);
+            border: 1px solid var(--border-light);
+            padding: 1px 5px;
+            border-radius: var(--radius-xs);
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+
+        /* Produto: UMA linha, obrigatoriamente com reticências */
+        .kcard-product {
+            font-size: 10px;
+            color: var(--text-muted);
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+            line-height: 1.3;
+            /* Trinca obrigatória de truncamento */
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            /* Garante que não empurra o layout */
+            display: block;
+            width: 100%;
+            box-sizing: border-box;
+            min-width: 0;
+        }
+
+        .kcard-bottom { display:flex; align-items:center; justify-content:space-between; gap:4px; width:100%; flex-wrap:nowrap; min-width:0; overflow:hidden; }
+        .kcard-value  { font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:600; color:#059669; white-space:nowrap; flex-shrink:1; min-width:0; overflow:hidden; text-overflow:ellipsis; }
+        .kcard-meta   { display:flex; align-items:center; gap:5px; flex-shrink:0; min-width:0; }
+        .kcard-days   { font-size:9px; font-weight:400; display:flex; align-items:center; gap:3px; color:var(--text-placeholder); white-space:nowrap; }
+        .kcard-days svg { width:10px; height:10px; stroke:currentColor; fill:none; stroke-width:2; }
         .kcard-days.alert-days { color:#ef4444; } .kcard-days.warn-days { color:var(--accent-orange,#f59e0b); }
-        .kcard-alert-chip { position:absolute; top:-8px; right:10px; background:#ef4444; color:#fff; font-size:9px; font-weight:700; padding:2px 8px; border-radius:var(--radius-full); letter-spacing:.04em; display:flex; align-items:center; gap:3px; white-space:nowrap; }
-        .kcard-alert-chip svg { width:9px; height:9px; stroke:currentColor; fill:none; stroke-width:2.5; }
-        .kcard-avatar { width:20px; height:20px; border-radius:5px; background:linear-gradient(135deg,var(--brand-blue),var(--brand-blue-dark,#4f46e5)); color:#fff; font-size:9px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-        .kcol-total { font-size:var(--font-xs); font-weight:600; color:var(--text-muted); text-align:center; padding:8px 4px 2px; border-top:1px dashed var(--border-light); margin-top:4px; }
-        .kcol-total strong { color:var(--text-primary); }
-        .kanban-empty { display:flex; align-items:center; justify-content:center; height:80px; border:1.5px dashed var(--border-light); border-radius:var(--radius-md); color:var(--text-muted); font-size:var(--font-xs); }
+
+        .kcard-alert-chip { position:absolute; top:-8px; right:8px; background:#ef4444; color:#fff; font-size:8px; font-weight:700; padding:2px 6px; border-radius:var(--radius-full); letter-spacing:.04em; display:flex; align-items:center; gap:3px; white-space:nowrap; z-index:2; }
+        .kcard-alert-chip svg { width:8px; height:8px; stroke:currentColor; fill:none; stroke-width:2.5; }
+        .kcard-avatar { width:18px; height:18px; border-radius:4px; background:linear-gradient(135deg,var(--brand-blue),var(--brand-blue-dark,#4f46e5)); color:#fff; font-size:8px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+
+        .kcol-total { font-size:10px; font-weight:400; color:var(--text-placeholder); text-align:center; padding:6px 4px 2px; border-top:1px solid var(--divider); margin-top:6px; }
+        .kcol-total strong { color:var(--text-secondary); font-weight:600; }
+        .kanban-empty   { display:flex; align-items:center; justify-content:center; height:80px; border:1.5px dashed var(--border-light); border-radius:var(--radius-md); color:var(--text-muted); font-size:var(--font-xs); }
         .kanban-loading { display:flex; align-items:center; justify-content:center; height:200px; color:var(--text-muted); font-size:var(--font-sm); gap:10px; }
-        @media (max-width:900px) { .kanban-board { grid-template-columns:repeat(2,1fr); } }
-        @media (max-width:600px) { .kanban-board { grid-template-columns:1fr; } }
 
         /* ────────────────────────────────────────────────────────
            INPUTS — GLOBAL BASE
@@ -521,7 +547,7 @@
            SIDEBAR
         ──────────────────────────────────────────────────────── */
         .sidebar {
-            width: 248px; min-width: 248px; height: 100vh;
+            width: 180px; min-width: 180px; height: 100vh;
             background: var(--sidebar-bg);
             display: flex; flex-direction: column;
             position: fixed; top: 0; left: 0; z-index: 100;
@@ -530,12 +556,12 @@
         }
 
         .sidebar-greeting {
-            padding: 24px 20px 18px;
+            padding: 20px 14px 16px;
             border-bottom: 1px solid var(--sidebar-border);
             margin-bottom: 4px;
         }
         .sidebar-greeting .greeting-text {
-            font-size: var(--font-md); font-weight: 700; color: #ffffff;
+            font-size: var(--font-base); font-weight: 700; color: #ffffff;
             letter-spacing: -0.02em;
         }
         .sidebar-greeting .greeting-sub {
@@ -544,12 +570,12 @@
         }
 
         .sidebar-nav {
-            flex: 1; padding: 8px 10px; display: flex; flex-direction: column; gap: 1px;
+            flex: 1; padding: 8px 6px; display: flex; flex-direction: column; gap: 1px;
         }
 
         .nav-item {
-            display: flex; align-items: center; gap: 10px;
-            padding: 9px 12px; border-radius: var(--radius-sm);
+            display: flex; align-items: center; gap: 8px;
+            padding: 9px 10px; border-radius: var(--radius-sm);
             cursor: pointer; color: var(--sidebar-text);
             font-size: var(--font-sm); font-weight: 500;
             text-decoration: none; transition: all var(--transition);
@@ -629,10 +655,11 @@
            MAIN CONTENT AREA
         ──────────────────────────────────────────────────────── */
         .main-content {
-            margin-left: 248px; flex: 1;
-            padding: 32px 36px 48px;
-            display: flex; flex-direction: column; gap: 24px;
+            margin-left: 180px; flex: 1;
+            padding: 20px 10px 32px;
+            display: flex; flex-direction: column; gap: 20px;
             min-width: 0;
+            overflow-x: hidden;
         }
 
         /* ── Page Header ── */
@@ -1700,7 +1727,7 @@
         ──────────────────────────────────────────────────────── */
         @media (max-width: 1100px) {
             .sidebar { width: 220px; min-width: 220px; }
-            .main-content { margin-left: 220px; }
+            .main-content { margin-left: 180px; }
             .kpi-row { grid-template-columns: 1fr 1fr; }
             .charts-row, .charts-row-duplo, .charts-row-triplo,
             .action-grid, .health-grid { grid-template-columns: 1fr; }
@@ -5754,12 +5781,13 @@ function selectFilter(filter) {
 
                 const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
 
-                // Agrupa por coluna (Apenas funil ativo)
+                // Agrupa por coluna (funil completo: ativo + finalizados)
                 const colunas = [
                     { key: 'ci',  label: 'Contato Inicial',  cls: 'kcol-ci',  statuses: [STATUS.CONTATO_INICIAL] },
                     { key: 'nv',  label: 'Negociação',       cls: 'kcol-nv',  statuses: [STATUS.NEGOCIACAO] },
-                    { key: 'ad',  label: 'Em Fechamento',    cls: 'kcol-ad',  statuses: [STATUS.EM_FECHAMENTO] }
-           
+                    { key: 'ad',  label: 'Em Fechamento',    cls: 'kcol-ad',  statuses: [STATUS.EM_FECHAMENTO] },
+                    { key: 'fec', label: 'Fechado',          cls: 'kcol-fec', statuses: [STATUS.FECHADO, 'Vendido'], finalizado: true },
+                    { key: 'per', label: 'Perdido',          cls: 'kcol-per', statuses: [STATUS.PERDIDO, STATUS.DECLINADO], finalizado: true }
                 ];
 
                 // Se filtro de status ativo, restringe colunas
@@ -5789,7 +5817,14 @@ function selectFilter(filter) {
                         </div>`;
 
                     // 2. Criamos a "zona de aterrissagem" (onde o card será solto)
-                    html += `<div class="kanban-cards" ondragover="allowDrop(event)" ondrop="dropCard(event, '${statusDestino}')" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)" style="flex: 1; display: flex; flex-direction: column; gap: 12px; padding-top: 12px;">`;
+                    // Colunas finalizadas têm comportamento de drop especial
+                    const dropHandler = col.finalizado
+                        ? (col.key === 'per'
+                            ? `ondrop="dropCardPerdido(event)"` 
+                            : `ondrop="dropCardFechado(event)"`)
+                        : `ondrop="dropCard(event, '${statusDestino}')"`;
+                    const dragAllowed = col.finalizado ? '' : `ondragover="allowDrop(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)"`;
+                    html += `<div class="kanban-cards" ${dragAllowed} ${dropHandler} style="flex:1; display:flex; flex-direction:column; gap:8px; padding-top:8px; min-width:0; overflow:hidden;">`;
 
                     if (items.length === 0) {
                         html += `<div class="kanban-empty">Nenhum orçamento</div>`;
@@ -5809,8 +5844,8 @@ function selectFilter(filter) {
                             let daysClass = 'ok-days';
                             let clockIcon = `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
 
-                            const isFechado = o.status_orcamento?.nome === STATUS.FECHADO;
-                            const isPerdido = o.status_orcamento?.nome === STATUS.PERDIDO;
+                            const isFechado = [STATUS.FECHADO, 'Vendido'].includes(o.status_orcamento?.nome);
+                            const isPerdido = [STATUS.PERDIDO, STATUS.DECLINADO].includes(o.status_orcamento?.nome);
 
                             if (isFechado) {
                                 borderClass = 'kcard-won';
@@ -5838,9 +5873,12 @@ function selectFilter(filter) {
 
                             const diasLabel = isFechado ? `há ${diasAtras}d` : diasAtras === 0 ? 'Hoje' : diasAtras === 1 ? 'Ontem' : `há ${diasAtras}d`;
 
-                            // 3. Tornamos o Card "arrastável" (draggable="true")
+                            // 3. Cards finalizados são somente-leitura (não arrastáveis)
+                            const draggableAttr = (isFechado || isPerdido)
+                                ? 'draggable="false"'
+                                : `draggable="true" ondragstart="dragStart(event, '${o.id_orcamento}')"`;
                             html += `
-                            <div class="kcard ${borderClass}" draggable="true" ondragstart="dragStart(event, '${o.id_orcamento}')" onclick="abrirDetalhesCliente('${o.id_orcamento}')" id="card-${o.id_orcamento}">
+                            <div class="kcard ${borderClass}" ${draggableAttr} onclick="abrirDetalhesCliente('${o.id_orcamento}')" id="card-${o.id_orcamento}">
                                 ${alertChip}
                                 <div class="kcard-top">
                                     <div class="kcard-name">${escapeHtml(nome)}</div>
@@ -5867,11 +5905,6 @@ function selectFilter(filter) {
                 });
 
                 html += '</div>';
-                
-                // 2. MENSAGEM AMIGÁVEL SE FILTRAR POR FECHADO/PERDIDO NO KANBAN
-                if (currentFilter === 'Fechado' || currentFilter === 'Perdido') {
-                    html = '<div style="padding: 40px; margin-top: 20px; text-align: center; color: var(--text-muted); background: var(--card-bg); border-radius: var(--radius-md); border: 1.5px dashed var(--border-light);"><strong>Estes cards não aparecem no funil ativo.</strong><br>Volte o filtro para "Todos os Status" ou consulte a aba Início (Tabela) para ver o histórico completo.</div>';
-                }
 
                 board.innerHTML = html;
 
@@ -6095,6 +6128,50 @@ async function dropCard(event, statusNomeDestino) {
     } catch (error) {
         showToast('Erro ao mover card: ' + error.message, 'error');
         renderKanbanBoard(); // Se der erro, redesenha a tela para o card voltar pro lugar original
+    }
+}
+
+// Drop em coluna "Perdido" → abre modal de motivo de perda
+function dropCardPerdido(event) {
+    event.preventDefault();
+    event.currentTarget.style.background = '';
+    const idOrcamento = event.dataTransfer.getData('text/plain');
+    if (!idOrcamento) return;
+    // Reutiliza o fluxo existente de motivo de perda
+    abrirMotivoPerda(idOrcamento);
+}
+
+// Drop em coluna "Fechado" → atualiza status direto (sem modal adicional)
+async function dropCardFechado(event) {
+    event.preventDefault();
+    event.currentTarget.style.background = '';
+    const idOrcamento = event.dataTransfer.getData('text/plain');
+    if (!idOrcamento) return;
+
+    const statusObj = mapStatusUUID.find(s => s.nome === STATUS.FECHADO);
+    if (!statusObj) {
+        showToast('Erro: status Fechado não encontrado.', 'error');
+        return;
+    }
+
+    showToast('Fechando negócio...', 'info');
+    try {
+        const { error } = await db.from('orcamentos')
+            .update({ id_status: statusObj.id_status })
+            .eq('id_orcamento', idOrcamento);
+        if (error) throw error;
+
+        const index = kpisMensais.findIndex(o => String(o.id_orcamento) === String(idOrcamento));
+        if (index !== -1) {
+            kpisMensais[index].status = STATUS.FECHADO;
+            if (kpisMensais[index].status_orcamento) kpisMensais[index].status_orcamento.nome = STATUS.FECHADO;
+        }
+
+        showToast('Negócio fechado com sucesso! 🎉', 'success');
+        renderKanbanBoard();
+    } catch (err) {
+        showToast('Erro ao fechar negócio: ' + err.message, 'error');
+        renderKanbanBoard();
     }
 }
 
