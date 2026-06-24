@@ -3535,13 +3535,15 @@ function selectFilter(filter) {
             donutChartInstance = new Chart(ctxDonut, {
                 type: 'doughnut',
                 data: {
-                    labels: ['Orçados', 'Fechados'],
-                    datasets: [{
-                        data: [orcadosCount, fechados],
-                        backgroundColor: [
-                            getComputedStyle(document.body).getPropertyValue('--chart-blue').trim() || '#3b82f6',
-                            getComputedStyle(document.body).getPropertyValue('--chart-green').trim() || '#10b981'
-                        ],
+                    data: {
+						    labels: ['Fechados', 'Abertos'], // Alteramos os nomes
+						    datasets: [{
+						        // Invertemos a ordem dos dados para respeitar os novos labels
+						        data: [fechados, orcadosCount], 
+						        backgroundColor: [
+						            getComputedStyle(document.body).getPropertyValue('--chart-green').trim() || '#10b981',
+						            getComputedStyle(document.body).getPropertyValue('--chart-blue').trim() || '#3b82f6'
+						        ],
                         borderColor: '#fff',
                         borderWidth: 3,
                         borderRadius: 6,
