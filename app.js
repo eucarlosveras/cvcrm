@@ -63,24 +63,15 @@
         let mapInteresseUUID = [];
         let listaLojas = [];
 
-        let currentUser = null;
         let kpisMensais = []; 
         let todosVendedores = [];
         let todosUsuarios = [];
         let todosProdutos = [];
         
         let currentFilter = 'todos';
-        let currentView = 'inicio';
         let kanbanAtivo = false;
-        let previousView = 'inicio';
-        let currentMonth = new Date().getMonth() + 1;
-        let currentYear = new Date().getFullYear();
-        let currentDay = null;
-        let currentPage = 1;
         let searchTerm = '';
         let searchProtocolo = '';
-        let selectedVendedor = 'todos';
-        let selectedLoja = 'todas';
         
         let clienteSelecionadoParaAcao = null;
         let clienteParaOrcamento = null;
@@ -98,6 +89,17 @@
         let isConfirmingPerda = false;
         let notificacoesLidas = new Set();
         let notificacoesBanco = []; 
+        
+        // Helpers para acessar o AppState de forma concisa
+        function getUsuarioLogado() { return AppState.usuarioLogado; }
+        function getFiltroMes() { return AppState.filtros.mes; }
+        function getFiltroAno() { return AppState.filtros.ano; }
+        function getFiltroDia() { return AppState.filtros.dia; }
+        function getViewAtual() { return AppState.ui.viewAtual; }
+        function getViewAnterior() { return AppState.ui.viewAnterior; }
+        function getPaginaAtual() { return AppState.ui.paginaAtual; }
+        function getFiltroVendedor() { return AppState.filtros.vendedor; }
+        function getFiltroLoja() { return AppState.filtros.loja; } 
 
         function showToast(message, type = 'info') {
             const container = document.getElementById('toast-container');
@@ -148,7 +150,7 @@
                         return;
                     }
                     // 3. Tudo em ordem: esconde o ecrã de login e arranca com a dashboard
-                    currentUser = userProfile;
+                    setUsuarioLogado(userProfile);
                     document.getElementById('loginOverlay').classList.add('hidden');
                     initAppAfterLogin();
                 } else {
@@ -192,7 +194,7 @@
                 if (profileError || !userProfile) throw new Error("Perfil não encontrado no sistema.");
                 if (userProfile.status?.toLowerCase() !== 'ativo') throw new Error("Usuário inativo.");
                 // 4. Libera o acesso e inicia a dashboard
-                currentUser = userProfile;
+                setUsuarioLogado(userProfile);
                 document.getElementById('loginOverlay').classList.add('hidden');
                 initAppAfterLogin();
             } catch (err) {
@@ -293,46 +295,46 @@
             if (_notifChannel) { db.removeChannel(_notifChannel); _notifChannel = null; }
             // Destrói a sessão real no Supabase antes de limpar a tela
             await db.auth.signOut();
-            currentUser = null;
+            AppState.usuarioLogado = null;
             location.reload();
         }
 
      async function carregarKpisEDashboard() {
-            if (!currentUser) return;
+            if (!AppState.usuarioLogado) return;
             // NOVO CÓDIGO LEVE E ESCALÁVEL
-            const isAdmin = currentUser.perfil === 'Administrador' || currentUser.perfil === 'Admin';
+            const isAdmin = AppState.usuarioLogado.perfil === 'Administrador' || AppState.usuarioLogado.perfil === 'Admin';
             try {
                 // Chama a função direto no banco, passando apenas os filtros
                 const { data: kpisData, error: rpcError } = await db.rpc('calcular_kpis_dashboard', {
-                    p_mes: currentMonth,
-                    p_ano: currentYear,
-                    p_id_usuario: currentUser.id_usuario,
-                    p_perfil: (currentUser.perfil || '').toLowerCase() === 'terminal' ? 'Gerente' : currentUser.perfil,
-                    p_id_loja: currentUser.id_loja
+                    p_mes: AppState.filtros.mes,
+                    p_ano: AppState.filtros.ano,
+                    p_id_usuario: AppState.usuarioLogado.id_usuario,
+                    p_perfil: (AppState.usuarioLogado.perfil || '').toLowerCase() === 'terminal' ? 'Gerente' : AppState.usuarioLogado.perfil,
+                    p_id_loja: AppState.usuarioLogado.id_loja
                 });
                 if (rpcError) throw rpcError;
                 // Salvamos o resultado mastigado no objeto global
                 AppState.kpisMensaisResumo = kpisData;
 
-	// --- NOVA BUSCA DETALHADA PARA GRÁFICOS E NOTIFICAÇÕES ---
+        // --- NOVA BUSCA DETALHADA PARA GRÁFICOS E NOTIFICAÇÕES ---
                 let queryDetalhes = db.from('orcamentos')
                     .select('id_orcamento, id_usuario, valor_orcado, modelo_colchao, data_criacao, data_contato, hora_contato, ligacao_confirmada, clientes(nome_cliente), status_orcamento(nome)');
 
-                const start = new Date(currentYear, currentMonth - 1, 1).toISOString();
-                const end = new Date(currentYear, currentMonth, 0, 23, 59, 59).toISOString();
+                const start = new Date(AppState.filtros.ano, AppState.filtros.mes - 1, 1).toISOString();
+                const end = new Date(AppState.filtros.ano, AppState.filtros.mes, 0, 23, 59, 59).toISOString();
                 queryDetalhes = queryDetalhes.gte('data_criacao', start).lte('data_criacao', end);
 
-                if (currentUser.perfil === 'Gerente' || (currentUser.perfil || '').toLowerCase() === 'terminal') {
-                    const ids = todosVendedores.filter(v => v.id_loja === currentUser.id_loja).map(v => v.id_usuario);
+                if (AppState.usuarioLogado.perfil === 'Gerente' || (AppState.usuarioLogado.perfil || '').toLowerCase() === 'terminal') {
+                    const ids = todosVendedores.filter(v => v.id_loja === AppState.usuarioLogado.id_loja).map(v => v.id_usuario);
                     if (ids.length > 0) queryDetalhes = queryDetalhes.in('id_usuario', ids);
-                    if (selectedVendedor !== 'todos') queryDetalhes = queryDetalhes.eq('id_usuario', selectedVendedor);
-                } else if (currentUser.perfil === 'Vendedor') {
-                    queryDetalhes = queryDetalhes.eq('id_usuario', currentUser.id_usuario);
+                    if (AppState.filtros.vendedor !== 'todos') queryDetalhes = queryDetalhes.eq('id_usuario', AppState.filtros.vendedor);
+                } else if (AppState.usuarioLogado.perfil === 'Vendedor') {
+                    queryDetalhes = queryDetalhes.eq('id_usuario', AppState.usuarioLogado.id_usuario);
                 } else {
-                    if (selectedVendedor !== 'todos') {
-                        queryDetalhes = queryDetalhes.eq('id_usuario', selectedVendedor);
-                    } else if (selectedLoja !== 'todas') {
-                        const ids = todosVendedores.filter(v => v.id_loja === selectedLoja).map(v => v.id_usuario);
+                    if (AppState.filtros.vendedor !== 'todos') {
+                        queryDetalhes = queryDetalhes.eq('id_usuario', AppState.filtros.vendedor);
+                    } else if (AppState.filtros.loja !== 'todas') {
+                        const ids = todosVendedores.filter(v => v.id_loja === AppState.filtros.loja).map(v => v.id_usuario);
                         if (ids.length > 0) queryDetalhes = queryDetalhes.in('id_usuario', ids);
                     }
                 }
@@ -349,7 +351,7 @@
                 const { data: notifs, error: errNotif } = await db
                     .from('notificacoes')
                     .select('*')
-                    .eq('id_usuario', currentUser.id_usuario)
+                    .eq('id_usuario', AppState.usuarioLogado.id_usuario)
                     .eq('lida', false);
                 
                 if (!errNotif) {
@@ -3285,7 +3287,7 @@ function selectFilter(filter) {
                 if (error) throw new Error(error.message);
                 const userIndex = todosUsuarios.findIndex(u => u.id_usuario === idMetaEdicao); if (userIndex > -1) todosUsuarios[userIndex].meta_mensal = Math.round(valor);
                 const vendIndex = todosVendedores.findIndex(v => v.id_usuario === idMetaEdicao); if (vendIndex > -1) todosVendedores[vendIndex].meta_mensal = Math.round(valor);
-                if (idMetaEdicao === currentUser.id_usuario) currentUser.meta_mensal = Math.round(valor);
+                if (idMetaEdicao === AppState.usuarioLogado.id_usuario) AppState.usuarioLogado.meta_mensal = Math.round(valor);
                 closeModal('modalEditarMeta'); showToast('Meta atualizada com sucesso', 'success'); renderMetas();
             } catch (e) { document.getElementById('errMeta').textContent = 'Erro ao salvar: ' + e.message; } 
             finally { btn.classList.remove('saving'); btn.disabled = false; }
