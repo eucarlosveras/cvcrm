@@ -113,6 +113,23 @@ const SUPABASE_URL = 'https://blumqkxwasdbyozdvrsp.supabase.co';
         let selectedVendedor = 'todos';
         let selectedLoja = 'todas';
 
+        function atualizarFab(view) {
+    const fab = document.getElementById('fabButton');
+    if (!fab) return;
+    const isVendedor = currentUser?.perfil === 'Vendedor' || (currentUser?.perfil || '').toLowerCase() === 'terminal';
+    if (view === 'inicio' && isVendedor) {
+        fab.style.display = 'flex';
+        fab.title = 'Novo orçamento';
+        fab.onclick = abrirNovoOrcamento;
+    } else if (view === 'estoque') {
+        fab.style.display = 'flex';
+        fab.title = 'Adicionar produto';
+        fab.onclick = abrirModalAdicionarProdutoEstoque;
+    } else {
+        fab.style.display = 'none';
+    }
+}
+
                 function showToast(message, type = 'info') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
@@ -817,6 +834,7 @@ const SUPABASE_URL = 'https://blumqkxwasdbyozdvrsp.supabase.co';
  	   if (view === 'inicio') {
  	       await carregarKpisEDashboard();
   	      renderInicio();
+               atualizarFab('inicio');
  	   }
  	   else if (view === 'carteira') {
   	      await carregarKpisEDashboard(); // Garante que os dados mais novos venham do banco
@@ -840,7 +858,10 @@ const SUPABASE_URL = 'https://blumqkxwasdbyozdvrsp.supabase.co';
     	else if (view === 'novo_orcamento') renderNovoOrcamentoPage();
     	else if (view === 'clientes_lista') await renderClientesLista();
     	else if (view === 'ficha_cliente') await renderFichaCliente();
-    else if (view === 'estoque') await renderEstoque();
+    else if (view === 'estoque') {
+        atualizarFab('estoque');
+        await renderEstoque();
+    }
 }
 
         function getMetaVendedor(idVendedor) {
@@ -4632,7 +4653,7 @@ function filtrarEstoque() {
 
     const filtrados = estoqueData.filter(item => {
         const codigo = (item.codigo_produto || '').toLowerCase();
-        const nome = (item.nome_produto || item.produtos?.nome_produto || '').toLowerCase();
+        const nome = (item.nome_produto || '').toLowerCase();
         const categoria = item.categoria || '';
         const qualidade = (item.qualidade || '').toLowerCase();
 
@@ -4685,7 +4706,7 @@ function renderizarTabelaEstoque(data) {
         return `
             <tr>
                 <td style="font-family: 'JetBrains Mono', monospace; font-size: var(--font-xs);">${escapeHtml(item.codigo_produto || '-')}</td>
-                <td><strong>${escapeHtml(item.nome_produto || item.produtos?.nome_produto || 'Produto não vinculado')}</strong></td>
+                <td><strong>${escapeHtml(item.nome_produto || 'Produto não vinculado')}</strong></td>
                 <td>${escapeHtml(item.categoria || '-')}</td>
                 <td><span class="quality-tag ${qualidadeClass}">${qualidadeLabel}</span></td>
                 <td style="text-align: center;"><span class="pill ${pillClass}">${disponivel}</span></td>
