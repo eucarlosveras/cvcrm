@@ -4822,7 +4822,7 @@ function filtrarEstoque() {
     const filtrados = dadosOriginais.filter(item => {
         const codigo = (item.codigo_produto || '').toLowerCase();
         const nome = (item.nome_produto || '').toLowerCase();
-        const qualidade = (item.qualidade || '').toLowerCase();
+        const qualidade = (item.qualidade || '').toLowerCase().trim();
 
         const matchBusca = codigo.includes(filtroEstoqueBusca) || nome.includes(filtroEstoqueBusca);
         // Filtro por Categoria (Comparando ID)
@@ -4847,7 +4847,7 @@ function renderizarTabelaEstoque(data) {
     tbody.innerHTML = data.map(item => {
         const disponivel = item.qtd_disponivel || 0;
         const reservado = item.qtd_reservada || 0;
-        const qualidade = item.qualidade?.toLowerCase() || 'novo';
+        const qualidade = (item.qualidade || '').toLowerCase().trim() || 'novo';
 
         // Pill de quantidade disponível
         let pillClass = 'pill-success';
