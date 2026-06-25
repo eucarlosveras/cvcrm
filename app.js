@@ -4614,7 +4614,14 @@ async function salvarNovoProdutoEstoque(event) {
     const nome = selectBase?.dataset.nome;
     
     const categoriaId = document.getElementById('novoProdCategoria')?.value;
-    const qualidade = document.getElementById('novoProdQualidade')?.value || 'Novo';
+    
+    const qualidadeEl = document.getElementById('novoProdQualidade');
+    if (!qualidadeEl || !qualidadeEl.value) {
+        showToast('Selecione a qualidade do produto.', 'warning');
+        return;
+    }
+    const qualidade = qualidadeEl.value;
+    
     const qtdInicial = parseInt(document.getElementById('novoProdQuantidade')?.value) || 0;
 
     if (!idProduto || !codigo || !nome) {
