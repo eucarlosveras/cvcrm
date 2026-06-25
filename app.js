@@ -124,7 +124,7 @@ const SUPABASE_URL = 'https://blumqkxwasdbyozdvrsp.supabase.co';
     } else if (view === 'estoque') {
         fab.style.display = 'flex';
         fab.title = 'Adicionar produto';
-        fab.onclick = abrirModalAdicionarProdutoEstoque;
+        fab.onclick = abrirModalNovoProduto;
     } else {
         fab.style.display = 'none';
     }
@@ -4526,85 +4526,115 @@ let filtroEstoqueBusca = '';
 let filtroEstoqueCategoria = 'todas';
 let filtroEstoqueQualidade = 'todas';
 
-function abrirModalAdicionarProdutoEstoque() {
-    const existing = document.getElementById('modalAdicionarProdutoEstoque');
-    if (existing) existing.remove();
-
-    const modal = document.createElement('div');
-    modal.id = 'modalAdicionarProdutoEstoque';
-    modal.className = 'modal-overlay active';
-    modal.innerHTML = `
-        <div class="modal-box" style="max-width:480px;">
-            <div class="modal-header">
-                <h3>Adicionar Produto ao Estoque</h3>
-                <button class="modal-close" onclick="document.getElementById('modalAdicionarProdutoEstoque').remove()">×</button>
-            </div>
-            <div class="modal-body" style="display:flex;flex-direction:column;gap:14px;">
-                <div>
-                    <label class="form-label">Código *</label>
-                    <input id="estProdCodigo" class="form-input" type="text" placeholder="Ex: COL-001">
-                </div>
-                <div>
-                    <label class="form-label">Nome do Produto *</label>
-                    <input id="estProdNome" class="form-input" type="text" placeholder="Ex: Colchão Molas Ensacadas Queen">
-                </div>
-                <div>
-                    <label class="form-label">Categoria</label>
-                    <input id="estProdCategoria" class="form-input" type="text" placeholder="Ex: Colchão, Cama, Sofá...">
-                </div>
-                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
-                    <div>
-                        <label class="form-label">Qualidade</label>
-                        <select id="estProdQualidade" class="form-input">
-                            <option value="novo">Novo</option>
-                            <option value="mostruario">Mostruário</option>
-                            <option value="avaria">Avaria</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="form-label">Disponível</label>
-                        <input id="estProdDisponivel" class="form-input" type="number" min="0" value="0">
-                    </div>
-                    <div>
-                        <label class="form-label">Reservado</label>
-                        <input id="estProdReservado" class="form-input" type="number" min="0" value="0">
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn-secondary" onclick="document.getElementById('modalAdicionarProdutoEstoque').remove()">Cancelar</button>
-                <button class="btn-primary" onclick="salvarProdutoEstoque()">Adicionar</button>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(modal);
+function fecharModalNovoProduto() {
+    const modal = document.getElementById('modalNovoProduto');
+    if (modal) modal.classList.remove('active');
 }
 
-async function salvarProdutoEstoque() {
-    const codigo = document.getElementById('estProdCodigo')?.value.trim();
-    const nome = document.getElementById('estProdNome')?.value.trim();
-    const categoria = document.getElementById('estProdCategoria')?.value.trim();
-    const qualidade = document.getElementById('estProdQualidade')?.value;
-    const disponivel = parseInt(document.getElementById('estProdDisponivel')?.value) || 0;
-    const reservado = parseInt(document.getElementById('estProdReservado')?.value) || 0;
+function abrirModalNovoProduto() {
+    const modal = document.getElementById('modalNovoProduto');
+    if (!modal) return;
 
-    if (!codigo || !nome) { showToast('Código e Nome são obrigatórios.', 'warning'); return; }
+    // Resetar formulário
+    const form = document.getElementById('formNovoProduto');
+    if (form) form.reset();
+    
+    // Exibir modal
+    modal.classList.add('active');
+    
+    // Carregar categorias dinamicamente
+    carregarCategoriasEstoque();
+}
+
+async function carregarCategoriasEstoque() {
+    const select = document.getElementById('novoProdCategoria');
+    if (!select) return;
+
+    select.innerHTML = '<option value="" disabled selected>Carregando...</option>';
 
     try {
-        const { error } = await db.from('estoque').insert({
+        const { data, error } = await db
+            .from('categorias')
+            .select('id, nome')
+            .order('nome');
+
+        if (error) throw error;
+
+        select.innerHTML = '<option value="" disabled selected>Selecione uma categoria...</option>';
+        
+        if (data && data.length > 0) {
+            data.forEach(cat => {
+                const option = document.createElement('option');
+                option.value = cat.id;
+                option.textContent = cat.nome;
+                select.appendChild(option);
+            });
+        } else {
+            select.innerHTML = '<option value="" disabled>Sem categorias cadastradas</option>';
+        }
+    } catch (e) {
+        console.error('Erro ao carregar categorias:', e);
+        showToast('Erro ao carregar categorias: ' + e.message, 'error');
+        select.innerHTML = '<option value="" disabled>Erro ao carregar</option>';
+    }
+}
+
+async function salvarNovoProdutoEstoque(event) {
+    event.preventDefault();
+
+    const codigo = document.getElementById('novoProdCodigo')?.value.trim();
+    const nome = document.getElementById('novoProdNome')?.value.trim();
+    const categoriaId = document.getElementById('novoProdCategoria')?.value;
+    const qualidade = document.getElementById('novoProdQualidade')?.value || 'novo';
+    const qtdInicial = parseInt(document.getElementById('novoProdQuantidade')?.value) || 0;
+
+    if (!codigo || !nome) {
+        showToast('Código e Nome são obrigatórios.', 'warning');
+        return;
+    }
+    if (!categoriaId) {
+        showToast('Selecione uma categoria válida.', 'warning');
+        return;
+    }
+
+    const btnSalvar = event.target.querySelector('button[type="submit"]');
+    const originalText = btnSalvar.textContent;
+    btnSalvar.textContent = 'Salvando...';
+    btnSalvar.disabled = true;
+
+    try {
+        const payload = {
             codigo_produto: codigo,
             nome_produto: nome,
-            categoria: categoria || null,
-            qualidade,
-            qtd_disponivel: disponivel,
-            qtd_reservada: reservado
-        });
-        if (error) throw error;
-        showToast('Produto adicionado ao estoque!', 'success');
-        document.getElementById('modalAdicionarProdutoEstoque').remove();
-        await carregarEstoqueComProdutos();
+            categoria_id: parseInt(categoriaId),
+            qualidade: qualidade,
+            qtd_disponivel: qtdInicial,
+            status: 'Ativo'
+        };
+
+        const { error } = await db.from('estoque').insert(payload);
+
+        if (error) {
+            if (error.code === '23505') {
+                throw new Error('Já existe um produto com este código cadastrado.');
+            }
+            throw error;
+        }
+
+        showToast('Produto adicionado com sucesso!', 'success');
+        fecharModalNovoProduto();
+        
+        if (typeof renderEstoquePage === 'function') {
+            await renderEstoquePage();
+        } else if (typeof renderEstoque === 'function') {
+            await renderEstoque();
+        }
+
     } catch (e) {
         showToast('Erro ao salvar: ' + e.message, 'error');
+    } finally {
+        btnSalvar.textContent = originalText;
+        btnSalvar.disabled = false;
     }
 }
 
