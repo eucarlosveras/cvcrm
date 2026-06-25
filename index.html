@@ -292,14 +292,11 @@
             <h3>Adicionar Produto ao Estoque</h3>
             
             <form id="formNovoProduto" onsubmit="salvarNovoProdutoEstoque(event)">
-                <div class="form-group">
-                    <label class="form-label">Código do Produto *</label>
-                    <input type="text" id="novoProdCodigo" class="form-input" placeholder="Ex: COL-001" required>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Nome do Produto *</label>
-                    <input type="text" id="novoProdNome" class="form-input" placeholder="Ex: Colchão Queen" required>
+                <div>
+                    <label class="form-label" style="font-size: 13px; font-weight: 600; text-transform: uppercase; color: var(--text-muted);">Selecionar Produto Base *</label>
+                    <select id="novoProdSelecaoBase" class="form-input" required>
+                        <option value="" disabled selected>Selecione um produto...</option>
+                    </select>
                 </div>
 
                 <div class="form-group">
