@@ -4527,23 +4527,19 @@ let filtroEstoqueCategoria = 'todas';
 let filtroEstoqueQualidade = 'todas';
 
 function fecharModalNovoProduto() {
-    const modal = document.getElementById('modalNovoProduto');
-    if (modal) modal.classList.remove('active');
+    closeModal('modalNovoProduto');
 }
 
 function abrirModalNovoProduto() {
-    const modal = document.getElementById('modalNovoProduto');
-    if (!modal) return;
-
     // Resetar formulário
     const form = document.getElementById('formNovoProduto');
     if (form) form.reset();
     
-    // Exibir modal
-    modal.classList.add('active');
-    
     // Carregar categorias dinamicamente
     carregarCategoriasEstoque();
+    
+    // Abrir modal usando a função padrão do sistema
+    openModal('modalNovoProduto');
 }
 
 async function carregarCategoriasEstoque() {

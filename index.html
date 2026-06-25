@@ -288,45 +288,48 @@
 
     <!-- Modal: Novo Produto Estoque -->
     <div class="modal-overlay" id="modalNovoProduto" onclick="if(event.target===this)closeModal('modalNovoProduto')">
-        <div class="modal-box" style="max-width:500px;">
-            <div class="modal-header">
-                <h3>Adicionar Produto ao Estoque</h3>
-                <button class="modal-close" onclick="fecharModalNovoProduto()">×</button>
-            </div>
+        <div class="modal-card">
+            <h3>Adicionar Produto ao Estoque</h3>
+            
             <form id="formNovoProduto" onsubmit="salvarNovoProdutoEstoque(event)">
-                <div class="modal-body" style="display:flex;flex-direction:column;gap:16px;">
-                    <div>
-                        <label class="form-label">Código do Produto *</label>
-                        <input type="text" id="novoProdCodigo" class="form-input" placeholder="Ex: COL-001" required>
-                    </div>
-                    <div>
-                        <label class="form-label">Nome do Produto *</label>
-                        <input type="text" id="novoProdNome" class="form-input" placeholder="Ex: Colchão Queen" required>
-                    </div>
-                    <div>
-                        <label class="form-label">Categoria *</label>
-                        <select id="novoProdCategoria" class="form-input" required>
-                            <option value="" disabled selected>Selecione uma categoria...</option>
+                <div class="form-group">
+                    <label class="form-label">Código do Produto *</label>
+                    <input type="text" id="novoProdCodigo" class="form-input" placeholder="Ex: COL-001" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Nome do Produto *</label>
+                    <input type="text" id="novoProdNome" class="form-input" placeholder="Ex: Colchão Queen" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Categoria *</label>
+                    <select id="novoProdCategoria" class="form-input" required>
+                        <option value="" disabled selected>Selecione uma categoria...</option>
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Qualidade</label>
+                        <select id="novoProdQualidade" class="form-input">
+                            <option value="Novo">Novo</option>
+                            <option value="Mostruário">Mostruário</option>
+                            <option value="Avariado">Avariado</option>
                         </select>
                     </div>
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-                        <div>
-                            <label class="form-label">Qualidade</label>
-                            <select id="novoProdQualidade" class="form-input">
-                                <option value="novo">Novo</option>
-                                <option value="mostruario">Mostruário</option>
-                                <option value="avaria">Avariado</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="form-label">Qtd. Inicial</label>
-                            <input type="number" id="novoProdQuantidade" class="form-input" min="0" value="0">
-                        </div>
+                    <div class="form-group">
+                        <label class="form-label">Qtd. Inicial</label>
+                        <input type="number" id="novoProdQuantidade" class="form-input" min="0" value="0">
                     </div>
                 </div>
-                <div class="modal-footer" style="margin-top:24px;display:flex;justify-content:flex-end;gap:12px;">
-                    <button type="button" class="btn-secondary" onclick="fecharModalNovoProduto()">Cancelar</button>
-                    <button type="submit" class="btn-primary">Salvar Produto</button>
+
+                <div class="modal-btns">
+                    <button type="button" class="btn-cancelar-modal" onclick="fecharModalNovoProduto()">Cancelar</button>
+                    <button type="submit" class="btn-salvar-modal">
+                        <span class="btn-spinner"></span>
+                        <span class="btn-text">Salvar Produto</span>
+                    </button>
                 </div>
             </form>
         </div>
