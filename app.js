@@ -4598,8 +4598,7 @@ async function carregarEstoqueComProdutos() {
             .select(`
                 *,
                 produtos (
-                    nome_produto,
-                    categoria
+                    nome_produto
                 )
             `);
 
@@ -4608,7 +4607,7 @@ async function carregarEstoqueComProdutos() {
         estoqueData = data || [];
         
         // Preencher filtro de categorias
-        const categorias = [...new Set(estoqueData.map(item => item.produtos?.categoria).filter(Boolean))];
+        const categorias = [...new Set(estoqueData.map(item => item.categoria).filter(Boolean))];
         const selectCategoria = document.getElementById('estoqueFiltroCategoria');
         if (selectCategoria) {
             categorias.forEach(cat => {
@@ -4646,8 +4645,8 @@ function filtrarEstoque() {
 
     const filtrados = estoqueData.filter(item => {
         const codigo = (item.codigo_produto || '').toLowerCase();
-        const nome = (item.produtos?.nome_produto || '').toLowerCase();
-        const categoria = item.produtos?.categoria || '';
+        const nome = (item.nome_produto || item.produtos?.nome_produto || '').toLowerCase();
+        const categoria = item.categoria || '';
         const qualidade = (item.qualidade || '').toLowerCase();
 
         const matchBusca = codigo.includes(filtroEstoqueBusca) || nome.includes(filtroEstoqueBusca);
@@ -4699,8 +4698,8 @@ function renderizarTabelaEstoque(data) {
         return `
             <tr>
                 <td style="font-family: 'JetBrains Mono', monospace; font-size: var(--font-xs);">${escapeHtml(item.codigo_produto || '-')}</td>
-                <td><strong>${escapeHtml(item.produtos?.nome_produto || 'Produto não vinculado')}</strong></td>
-                <td>${escapeHtml(item.produtos?.categoria || '-')}</td>
+                <td><strong>${escapeHtml(item.nome_produto || item.produtos?.nome_produto || 'Produto não vinculado')}</strong></td>
+                <td>${escapeHtml(item.categoria || '-')}</td>
                 <td><span class="quality-tag ${qualidadeClass}">${qualidadeLabel}</span></td>
                 <td style="text-align: center;"><span class="pill ${pillClass}">${disponivel}</span></td>
                 <td style="text-align: center; color: var(--text-muted);">${reservado}</td>
