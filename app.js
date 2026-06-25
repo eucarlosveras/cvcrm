@@ -4538,6 +4538,35 @@ function abrirModalNovoProduto() {
     // Carregar categorias dinamicamente
     carregarCategoriasEstoque();
     
+    // Popular o select de produtos base usando o array global todosProdutos
+    const selectBase = document.getElementById('novoProdSelecaoBase');
+    if (selectBase && typeof todosProdutos !== 'undefined' && Array.isArray(todosProdutos)) {
+        selectBase.innerHTML = '<option value="" disabled selected>Selecione um produto...</option>';
+        todosProdutos.forEach(prod => {
+            const option = document.createElement('option');
+            option.value = prod.id_produto;
+            option.textContent = `${prod.codigo} - ${prod.nome}`;
+            // Armazena dados no próprio elemento option para acesso fácil
+            option.dataset.codigo = prod.codigo;
+            option.dataset.nome = prod.nome;
+            selectBase.appendChild(option);
+        });
+        
+        // Adiciona listener para atualizar data attributes no select quando mudar
+        selectBase.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            if (selectedOption && selectedOption.value) {
+                this.dataset.codigo = selectedOption.dataset.codigo;
+                this.dataset.nome = selectedOption.dataset.nome;
+                this.dataset.idProduto = selectedOption.value;
+            } else {
+                delete this.dataset.codigo;
+                delete this.dataset.nome;
+                delete this.dataset.idProduto;
+            }
+        });
+    }
+    
     // Abrir modal usando a função padrão do sistema
     openModal('modalNovoProduto');
 }
@@ -4578,14 +4607,18 @@ async function carregarCategoriasEstoque() {
 async function salvarNovoProdutoEstoque(event) {
     event.preventDefault();
 
-    const codigo = document.getElementById('novoProdCodigo')?.value.trim();
-    const nome = document.getElementById('novoProdNome')?.value.trim();
+    // Obter dados do select de produto base
+    const selectBase = document.getElementById('novoProdSelecaoBase');
+    const idProduto = selectBase?.dataset.idProduto;
+    const codigo = selectBase?.dataset.codigo;
+    const nome = selectBase?.dataset.nome;
+    
     const categoriaId = document.getElementById('novoProdCategoria')?.value;
-    const qualidade = document.getElementById('novoProdQualidade')?.value || 'novo';
+    const qualidade = document.getElementById('novoProdQualidade')?.value || 'Novo';
     const qtdInicial = parseInt(document.getElementById('novoProdQuantidade')?.value) || 0;
 
-    if (!codigo || !nome) {
-        showToast('Código e Nome são obrigatórios.', 'warning');
+    if (!idProduto || !codigo || !nome) {
+        showToast('Selecione um produto base válido.', 'warning');
         return;
     }
     if (!categoriaId) {
@@ -4600,6 +4633,7 @@ async function salvarNovoProdutoEstoque(event) {
 
     try {
         const payload = {
+            id_produto: idProduto,
             codigo_produto: codigo,
             nome_produto: nome,
             categoria_id: parseInt(categoriaId),
