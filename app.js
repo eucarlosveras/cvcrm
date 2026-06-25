@@ -755,6 +755,29 @@
                     historicoFaturamento.push({ mes: nomeMes + '/' + anoAbrev, valor: total });
                 }
             } catch(e) { }
+        }
+
+        async function carregarEstoqueComProdutos() {
+            try {
+                // O .select('*, produtos(nome_produto)') faz a mágica da relação
+                const { data, error } = await db
+                    .from('estoque')
+                    .select(`
+                        *,
+                        produtos (
+                            nome_produto
+                        )
+                    `);
+
+                if (error) throw error;
+
+                // 'data' agora contém os dados do estoque e, dentro de cada item, 
+                // existe um objeto 'produtos' com o nome do produto.
+                renderizarTabelaEstoque(data);
+            } catch (e) {
+                showToast('Erro ao carregar estoque: ' + e.message, 'error');
+            }
+        }
 
         function atualizarBadge() {
             const pendentes = kpisMensais.filter(o => [STATUS.CONTATO_INICIAL, STATUS.NEGOCIACAO, STATUS.EM_FECHAMENTO].includes(o.status)).length;
@@ -811,8 +834,8 @@
     	else if (view === 'novo_orcamento') renderNovoOrcamentoPage();
     	else if (view === 'clientes_lista') await renderClientesLista();
     	else if (view === 'ficha_cliente') await renderFichaCliente();
-        else if (view === 'estoque') await renderEstoque();
 	}
+        else if (view === 'estoque') await renderEstoque();
 
         function getMetaVendedor(idVendedor) {
             const user = (todosUsuarios && todosUsuarios.length > 0 ? todosUsuarios : todosVendedores).find(u => u.id_usuario === idVendedor);
@@ -4483,52 +4506,44 @@ async function dropCardFechado(event) {
 }
 
 
-// =============================================================================
-// MÓDULO DE CONTROLE DE ESTOQUE
-// =============================================================================
+// ==================== MÓDULO DE ESTOQUE ====================
 
 let estoqueData = [];
+let filtroEstoqueBusca = '';
 let filtroEstoqueCategoria = 'todas';
 let filtroEstoqueQualidade = 'todas';
-let filtroEstoqueBusca = '';
 
 async function renderEstoque() {
     const main = document.getElementById('mainContent');
+    if (!main) return;
+
     main.innerHTML = `
-        <div class="page-header">
-            <h1><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg> Controle de Estoque</h1>
-            <p class="page-subtitle">Consulte disponibilidade, reservas e estado dos produtos</p>
-        </div>
+        <header class="dashboard-header">
+            <h1>Controle de Estoque</h1>
+        </header>
         
         <div class="kpi-grid" style="margin-bottom: 24px;">
             <div class="kpi-card">
                 <div class="kpi-label">Total de Produtos</div>
                 <div class="kpi-value" id="estoqueKpiTotal">-</div>
-                <div class="kpi-trend">produtos cadastrados</div>
             </div>
             <div class="kpi-card">
                 <div class="kpi-label">Disponível</div>
-                <div class="kpi-value" id="estoqueKpiDisponivel">-</div>
-                <div class="kpi-trend" style="color: var(--accent-green);">prontos para venda</div>
+                <div class="kpi-value" style="color: var(--success-text);" id="estoqueKpiDisponivel">-</div>
             </div>
             <div class="kpi-card">
                 <div class="kpi-label">Reservado</div>
-                <div class="kpi-value" id="estoqueKpiReservado">-</div>
-                <div class="kpi-trend" style="color: var(--warning-orange);">aguardando retirada</div>
+                <div class="kpi-value" style="color: var(--warning-text);" id="estoqueKpiReservado">-</div>
             </div>
             <div class="kpi-card">
                 <div class="kpi-label">Baixo Estoque</div>
-                <div class="kpi-value" id="estoqueKpiBaixo">-</div>
-                <div class="kpi-trend" style="color: var(--danger-text);">atenção necessária</div>
+                <div class="kpi-value" style="color: var(--danger-text);" id="estoqueKpiBaixo">-</div>
             </div>
         </div>
-        
-        <div class="table-controls">
-            <div class="search-box">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                <input type="text" id="estoqueBuscaInput" placeholder="Buscar por nome ou código..." value="${filtroEstoqueBusca}" oninput="filtrarEstoque()">
-            </div>
-            <div class="filter-group">
+
+        <div class="table-card">
+            <div style="display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;">
+                <input type="text" id="estoqueBuscaInput" placeholder="Buscar por nome ou código..." value="${filtroEstoqueBusca}" oninput="filtrarEstoque()" style="flex: 1; min-width: 200px;">
                 <select id="estoqueFiltroCategoria" class="form-input" onchange="filtrarEstoque()" style="min-width: 150px;">
                     <option value="todas">Todas Categorias</option>
                 </select>
@@ -4539,10 +4554,8 @@ async function renderEstoque() {
                     <option value="avaria">Avaria</option>
                 </select>
             </div>
-        </div>
-        
-        <div class="table-container">
-            <table class="data-table">
+
+            <table>
                 <thead>
                     <tr>
                         <th>Código</th>
@@ -4560,7 +4573,7 @@ async function renderEstoque() {
             </table>
         </div>
     `;
-    
+
     await carregarEstoqueComProdutos();
 }
 
@@ -4580,7 +4593,7 @@ async function carregarEstoqueComProdutos() {
 
         estoqueData = data || [];
         
-        // Preencher dropdown de categorias
+        // Preencher filtro de categorias
         const categorias = [...new Set(estoqueData.map(item => item.produtos?.categoria).filter(Boolean))];
         const selectCategoria = document.getElementById('estoqueFiltroCategoria');
         if (selectCategoria) {
@@ -4591,7 +4604,7 @@ async function carregarEstoqueComProdutos() {
                 selectCategoria.appendChild(option);
             });
         }
-        
+
         atualizarKpisEstoque();
         filtrarEstoque();
     } catch (e) {
@@ -4605,7 +4618,7 @@ function atualizarKpisEstoque() {
     const disponivel = estoqueData.reduce((sum, item) => sum + (item.qtd_disponivel || 0), 0);
     const reservado = estoqueData.reduce((sum, item) => sum + (item.qtd_reservada || 0), 0);
     const baixo = estoqueData.filter(item => (item.qtd_disponivel || 0) > 0 && (item.qtd_disponivel || 0) <= 5).length;
-    
+
     document.getElementById('estoqueKpiTotal').textContent = total;
     document.getElementById('estoqueKpiDisponivel').textContent = disponivel;
     document.getElementById('estoqueKpiReservado').textContent = reservado;
@@ -4616,37 +4629,37 @@ function filtrarEstoque() {
     filtroEstoqueBusca = document.getElementById('estoqueBuscaInput')?.value.toLowerCase() || '';
     filtroEstoqueCategoria = document.getElementById('estoqueFiltroCategoria')?.value || 'todas';
     filtroEstoqueQualidade = document.getElementById('estoqueFiltroQualidade')?.value || 'todas';
-    
+
     const filtrados = estoqueData.filter(item => {
-        const nomeProduto = item.produtos?.nome_produto?.toLowerCase() || '';
-        const codigo = item.codigo_produto?.toLowerCase() || '';
+        const codigo = (item.codigo_produto || '').toLowerCase();
+        const nome = (item.produtos?.nome_produto || '').toLowerCase();
         const categoria = item.produtos?.categoria || '';
-        const qualidade = item.qualidade?.toLowerCase() || '';
-        
-        const matchBusca = nomeProduto.includes(filtroEstoqueBusca) || codigo.includes(filtroEstoqueBusca);
+        const qualidade = (item.qualidade || '').toLowerCase();
+
+        const matchBusca = codigo.includes(filtroEstoqueBusca) || nome.includes(filtroEstoqueBusca);
         const matchCategoria = filtroEstoqueCategoria === 'todas' || categoria === filtroEstoqueCategoria;
         const matchQualidade = filtroEstoqueQualidade === 'todas' || qualidade === filtroEstoqueQualidade;
-        
+
         return matchBusca && matchCategoria && matchQualidade;
     });
-    
+
     renderizarTabelaEstoque(filtrados);
 }
 
 function renderizarTabelaEstoque(data) {
     const tbody = document.getElementById('estoqueTableBody');
     if (!tbody) return;
-    
+
     if (data.length === 0) {
         tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 40px; color: var(--text-muted);">Nenhum produto encontrado</td></tr>';
         return;
     }
-    
+
     tbody.innerHTML = data.map(item => {
         const disponivel = item.qtd_disponivel || 0;
         const reservado = item.qtd_reservada || 0;
         const qualidade = item.qualidade?.toLowerCase() || 'novo';
-        
+
         // Pill de quantidade disponível
         let pillClass = 'pill-success';
         let pillText = 'OK';
@@ -4657,7 +4670,7 @@ function renderizarTabelaEstoque(data) {
             pillClass = 'pill-warning';
             pillText = 'Baixo';
         }
-        
+
         // Tag de qualidade
         let qualidadeClass = 'tag-novo';
         let qualidadeLabel = 'Novo';
@@ -4668,7 +4681,7 @@ function renderizarTabelaEstoque(data) {
             qualidadeClass = 'tag-avaria';
             qualidadeLabel = 'Avaria';
         }
-        
+
         return `
             <tr>
                 <td style="font-family: 'JetBrains Mono', monospace; font-size: var(--font-xs);">${escapeHtml(item.codigo_produto || '-')}</td>
