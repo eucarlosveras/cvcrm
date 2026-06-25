@@ -757,6 +757,28 @@
             } catch(e) { }
         }
 
+        async function carregarEstoqueComProdutos() {
+            try {
+                // O .select('*, produtos(nome_produto)') faz a mágica da relação
+                const { data, error } = await db
+                    .from('estoque')
+                    .select(`
+                        *,
+                        produtos (
+                            nome_produto
+                        )
+                    `);
+
+                if (error) throw error;
+
+                // 'data' agora contém os dados do estoque e, dentro de cada item, 
+                // existe um objeto 'produtos' com o nome do produto.
+                renderizarTabelaEstoque(data);
+            } catch (e) {
+                showToast('Erro ao carregar estoque: ' + e.message, 'error');
+            }
+        }
+
         function atualizarBadge() {
             const pendentes = kpisMensais.filter(o => [STATUS.CONTATO_INICIAL, STATUS.NEGOCIACAO, STATUS.EM_FECHAMENTO].includes(o.status)).length;
             const badge = document.getElementById('badgeAgendaDia');
