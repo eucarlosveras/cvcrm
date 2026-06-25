@@ -836,8 +836,8 @@
     	else if (view === 'novo_orcamento') renderNovoOrcamentoPage();
     	else if (view === 'clientes_lista') await renderClientesLista();
     	else if (view === 'ficha_cliente') await renderFichaCliente();
-	}
-        else if (view === 'estoque') await renderEstoque();
+    else if (view === 'estoque') await renderEstoque();
+}
 
         function getMetaVendedor(idVendedor) {
             const user = (todosUsuarios && todosUsuarios.length > 0 ? todosUsuarios : todosVendedores).find(u => u.id_usuario === idVendedor);
