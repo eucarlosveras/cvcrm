@@ -4700,10 +4700,10 @@ async function renderEstoque() {
             <div style="display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; align-items: center;">
                 <input type="text" id="estoqueBuscaInput" class="form-input" placeholder="Buscar por nome ou código..." value="${filtroEstoqueBusca}" oninput="filtrarEstoque()" style="flex: 1; min-width: 200px;">
                 <select id="estoqueFiltroCategoria" class="form-input" onchange="filtrarEstoque()" style="width: 180px;">
-                    <option value="todas">Todas Categorias</option>
+                    <option value="todas">Categorias</option>
                 </select>
                 <select id="estoqueFiltroQualidade" class="form-input" onchange="filtrarEstoque()" style="width: 160px;">
-                    <option value="todas">Todas Qualidades</option>
+                    <option value="todas">Qualidades</option>
                     <option value="novo">Novo</option>
                     <option value="mostruario">Mostruário</option>
                     <option value="avaria">Avaria</option>
@@ -4752,7 +4752,7 @@ async function carregarEstoqueComProdutos() {
         // 3. Popula o select de filtro dinamicamente
         const selectFiltro = document.getElementById('estoqueFiltroCategoria');
         if (selectFiltro) {
-            selectFiltro.innerHTML = '<option value="todas">Todas Categorias</option>';
+            selectFiltro.innerHTML = '<option value="todas">Categorias</option>';
             
             if (categoriasData && categoriasData.length > 0) {
                 categoriasData.forEach(cat => {
