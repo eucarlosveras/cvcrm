@@ -4778,12 +4778,26 @@ async function carregarEstoqueComProdutos() {
 
 function atualizarKpisEstoque() {
     const dados = window.dadosEstoqueCompleto || [];
-    const total = dados.length;
-    const disponivel = dados.reduce((sum, item) => sum + (parseInt(item.qtd_disponivel) || 0), 0);
+    
+    // 1. Total: Volume físico real (Disponível + Reservado)
+    const total = dados.reduce((sum, item) => {
+        const disp = parseInt(item.qtd_disponivel) || 0;
+        const res = parseInt(item.qtd_reservada) || 0;
+        return sum + (disp + res);
+    }, 0);
+
+    // 2. Disponível: Apenas produtos que NÃO são avaria
+    const disponivel = dados
+        .filter(item => (item.qualidade || '').toLowerCase() !== 'avaria')
+        .reduce((sum, item) => sum + (parseInt(item.qtd_disponivel) || 0), 0);
+
+    // 3. Reservado: Soma das unidades comprometidas
     const reservado = dados.reduce((sum, item) => sum + (parseInt(item.qtd_reservada) || 0), 0);
+
+    // 4. Baixo Estoque: Produtos com menos de 5 unidades (incluindo 0)
     const baixo = dados.filter(item => {
         const qtd = parseInt(item.qtd_disponivel) || 0;
-        return qtd > 0 && qtd <= 5;
+        return qtd < 5;
     }).length;
 
     const elTotal = document.getElementById('estoqueKpiTotal');
