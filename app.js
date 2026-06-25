@@ -4527,33 +4527,33 @@ async function renderEstoque() {
         <header class="dashboard-header">
             <h1>Controle de Estoque</h1>
         </header>
-        
-        <div class="kpi-grid" style="margin-bottom: 24px;">
+
+        <div class="kpi-grid">
             <div class="kpi-card">
-                <div class="kpi-label">Total de Produtos</div>
+                <div class="kpi-label-row"><span class="kpi-dot blue"></span><span class="kpi-label">Total de Produtos</span></div>
                 <div class="kpi-value" id="estoqueKpiTotal">-</div>
             </div>
             <div class="kpi-card">
-                <div class="kpi-label">Disponível</div>
+                <div class="kpi-label-row"><span class="kpi-dot green"></span><span class="kpi-label">Disponível</span></div>
                 <div class="kpi-value" style="color: var(--success-text);" id="estoqueKpiDisponivel">-</div>
             </div>
             <div class="kpi-card">
-                <div class="kpi-label">Reservado</div>
+                <div class="kpi-label-row"><span class="kpi-dot orange"></span><span class="kpi-label">Reservado</span></div>
                 <div class="kpi-value" style="color: var(--warning-text);" id="estoqueKpiReservado">-</div>
             </div>
             <div class="kpi-card">
-                <div class="kpi-label">Baixo Estoque</div>
+                <div class="kpi-label-row"><span class="kpi-dot red"></span><span class="kpi-label">Baixo Estoque</span></div>
                 <div class="kpi-value" style="color: var(--danger-text);" id="estoqueKpiBaixo">-</div>
             </div>
         </div>
 
         <div class="table-card">
-            <div style="display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;">
-                <input type="text" id="estoqueBuscaInput" placeholder="Buscar por nome ou código..." value="${filtroEstoqueBusca}" oninput="filtrarEstoque()" style="flex: 1; min-width: 200px;">
-                <select id="estoqueFiltroCategoria" class="form-input" onchange="filtrarEstoque()" style="min-width: 150px;">
+            <div style="display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; align-items: center;">
+                <input type="text" id="estoqueBuscaInput" class="form-input" placeholder="Buscar por nome ou código..." value="${filtroEstoqueBusca}" oninput="filtrarEstoque()" style="flex: 1; min-width: 200px;">
+                <select id="estoqueFiltroCategoria" class="form-input" onchange="filtrarEstoque()" style="width: 180px;">
                     <option value="todas">Todas Categorias</option>
                 </select>
-                <select id="estoqueFiltroQualidade" class="form-input" onchange="filtrarEstoque()" style="min-width: 140px;">
+                <select id="estoqueFiltroQualidade" class="form-input" onchange="filtrarEstoque()" style="width: 160px;">
                     <option value="todas">Todas Qualidades</option>
                     <option value="novo">Novo</option>
                     <option value="mostruario">Mostruário</option>
