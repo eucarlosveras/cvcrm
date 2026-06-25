@@ -4734,26 +4734,40 @@ async function renderEstoque() {
 
 async function carregarEstoqueComProdutos() {
     try {
-        const { data, error } = await db
+        // 1. Busca os dados do estoque com o relacionamento de categorias
+        const { data: estoqueData, error: estoqueError } = await db
             .from('estoque')
-            .select('*');
+            .select('*, categorias(nome)');
 
-        if (error) throw error;
+        if (estoqueError) throw estoqueError;
 
-        estoqueData = data || [];
-        
-        // Preencher filtro de categorias
-        const categorias = [...new Set(estoqueData.map(item => item.categoria).filter(Boolean))];
-        const selectCategoria = document.getElementById('estoqueFiltroCategoria');
-        if (selectCategoria) {
-            categorias.forEach(cat => {
-                const option = document.createElement('option');
-                option.value = cat;
-                option.textContent = cat;
-                selectCategoria.appendChild(option);
-            });
+        // 2. Busca todas as categorias para popular o filtro
+        const { data: categoriasData, error: catError } = await db
+            .from('categorias')
+            .select('id, nome')
+            .order('nome');
+
+        if (catError) throw catError;
+
+        // 3. Popula o select de filtro dinamicamente
+        const selectFiltro = document.getElementById('estoqueFiltroCategoria');
+        if (selectFiltro) {
+            selectFiltro.innerHTML = '<option value="todas">Todas Categorias</option>';
+            
+            if (categoriasData && categoriasData.length > 0) {
+                categoriasData.forEach(cat => {
+                    const option = document.createElement('option');
+                    option.value = cat.id; // Usa o ID como valor
+                    option.textContent = cat.nome; // Usa o nome como exibição
+                    selectFiltro.appendChild(option);
+                });
+            }
         }
 
+        // 4. Salva os dados completos para uso na função de filtro
+        window.dadosEstoqueCompleto = estoqueData;
+
+        // 5. Atualiza KPIs e renderiza a tabela
         atualizarKpisEstoque();
         filtrarEstoque();
     } catch (e) {
@@ -4779,14 +4793,17 @@ function filtrarEstoque() {
     filtroEstoqueCategoria = document.getElementById('estoqueFiltroCategoria')?.value || 'todas';
     filtroEstoqueQualidade = document.getElementById('estoqueFiltroQualidade')?.value || 'todas';
 
-    const filtrados = estoqueData.filter(item => {
+    // Acessando a fonte de dados original
+    const dadosOriginais = window.dadosEstoqueCompleto || estoqueData || []; 
+
+    const filtrados = dadosOriginais.filter(item => {
         const codigo = (item.codigo_produto || '').toLowerCase();
         const nome = (item.nome_produto || '').toLowerCase();
-        const categoria = item.categoria || '';
         const qualidade = (item.qualidade || '').toLowerCase();
 
         const matchBusca = codigo.includes(filtroEstoqueBusca) || nome.includes(filtroEstoqueBusca);
-        const matchCategoria = filtroEstoqueCategoria === 'todas' || categoria === filtroEstoqueCategoria;
+        // Filtro por Categoria (Comparando ID)
+        const matchCategoria = filtroEstoqueCategoria === 'todas' || String(item.categoria_id) === String(filtroEstoqueCategoria);
         const matchQualidade = filtroEstoqueQualidade === 'todas' || qualidade === filtroEstoqueQualidade;
 
         return matchBusca && matchCategoria && matchQualidade;
@@ -4835,7 +4852,7 @@ function renderizarTabelaEstoque(data) {
             <tr>
                 <td style="font-family: 'JetBrains Mono', monospace; font-size: var(--font-xs);">${escapeHtml(item.codigo_produto || '-')}</td>
                 <td><strong>${escapeHtml(item.nome_produto || 'Produto não vinculado')}</strong></td>
-                <td>${escapeHtml(item.categoria || '-')}</td>
+                <td>${escapeHtml(item.categorias?.nome || '-')}</td>
                 <td><span class="quality-tag ${qualidadeClass}">${qualidadeLabel}</span></td>
                 <td style="text-align: center;"><span class="pill ${pillClass}">${disponivel}</span></td>
                 <td style="text-align: center; color: var(--text-muted);">${reservado}</td>
