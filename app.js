@@ -102,7 +102,18 @@ const SUPABASE_URL = 'https://blumqkxwasdbyozdvrsp.supabase.co';
         function getFiltroVendedor() { return AppState.filtros.vendedor; }
         function getFiltroLoja() { return AppState.filtros.loja; } 
 
-        function showToast(message, type = 'info') {
+        // Variáveis de estado legadas (mantidas para compatibilidade com o código existente)
+        let currentUser = null;
+        let currentView = 'inicio';
+        let previousView = 'inicio';
+        let currentMonth = new Date().getMonth() + 1;
+        let currentYear = new Date().getFullYear();
+        let currentDay = null;
+        let currentPage = 1;
+        let selectedVendedor = 'todos';
+        let selectedLoja = 'todas';
+
+                function showToast(message, type = 'info') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
             toast.className = `toast ${type}`;
