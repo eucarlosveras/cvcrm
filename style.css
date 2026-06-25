@@ -1647,13 +1647,12 @@
 
         .cliente-id-badge {
             display: inline-block; 
-            font-size: 11px; 
+            font-size: 10px; 
             font-weight: 700; 
-            color: var(--brand-blue);
-            background: var(--brand-blue-subtle); 
-            border: 1px solid rgba(99,102,241,0.2);
-            padding: 3px 8px; 
-            border-radius: var(--radius-xs);
+            color: var(--text-muted);
+            background: transparent; 
+            border: none;
+            padding: 0; 
             white-space: nowrap;
         }
 
