@@ -773,20 +773,12 @@ const SUPABASE_URL = 'https://blumqkxwasdbyozdvrsp.supabase.co';
 
         async function carregarEstoqueComProdutos() {
             try {
-                // O .select('*, produtos(nome_produto)') faz a mágica da relação
                 const { data, error } = await db
                     .from('estoque')
-                    .select(`
-                        *,
-                        produtos (
-                            nome_produto
-                        )
-                    `);
+                    .select('*');
 
                 if (error) throw error;
 
-                // 'data' agora contém os dados do estoque e, dentro de cada item, 
-                // existe um objeto 'produtos' com o nome do produto.
                 renderizarTabelaEstoque(data);
             } catch (e) {
                 showToast('Erro ao carregar estoque: ' + e.message, 'error');
@@ -4595,12 +4587,7 @@ async function carregarEstoqueComProdutos() {
     try {
         const { data, error } = await db
             .from('estoque')
-            .select(`
-                *,
-                produtos (
-                    nome_produto
-                )
-            `);
+            .select('*');
 
         if (error) throw error;
 
