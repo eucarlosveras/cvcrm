@@ -1,4 +1,4 @@
-        const SUPABASE_URL = 'https://blumqkxwasdbyozdvrsp.supabase.co';
+const SUPABASE_URL = 'https://blumqkxwasdbyozdvrsp.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_kvVacObZ3ERPqc9MjOIoWw_aRZeYeIn';
         const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
@@ -46,6 +46,7 @@
                 return false;
             }
             AppState.usuarioLogado = usuario;
+            currentUser = usuario;
             return true;
         }
         
