@@ -4777,15 +4777,24 @@ async function carregarEstoqueComProdutos() {
 }
 
 function atualizarKpisEstoque() {
-    const total = estoqueData.length;
-    const disponivel = estoqueData.reduce((sum, item) => sum + (item.qtd_disponivel || 0), 0);
-    const reservado = estoqueData.reduce((sum, item) => sum + (item.qtd_reservada || 0), 0);
-    const baixo = estoqueData.filter(item => (item.qtd_disponivel || 0) > 0 && (item.qtd_disponivel || 0) <= 5).length;
+    const dados = window.dadosEstoqueCompleto || [];
+    const total = dados.length;
+    const disponivel = dados.reduce((sum, item) => sum + (parseInt(item.qtd_disponivel) || 0), 0);
+    const reservado = dados.reduce((sum, item) => sum + (parseInt(item.qtd_reservada) || 0), 0);
+    const baixo = dados.filter(item => {
+        const qtd = parseInt(item.qtd_disponivel) || 0;
+        return qtd > 0 && qtd <= 5;
+    }).length;
 
-    document.getElementById('estoqueKpiTotal').textContent = total;
-    document.getElementById('estoqueKpiDisponivel').textContent = disponivel;
-    document.getElementById('estoqueKpiReservado').textContent = reservado;
-    document.getElementById('estoqueKpiBaixo').textContent = baixo;
+    const elTotal = document.getElementById('estoqueKpiTotal');
+    const elDisp = document.getElementById('estoqueKpiDisponivel');
+    const elRes = document.getElementById('estoqueKpiReservado');
+    const elBaixo = document.getElementById('estoqueKpiBaixo');
+
+    if (elTotal) elTotal.textContent = total;
+    if (elDisp) elDisp.textContent = disponivel;
+    if (elRes) elRes.textContent = reservado;
+    if (elBaixo) elBaixo.textContent = baixo;
 }
 
 function filtrarEstoque() {
