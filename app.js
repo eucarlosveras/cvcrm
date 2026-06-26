@@ -5331,24 +5331,28 @@ async function analisarClienteComIA(idOrcamentoAtual) {
         console.log("=== DOSSIÊ ENVIADO PARA IA ===");
         console.log(dossie);
 
-        // 4. Mock Temporário (Aguardando Edge Function)
-        setTimeout(() => {
-            container.style.display = 'block';
-            content.innerHTML = `
-                <p><strong>Com base no histórico do cliente, aqui estão 2 estratégias de fecho:</strong></p>
-                <ul style="margin-top: 10px; padding-left: 20px; display: flex; flex-direction: column; gap: 8px;">
-                    <li><strong>Gatilho de Urgência:</strong> O cliente tem um padrão de negociação longo (analisando os orçamentos anteriores). Ofereça a entrega prioritária caso ele feche a venda até amanhã.</li>
-                    <li><strong>Quebra de Objeção:</strong> No contato anterior, o preço foi um obstáculo. Demonstre o valor fracionando o investimento total de R$ ${orc.valor_orcado} pelos meses de garantia do produto.</li>
-                </ul>
-            `;
-            if(btn) {
-                btn.querySelector('.btn-text').textContent = '✨ Destravar Venda';
-                btn.querySelector('.btn-spinner').style.display = 'none';
-                btn.disabled = false;
-            }
-            
-            container.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 1500);
+        // 4. Chamada real ao Gemini via Edge Function
+        const promptFinal = `Você é um especialista em vendas de colchões na loja Euro Colchões. 
+Analise o dossiê abaixo e sugira 3 estratégias práticas e objetivas para o vendedor fechar esta venda.
+Responda em português do Brasil, em formato de lista com bullet points.
+
+
+${dossie}`;
+
+        const resposta = await chamarGemini(promptFinal);
+
+        container.style.display = 'block';
+        content.innerHTML = resposta
+            .replace(/\n/g, '<br>')
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+        if(btn) {
+            btn.querySelector('.btn-text').textContent = '✨ Destravar Venda';
+            btn.querySelector('.btn-spinner').style.display = 'none';
+            btn.disabled = false;
+        }
+        
+        container.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
     } catch (error) {
         console.error("Erro ao analisar cliente:", error);
@@ -5359,4 +5363,25 @@ async function analisarClienteComIA(idOrcamentoAtual) {
             btn.disabled = false;
         }
     }
+}
+
+async function chamarGemini(prompt, contexto = '') {
+    const { data: { session } } = await db.auth.getSession();
+    if (!session) throw new Error('Usuário não autenticado.');
+
+    const res = await fetch(
+        'https://blumqkxwasdbyozdvrsp.supabase.co/functions/v1/gemini-proxy  ',
+        {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify({ prompt, contexto }),
+        }
+    );
+
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    return data.resposta;
 }
