@@ -4935,28 +4935,144 @@ function renderMeuRadar() {
 }
 
 // ==========================================
-// LÓGICA DO MEU RADAR (MOCK)
+// LÓGICA DO MEU RADAR (INTEGRAÇÃO SUPABASE)
 // ==========================================
 
-let mockRadarSignals = [
-    { id: 1, seller: "Carlos", type: "alert", priority: "high", message: "A oportunidade 'Acme Corp' está há 12 dias sem interação.", leadName: "Acme Corp", time: "Hoje, 09:15", justification: "A média de tempo de resposta nesse estágio é de 3 dias.", actionText: "Agendar follow-up", executed: false },
-    { id: 2, seller: "Maria", type: "tip", priority: "medium", message: "O decisor abriu a sua proposta 3 vezes hoje.", leadName: "Tech Corp", time: "Hoje, 11:30", justification: "Picos de engajamento indicam momento de decisão.", actionText: "Ligar agora", executed: false },
-    { id: 3, seller: "Carlos", type: "suggestion", priority: "low", message: "Ofertar módulo 'Premium' baseado no uso recente.", leadName: "DataSys", time: "Ontem, 14:10", justification: "Baseado no histórico do cliente.", actionText: "Criar oportunidade", executed: false }
-];
+let radarSignalsData = [];
 
-function initMeuRadar() {
+async function carregarSinaisRadar() {
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    
+    // Busca orçamentos da tabela 'orcamentos' com dados relacionados
+    const { data: orcamentos, error } = await db
+        .from('orcamentos')
+        .select(`
+            id_orcamento,
+            data_criacao,
+            data_contato,
+            ligacao_confirmada,
+            clientes(nome_cliente),
+            usuarios(nome),
+            status_orcamento(nome)
+        `);
+    
+    if (error || !orcamentos) {
+        console.error('Erro ao carregar sinais do radar:', error);
+        radarSignalsData = [];
+        return;
+    }
+    
+    radarSignalsData = [];
+    let signalIdCounter = 1;
+    
+    orcamentos.forEach(orc => {
+        const statusNome = orc.status_orcamento?.nome || '';
+        
+        // Filtra orçamentos que NÃO estão "Fechado" ou "Perdido"
+        if (statusNome === 'Fechado' || statusNome === 'Perdido') {
+            return;
+        }
+        
+        const dataContato = orc.data_contato ? new Date(orc.data_contato) : null;
+        const dataCriacao = orc.data_criacao ? new Date(orc.data_criacao) : null;
+        const ligacaoConfirmada = orc.ligacao_confirmada === true;
+        const nomeCliente = orc.clientes?.nome_cliente || 'Cliente sem nome';
+        const nomeVendedor = orc.usuarios?.nome || 'Vendedor não atribuído';
+        
+        // ALERTA: data_contato anterior a hoje e ligacao_confirmada false/null
+        if (dataContato && dataContato < hoje && !ligacaoConfirmada) {
+            radarSignalsData.push({
+                id: signalIdCounter++,
+                seller: nomeVendedor,
+                type: 'alert',
+                priority: 'high',
+                message: 'Contacto em atraso! A oportunidade está a esfriar.',
+                leadName: nomeCliente,
+                time: formatDateForDisplay(dataContato),
+                justification: `Data de contacto: ${formatDateForDisplay(dataContato)}. A média de tempo de resposta nesse estágio é de 3 dias.`,
+                actionText: 'Reagendar',
+                executed: false,
+                ignored: false
+            });
+        }
+        // DICA: data_contato igual a hoje e ligacao_confirmada false/null
+        else if (dataContato && dataContato.getTime() === hoje.getTime() && !ligacaoConfirmada) {
+            radarSignalsData.push({
+                id: signalIdCounter++,
+                seller: nomeVendedor,
+                type: 'tip',
+                priority: 'medium',
+                message: 'Contacto agendado para hoje pendente.',
+                leadName: nomeCliente,
+                time: 'Hoje',
+                justification: 'Picos de engajamento indicam momento de decisão.',
+                actionText: 'Confirmar contacto',
+                executed: false,
+                ignored: false
+            });
+        }
+        // SUGESTÃO: orçamento criado há mais de 5 dias e status "Contato Inicial"
+        else if (dataCriacao && statusNome === 'Contato Inicial') {
+            const diffTime = Math.abs(hoje - dataCriacao);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            if (diffDays > 5) {
+                radarSignalsData.push({
+                    id: signalIdCounter++,
+                    seller: nomeVendedor,
+                    type: 'suggestion',
+                    priority: 'low',
+                    message: 'Lead estagnada no início do funil.',
+                    leadName: nomeCliente,
+                    time: formatDateForDisplay(dataCriacao),
+                    justification: `Orçamento criado há ${diffDays} dias. Baseado no histórico do cliente.`,
+                    actionText: 'Tentar nova abordagem',
+                    executed: false,
+                    ignored: false
+                });
+            }
+        }
+    });
+}
+
+function formatDateForDisplay(date) {
+    if (!date) return '';
+    const hoje = new Date();
+    const ontem = new Date(hoje);
+    ontem.setDate(hoje.getDate() - 1);
+    
+    if (date.toDateString() === hoje.toDateString()) return 'Hoje';
+    if (date.toDateString() === ontem.toDateString()) return 'Ontem';
+    
+    return date.toLocaleDateString('pt-BR');
+}
+
+async function initMeuRadar() {
+    // Carrega os sinais reais do Supabase primeiro
+    await carregarSinaisRadar();
+    
     const sellerSelect = document.getElementById('sellerFilter');
     if (sellerSelect) {
         // Puxa o nome do usuário real do CRM, ou usa fallback
-        let nomeLogado = (typeof currentUser !== 'undefined' && currentUser?.nome) ? currentUser.nome : 'Carlos';
+        let nomeLogado = (typeof currentUser !== 'undefined' && currentUser?.nome) ? currentUser.nome : 'Sem Nome';
         
-        // Adapta o mock para mostrar os cards para o usuário logado
-        mockRadarSignals[0].seller = nomeLogado;
-        mockRadarSignals[2].seller = nomeLogado;
+        // Adapta os sinais para mostrar os cards para o usuário logado
+        radarSignalsData.forEach(s => {
+            if (s.seller === 'Carlos' || s.seller === 'Maria') {
+                s.seller = nomeLogado;
+            }
+        });
 
         let opts = '<option value="Todos">Todos os vendedores</option>';
         opts += `<option value="${nomeLogado}">Eu (${nomeLogado})</option>`;
-        opts += `<option value="Maria">Maria (Teste)</option>`;
+        
+        // Adiciona outros vendedores únicos dos sinais
+        const vendedoresUnicos = [...new Set(radarSignalsData.map(s => s.seller))];
+        vendedoresUnicos.forEach(v => {
+            if (v !== nomeLogado && v !== 'Sem Nome') {
+                opts += `<option value="${v}">${v}</option>`;
+            }
+        });
         
         sellerSelect.innerHTML = opts;
         sellerSelect.value = nomeLogado;
@@ -4974,7 +5090,7 @@ function renderRadarSignals(sellerFilter) {
     const emptyState = document.getElementById('emptyState');
     if(!container) return;
 
-    const filtered = mockRadarSignals.filter(s => {
+    const filtered = radarSignalsData.filter(s => {
         if (s.ignored) return false;
         if (sellerFilter === 'Todos') return true;
         return s.seller === sellerFilter;
@@ -5040,18 +5156,19 @@ function renderRadarSignals(sellerFilter) {
 }
 
 window.handleRadarAction = function(id) {
-    const index = mockRadarSignals.findIndex(s => s.id === id);
+    const index = radarSignalsData.findIndex(s => s.id === id);
     if (index > -1) {
-        mockRadarSignals[index].executed = true;
+        radarSignalsData[index].executed = true;
         const btn = document.getElementById(`btn-exec-${id}`);
         if(btn) {
             btn.className = 'btn btn-exec executed';
             btn.innerHTML = '✓ Executado';
             btn.disabled = true;
         }
+        // TODO: update no supabase
         // Integração com o Toast nativo do CRM
         if(typeof showToast === 'function') {
-            showToast(`Ação '${mockRadarSignals[index].actionText}' registrada no CRM.`, 'success');
+            showToast(`Ação '${radarSignalsData[index].actionText}' registrada no CRM.`, 'success');
         }
     }
 };
@@ -5062,8 +5179,8 @@ window.handleRadarIgnore = function(id) {
         card.style.opacity = '0';
         card.style.transform = 'translateX(20px)';
         setTimeout(() => {
-            const index = mockRadarSignals.findIndex(s => s.id === id);
-            if (index > -1) mockRadarSignals[index].ignored = true;
+            const index = radarSignalsData.findIndex(s => s.id === id);
+            if (index > -1) radarSignalsData[index].ignored = true;
             const select = document.getElementById('sellerFilter');
             renderRadarSignals(select ? select.value : 'Todos');
         }, 300);
