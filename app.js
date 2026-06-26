@@ -4911,29 +4911,27 @@ function renderMeuRadar() {
                 </div>
             </div>
         </header>
-        <div style="max-width: 1000px; margin: 0 auto; padding: 24px; width: 100%;">
-            <div class="kpi-row" style="margin-bottom: 32px;">
-                <div class="kpi-card">
-                    <div class="kpi-label-row"><span class="kpi-dot red"></span><span class="kpi-label">Alertas urgentes</span></div>
-                    <div class="kpi-value" id="count-alerts">0</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label-row"><span class="kpi-dot blue"></span><span class="kpi-label">Dicas de abordagem</span></div>
-                    <div class="kpi-value" id="count-tips">0</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label-row"><span class="kpi-dot green"></span><span class="kpi-label">Sugestões de ação</span></div>
-                    <div class="kpi-value" id="count-suggestions">0</div>
-                </div>
+        <div class="kpi-row" style="grid-template-columns: repeat(3, 1fr);">
+            <div class="kpi-card">
+                <div class="kpi-label-row"><span class="kpi-dot red"></span><span class="kpi-label">Alertas urgentes</span></div>
+                <div class="kpi-value" id="count-alerts">0</div>
             </div>
-            
-            <div id="signalContainer" style="display: flex; flex-direction: column; gap: 16px;"></div>
-            
-            <div class="empty-state" id="emptyState" style="display: none; text-align: center; padding: 64px 24px; color: var(--text-muted); background: var(--card-bg); border: 1px solid var(--border-light); border-radius: var(--radius-md);">
-                <svg viewBox="0 0 24 24" width="48" height="48" stroke="var(--brand-blue)" fill="none" stroke-width="2" style="opacity: 0.5; margin-bottom: 16px;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                <h3 style="font-weight: 600; margin-bottom: 8px; font-size: 18px; color: var(--text-primary);">Nenhum sinal no momento.</h3>
-                <p style="font-size: 14px;">Seu radar está limpo. Vá fechar negócios.</p>
+            <div class="kpi-card">
+                <div class="kpi-label-row"><span class="kpi-dot blue"></span><span class="kpi-label">Dicas de abordagem</span></div>
+                <div class="kpi-value" id="count-tips">0</div>
             </div>
+            <div class="kpi-card">
+                <div class="kpi-label-row"><span class="kpi-dot green"></span><span class="kpi-label">Sugestões de ação</span></div>
+                <div class="kpi-value" id="count-suggestions">0</div>
+            </div>
+        </div>
+
+        <div id="signalContainer" class="signal-list"></div>
+
+        <div class="empty-state" id="emptyState" style="display: none; text-align: center; padding: 64px 24px; color: var(--text-muted); background: var(--card-bg); border: 1px solid var(--border-light); border-radius: var(--radius-md);">
+            <svg viewBox="0 0 24 24" width="48" height="48" stroke="var(--brand-blue)" fill="none" stroke-width="2" style="opacity: 0.5; margin-bottom: 16px;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            <h3 style="font-weight: 600; margin-bottom: 8px; font-size: 18px; color: var(--text-primary);">Nenhum sinal no momento.</h3>
+            <p style="font-size: 14px;">Seu radar está limpo. Vá fechar negócios.</p>
         </div>
     `;
     initMeuRadar();
