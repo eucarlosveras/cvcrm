@@ -69,7 +69,45 @@
         <div class="sidebar-actions"><button class="theme-toggle" onclick="toggleTheme()">Alternar tema</button><button class="btn-logout-sidebar" onclick="logout()"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg> Sair do sistema</button></div>
     </aside>
 
-    <main class="main-content" id="mainContent" style="display:none;"></main>
+    <main class="main-content" id="mainContent" style="display:none;">
+        <!-- View: Meu Radar -->
+        <div id="view-meu-radar" class="view-section" style="display: none;">
+            <div class="radar-header">
+                <h1 class="page-title">📡 Meu Radar</h1>
+                <div class="header-actions">
+                    <select class="seller-select" id="sellerFilter">
+                        <option value="Todos">Todos os vendedores</option>
+                    </select>
+                    <div class="notification-bell">
+                        <i class="fa-regular fa-bell"></i>
+                        <span class="notification-badge" id="bellCounter">0</span>
+                    </div>
+                </div>
+            </div>
+            <div class="content-scroll">
+                <div class="summary-grid">
+                    <div class="summary-card">
+                        <div class="summary-icon alerts"><i class="fa-solid fa-bell"></i></div>
+                        <div class="summary-info"><h4>Alertas urgentes</h4><span id="count-alerts">0</span></div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-icon tips"><i class="fa-solid fa-lightbulb"></i></div>
+                        <div class="summary-info"><h4>Dicas</h4><span id="count-tips">0</span></div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-icon suggestions"><i class="fa-solid fa-bolt"></i></div>
+                        <div class="summary-info"><h4>Sugestões</h4><span id="count-suggestions">0</span></div>
+                    </div>
+                </div>
+                <div class="signal-list" id="signalContainer">
+                </div>
+                <div class="empty-state" id="emptyState" style="display: none;">
+                    <i class="fa-regular fa-circle-check"></i>
+                    <h3>Nenhum sinal no momento.</h3>
+                </div>
+            </div>
+        </div>
+    </main>
     <button class="fab" id="fabButton" style="display:none;" onclick="abrirNovoOrcamento()" aria-label="Novo orçamento" title="Novo orçamento">+</button>
 
     <div class="modal-overlay" id="modalMotivoPerda" onclick="if(event.target === this) closeModal('modalMotivoPerda')">
