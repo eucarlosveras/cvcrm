@@ -848,6 +848,10 @@ const SUPABASE_URL = 'https://blumqkxwasdbyozdvrsp.supabase.co';
         atualizarFab('estoque');
         await renderEstoque();
     }
+    else if (view === 'meu_radar') {
+        atualizarFab('meu_radar');
+        renderMeuRadar();
+    }
 }
 
         function getMetaVendedor(idVendedor) {
@@ -4890,4 +4894,41 @@ function renderizarTabelaEstoque(data) {
             </tr>
         `;
     }).join('');
+}
+
+function renderMeuRadar() {
+    const main = document.getElementById('mainContent');
+    main.innerHTML = `
+        <div class="radar-header">
+            <h1 class="page-title">📡 Meu Radar</h1>
+            <div class="header-actions">
+                <select class="seller-select" id="sellerFilter">
+                    <option value="Todos">Todos os vendedores</option>
+                </select>
+            </div>
+        </div>
+        <div class="content-scroll">
+            <div class="summary-grid">
+                <div class="summary-card">
+                    <div class="summary-icon alerts" style="display: flex; align-items: center; justify-content: center;"><svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" fill="none" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg></div>
+                    <div class="summary-info"><h4>Alertas urgentes</h4><span id="count-alerts">0</span></div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-icon tips" style="display: flex; align-items: center; justify-content: center;"><svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" fill="none" stroke-width="2"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1.53.93 2.7 1.5 3.5.76.76 1.23 1.52 1.41 2.5"/></svg></div>
+                    <div class="summary-info"><h4>Dicas</h4><span id="count-tips">0</span></div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-icon suggestions" style="display: flex; align-items: center; justify-content: center;"><svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" fill="none" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+                    <div class="summary-info"><h4>Sugestões</h4><span id="count-suggestions">0</span></div>
+                </div>
+            </div>
+            <div class="signal-list" id="signalContainer">
+                </div>
+            <div class="empty-state" id="emptyState" style="text-align: center; padding: 48px; color: var(--text-muted);">
+                <svg viewBox="0 0 24 24" width="48" height="48" stroke="var(--success, #10b981)" fill="none" stroke-width="2" style="opacity: 0.5; margin-bottom: 16px;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                <h3 style="font-weight: 600; margin-bottom: 8px;">Nenhum sinal no momento.</h3>
+                <p style="font-size: 14px;">Seu radar está limpo.</p>
+            </div>
+        </div>
+    `;
 }
