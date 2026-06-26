@@ -4899,35 +4899,40 @@ function renderizarTabelaEstoque(data) {
 function renderMeuRadar() {
     const main = document.getElementById('mainContent');
     main.innerHTML = `
-        <div class="radar-header">
-            <h1 class="page-title">📡 Meu Radar</h1>
-            <div class="header-actions">
-                <select class="seller-select" id="sellerFilter">
-                    <option value="Todos">Todos os vendedores</option>
-                </select>
+        <header class="dashboard-header">
+            <div style="display:flex; align-items:center; gap:16px;">
+                <h1>📡 Meu Radar</h1>
             </div>
-        </div>
-        <div class="content-scroll">
-            <div class="summary-grid">
-                <div class="summary-card">
-                    <div class="summary-icon alerts" style="display: flex; align-items: center; justify-content: center;"><svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" fill="none" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg></div>
-                    <div class="summary-info"><h4>Alertas urgentes</h4><span id="count-alerts">0</span></div>
-                </div>
-                <div class="summary-card">
-                    <div class="summary-icon tips" style="display: flex; align-items: center; justify-content: center;"><svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" fill="none" stroke-width="2"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1.53.93 2.7 1.5 3.5.76.76 1.23 1.52 1.41 2.5"/></svg></div>
-                    <div class="summary-info"><h4>Dicas</h4><span id="count-tips">0</span></div>
-                </div>
-                <div class="summary-card">
-                    <div class="summary-icon suggestions" style="display: flex; align-items: center; justify-content: center;"><svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" fill="none" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
-                    <div class="summary-info"><h4>Sugestões</h4><span id="count-suggestions">0</span></div>
+            <div class="header-controls">
+                <div class="filter-wrapper">
+                    <select class="vendedor-select" id="sellerFilter" style="border-radius:20px; padding:8px 16px;">
+                        <option value="Todos">Todos os vendedores</option>
+                    </select>
                 </div>
             </div>
-            <div class="signal-list" id="signalContainer">
+        </header>
+        <div style="max-width: 1000px; margin: 0 auto; padding: 24px; width: 100%;">
+            <div class="kpi-row" style="margin-bottom: 32px;">
+                <div class="kpi-card">
+                    <div class="kpi-label-row"><span class="kpi-dot red"></span><span class="kpi-label">Alertas urgentes</span></div>
+                    <div class="kpi-value" id="count-alerts">0</div>
                 </div>
-            <div class="empty-state" id="emptyState" style="text-align: center; padding: 48px; color: var(--text-muted);">
-                <svg viewBox="0 0 24 24" width="48" height="48" stroke="var(--success, #10b981)" fill="none" stroke-width="2" style="opacity: 0.5; margin-bottom: 16px;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                <h3 style="font-weight: 600; margin-bottom: 8px;">Nenhum sinal no momento.</h3>
-                <p style="font-size: 14px;">Seu radar está limpo.</p>
+                <div class="kpi-card">
+                    <div class="kpi-label-row"><span class="kpi-dot blue"></span><span class="kpi-label">Dicas de abordagem</span></div>
+                    <div class="kpi-value" id="count-tips">0</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label-row"><span class="kpi-dot green"></span><span class="kpi-label">Sugestões de ação</span></div>
+                    <div class="kpi-value" id="count-suggestions">0</div>
+                </div>
+            </div>
+            
+            <div id="signalContainer" style="display: flex; flex-direction: column; gap: 16px;"></div>
+            
+            <div class="empty-state" id="emptyState" style="display: none; text-align: center; padding: 64px 24px; color: var(--text-muted); background: var(--card-bg); border: 1px solid var(--border-light); border-radius: var(--radius-md);">
+                <svg viewBox="0 0 24 24" width="48" height="48" stroke="var(--brand-blue)" fill="none" stroke-width="2" style="opacity: 0.5; margin-bottom: 16px;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                <h3 style="font-weight: 600; margin-bottom: 8px; font-size: 18px; color: var(--text-primary);">Nenhum sinal no momento.</h3>
+                <p style="font-size: 14px;">Seu radar está limpo. Vá fechar negócios.</p>
             </div>
         </div>
     `;
@@ -4957,101 +4962,132 @@ function addIgnoredRadarId(idOrcamento) {
 async function carregarSinaisRadar() {
     const hoje = new Date();
     hoje.setHours(0, 0, 0, 0);
-    
-    // Busca orçamentos da tabela 'orcamentos' com dados relacionados
-    const { data: orcamentos, error } = await db
-        .from('orcamentos')
-        .select(`
-            id_orcamento,
-            data_criacao,
-            data_contato,
-            ligacao_confirmada,
-            clientes(nome_cliente),
-            usuarios(nome),
-            status_orcamento(nome)
-        `);
-    
-    if (error || !orcamentos) {
-        console.error('Erro ao carregar sinais do radar:', error);
-        radarSignalsData = [];
-        return;
-    }
+    const hojeIso = hoje.toISOString().split('T')[0];
     
     radarSignalsData = [];
-    
-    orcamentos.forEach(orc => {
-        const statusNome = orc.status_orcamento?.nome || '';
+    const ignoredIds = getIgnoredRadarIds();
+
+    try {
+        // 1. Busca Orçamentos
+        const { data: orcamentos, error: errOrc } = await db
+            .from('orcamentos')
+            .select(`
+                id_orcamento, data_criacao, data_contato, data_entrega, ligacao_confirmada, valor_orcado, modelo_colchao,
+                clientes(nome_cliente), usuarios(nome), status_orcamento(nome)
+            `);
         
-        // Filtra orçamentos que NÃO estão "Fechado" ou "Perdido"
-        if (statusNome === 'Fechado' || statusNome === 'Perdido') {
-            return;
-        }
-        
-        // Verifica se o orçamento já foi ignorado na sessão atual
-        const ignoredIds = getIgnoredRadarIds();
-        if (ignoredIds.includes(orc.id_orcamento)) {
-            return;
-        }
-        
-        const dataContato = orc.data_contato ? new Date(orc.data_contato) : null;
-        const dataCriacao = orc.data_criacao ? new Date(orc.data_criacao) : null;
-        const ligacaoConfirmada = orc.ligacao_confirmada === true;
-        const nomeCliente = orc.clientes?.nome_cliente || 'Cliente sem nome';
-        const nomeVendedor = orc.usuarios?.nome || 'Vendedor não atribuído';
-        
-        // ALERTA: data_contato anterior a hoje e ligacao_confirmada false/null
-        if (dataContato && dataContato < hoje && !ligacaoConfirmada) {
-            radarSignalsData.push({
-                id: orc.id_orcamento,
-                seller: nomeVendedor,
-                type: 'alert',
-                priority: 'high',
-                message: 'Contacto em atraso! A oportunidade está a esfriar.',
-                leadName: nomeCliente,
-                time: formatDateForDisplay(dataContato),
-                justification: `Data de contacto: ${formatDateForDisplay(dataContato)}. A média de tempo de resposta nesse estágio é de 3 dias.`,
-                actionText: 'Reagendar',
-                executed: false,
-                ignored: false
-            });
-        }
-        // DICA: data_contato igual a hoje e ligacao_confirmada false/null
-        else if (dataContato && dataContato.getTime() === hoje.getTime() && !ligacaoConfirmada) {
-            radarSignalsData.push({
-                id: orc.id_orcamento,
-                seller: nomeVendedor,
-                type: 'tip',
-                priority: 'medium',
-                message: 'Contacto agendado para hoje pendente.',
-                leadName: nomeCliente,
-                time: 'Hoje',
-                justification: 'Picos de engajamento indicam momento de decisão.',
-                actionText: 'Confirmar contacto',
-                executed: false,
-                ignored: false
-            });
-        }
-        // SUGESTÃO: orçamento criado há mais de 5 dias e status "Contato Inicial"
-        else if (dataCriacao && statusNome === 'Contato Inicial') {
-            const diffTime = Math.abs(hoje - dataCriacao);
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            if (diffDays > 5) {
+        // 2. Busca Estoque Zerado (Regra 1)
+        const { data: estoqueZero, error: errEst } = await db
+            .from('estoque')
+            .select('id_produto, codigo_produto, nome_produto')
+            .lte('qtd_disponivel', 0);
+
+        if (estoqueZero && estoqueZero.length > 0) {
+            estoqueZero.forEach(item => {
+                const signalId = 'est-' + item.id_produto;
+                if (ignoredIds.includes(signalId)) return;
                 radarSignalsData.push({
-                    id: orc.id_orcamento,
+                    id: signalId,
+                    seller: 'Todos', // Alerta global para a loja
+                    type: 'alert',
+                    priority: 'high',
+                    message: `Ruptura de Estoque: ${item.nome_produto}`,
+                    leadName: item.codigo_produto,
+                    time: 'Hoje',
+                    justification: `Produto atingiu zero unidades disponíveis. Acione compras ou fornecedor com urgência para não travar vendas.`,
+                    actionText: 'Ver Estoque',
+                    executed: false,
+                    ignored: false
+                });
+            });
+        }
+
+        if (errOrc || !orcamentos) return;
+
+        // Dicionário de SLA médio em dias para cada fase (Regra 3 - Ajustável)
+        const SLAs = {
+            'Contato Inicial': 2,
+            'Negociação': 5,
+            'Em Fechamento': 3
+        };
+
+        orcamentos.forEach(orc => {
+            const statusNome = orc.status_orcamento?.nome || '';
+            const isFechado = statusNome === 'Fechado' || statusNome === 'Vendido';
+            const isPerdido = statusNome === 'Perdido' || statusNome === 'Declinado';
+            
+            const nomeCliente = orc.clientes?.nome_cliente || 'Cliente';
+            const nomeVendedor = orc.usuarios?.nome || 'Sem Vendedor';
+            const dataCriacao = orc.data_criacao ? new Date(orc.data_criacao) : null;
+            const diffDays = dataCriacao ? Math.floor(Math.abs(hoje - dataCriacao) / (1000 * 60 * 60 * 24)) : 0;
+
+            // Regra 2: Data de Entrega Hoje (Apenas para fechados)
+            const idEntrega = orc.id_orcamento + '-entrega';
+            if (isFechado && orc.data_entrega === hojeIso && !ignoredIds.includes(idEntrega)) {
+                radarSignalsData.push({
+                    id: idEntrega,
                     seller: nomeVendedor,
-                    type: 'suggestion',
-                    priority: 'low',
-                    message: 'Lead estagnada no início do funil.',
+                    type: 'alert',
+                    priority: 'high',
+                    message: `Dia de Entrega: Confirme o recebimento!`,
                     leadName: nomeCliente,
-                    time: formatDateForDisplay(dataCriacao),
-                    justification: `Orçamento criado há ${diffDays} dias. Baseado no histórico do cliente.`,
-                    actionText: 'Tentar nova abordagem',
+                    time: 'Hoje',
+                    justification: `Entrega programada para hoje. Garanta que o cliente recebeu tudo corretamente e registe o feedback.`,
+                    actionText: 'Abrir Pedido',
                     executed: false,
                     ignored: false
                 });
             }
-        }
-    });
+
+            // Regras exclusivas para funil ativo (não fechado/perdido)
+            if (!isFechado && !isPerdido) {
+                
+                // Regra 3: Estagnado no Kanban (> 1.5x a média)
+                const idEstagnado = orc.id_orcamento + '-estagnado';
+                const slaFase = SLAs[statusNome] || 3;
+                if (diffDays > (slaFase * 1.5) && !ignoredIds.includes(idEstagnado)) {
+                    const valorFmt = parseFloat(orc.valor_orcado || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+                    radarSignalsData.push({
+                        id: idEstagnado,
+                        seller: nomeVendedor,
+                        type: 'tip',
+                        priority: 'medium',
+                        message: `Oportunidade estagnada em ${statusNome}.`,
+                        leadName: nomeCliente,
+                        time: formatDateForDisplay(dataCriacao),
+                        justification: `A oportunidade de R$ ${valorFmt} está há ${diffDays} dias nesta fase (média: ${slaFase} dias). Aja para destravá-la.`,
+                        actionText: 'Fazer Follow-up',
+                        executed: false,
+                        ignored: false
+                    });
+                }
+
+                // Regra 4: Cross-sell de Cama sem acessórios
+                const idCross = orc.id_orcamento + '-crosssell';
+                const produtosStr = (orc.modelo_colchao || '').toLowerCase();
+                const temCamaColchao = produtosStr.includes('colchão') || produtosStr.includes('colchao') || produtosStr.includes('cama') || produtosStr.includes('box');
+                const temAcessorios = produtosStr.includes('protetor') || produtosStr.includes('travesseiro');
+
+                if (temCamaColchao && !temAcessorios && statusNome === 'Em Fechamento' && !ignoredIds.includes(idCross)) {
+                    radarSignalsData.push({
+                        id: idCross,
+                        seller: nomeVendedor,
+                        type: 'suggestion',
+                        priority: 'low',
+                        message: `Venda sem acessórios detetada.`,
+                        leadName: nomeCliente,
+                        time: 'Hoje',
+                        justification: `O cliente está a fechar um colchão/cama mas não incluiu acessórios. Ofereça um combo com protetor e travesseiros para aumentar o ticket médio.`,
+                        actionText: 'Oferecer Combo',
+                        executed: false,
+                        ignored: false
+                    });
+                }
+            }
+        });
+    } catch (e) {
+        console.error('Erro ao gerar sinais do Radar:', e);
+    }
 }
 
 function formatDateForDisplay(date) {
@@ -5131,47 +5167,45 @@ function renderRadarSignals(sellerFilter) {
         container.innerHTML = '';
         
         const configMap = {
-            alert: { class: 'badge-alert', label: 'Alerta' },
-            tip: { class: 'badge-tip', label: 'Dica' },
-            suggestion: { class: 'badge-suggestion', label: 'Sugestão' }
+            alert: { bg: '#fee2e2', color: '#b91c1c', label: 'Alerta' },
+            tip: { bg: '#dbeafe', color: '#1d4ed8', label: 'Dica' },
+            suggestion: { bg: '#dcfce7', color: '#15803d', label: 'Sugestão' }
         };
 
         filtered.forEach(signal => {
             const conf = configMap[signal.type];
-            const btnExecClass = signal.executed ? 'btn-exec executed' : 'btn-exec';
-            const btnExecText = signal.executed ? '✓ Executado' : signal.actionText;
             
-            // Renderização do Card com as classes de estilo do style.css
+            // Renderização do Card com variáveis CSS nativas e design aprimorado
             const cardHtml = `
-                <div class="signal-card" id="radar-card-${signal.id}">
-                    <div class="priority-stripe priority-${signal.priority}"></div>
-                    <div class="card-body">
-                        <div class="card-header">
-                            <span class="badge ${conf.class}">${conf.label}</span>
-                        </div>
-                        <h3 class="signal-message">${signal.message}</h3>
-                        <div class="signal-meta">
-                            <span>Lead: <strong>${signal.leadName}</strong></span>
-                            <span>•</span>
+                <div class="signal-card" id="radar-card-${signal.id}" style="background: var(--card-bg); border: 1px solid var(--border-light); border-left: 4px solid ${conf.color}; border-radius: var(--radius-md); padding: 20px; display: flex; flex-direction: column; gap: 14px; transition: opacity 0.3s ease, transform 0.3s ease;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="background: ${conf.bg}; color: ${conf.color}; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">${conf.label}</span>
+                        <span style="font-size: 12px; color: var(--text-muted);">${signal.time}</span>
+                    </div>
+                    
+                    <div>
+                        <h3 style="font-size: 16px; font-weight: 700; margin: 0 0 6px 0; color: var(--text-primary);">${signal.message}</h3>
+                        <div style="font-size: 13px; color: var(--text-secondary); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                            <span>Lead: <strong style="color: var(--brand-blue); cursor: pointer;" onclick="abrirDetalhesCliente('${signal.id}')">${signal.leadName}</strong></span>
+                            <span style="color: var(--border-light);">|</span>
                             <span>Vendedor: ${signal.seller}</span>
-                            <span>•</span>
-                            <span>${signal.time}</span>
                         </div>
-                        ${signal.justification ? `<div class="justification-block">${signal.justification}</div>` : ''}
-                        <div class="card-actions">
-                            <button class="btn ${btnExecClass}" id="btn-exec-${signal.id}" onclick="handleRadarAction('${signal.id}')" ${signal.executed ? 'disabled' : ''}>
-                                ${btnExecText}
-                            </button>
-                            <button class="btn btn-ignore" onclick="handleRadarIgnore('${signal.id}')">
-                                Ignorar
-                            </button>
-                        </div>
+                    </div>
+                    
+                    ${signal.justification ? `<div style="background: var(--bg-body); border: 1px solid var(--border-light); padding: 10px 14px; border-radius: 8px; font-size: 12px; color: var(--text-secondary); display: flex; gap: 8px; align-items: flex-start;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-top:2px; flex-shrink:0;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> <span>${signal.justification}</span></div>` : ''}
+                    
+                    <div style="display: flex; gap: 10px; margin-top: 4px;">
+                        <button id="btn-exec-${signal.id}" onclick="handleRadarAction('${signal.id}')" ${signal.executed ? 'disabled' : ''} style="background: ${signal.executed ? 'var(--accent-green)' : 'var(--brand-blue)'}; color: #fff; border: none; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: ${signal.executed ? 'default' : 'pointer'}; max-width: max-content; display: flex; justify-content: center; align-items: center; gap: 6px;">
+                            ${signal.executed ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Executado' : signal.actionText}
+                        </button>
+                        <button onclick="handleRadarIgnore('${signal.id}')" style="background: transparent; color: var(--text-muted); border: 1px solid var(--border-light); padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='var(--bg-body)'" onmouseout="this.style.background='transparent'">
+                            Ignorar
+                        </button>
                     </div>
                 </div>
             `;
             container.insertAdjacentHTML('beforeend', cardHtml);
         });
-    }
 }
 
 window.handleRadarAction = function(id) {
