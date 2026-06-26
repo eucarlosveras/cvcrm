@@ -5174,33 +5174,45 @@ function renderRadarSignals(sellerFilter) {
 
         filtered.forEach(signal => {
             const conf = configMap[signal.type];
-            
-            // Renderização do Card com variáveis CSS nativas e design aprimorado
+
+            // Extrai UUID correto removendo sufixo pelo final (UUIDs contêm hífens)
+            const sufixos = ['-estagnado', '-entrega', '-crosssell'];
+            let orcId = signal.id;
+            for (const s of sufixos) { if (signal.id.endsWith(s)) { orcId = signal.id.slice(0, -s.length); break; } }
+
+            const leadLink = signal.id.startsWith('est-')
+                ? `<strong>${signal.leadName}</strong>`
+                : `<strong style="color:var(--brand-blue);cursor:pointer;" onclick="abrirDetalhesCliente('${orcId}')">${signal.leadName}</strong>`;
+
+            const justHtml = signal.justification
+                ? `<div class="justification-block"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-top:2px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><span>${signal.justification}</span></div>`
+                : '';
+
+            const execClass = signal.executed ? 'btn-exec executed' : 'btn-exec';
+            const execLabel = signal.executed
+                ? '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Executado'
+                : signal.actionText;
+
             const cardHtml = `
-                <div class="signal-card" id="radar-card-${signal.id}" style="background: var(--card-bg); border: 1px solid var(--border-light); border-left: 4px solid ${conf.color}; border-radius: var(--radius-md); padding: 20px; display: flex; flex-direction: column; gap: 14px; transition: opacity 0.3s ease, transform 0.3s ease;">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span style="background: ${conf.bg}; color: ${conf.color}; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">${conf.label}</span>
-                        <span style="font-size: 12px; color: var(--text-muted);">${signal.time}</span>
+                <div class="signal-card" id="radar-card-${signal.id}">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <span class="badge badge-${signal.type}">${conf.label}</span>
+                        <span style="font-size:var(--font-xs);color:var(--text-muted);">${signal.time}</span>
                     </div>
-                    
                     <div>
-                        <h3 style="font-size: 16px; font-weight: 700; margin: 0 0 6px 0; color: var(--text-primary);">${signal.message}</h3>
-                        <div style="font-size: 13px; color: var(--text-secondary); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                            <span>Lead: <strong style="color: var(--brand-blue); cursor: pointer;" onclick="abrirDetalhesCliente('${signal.id.split('-')[0]}')">${signal.leadName}</strong></span>
-                            <span style="color: var(--border-light);">|</span>
+                        <p class="signal-message">${signal.message}</p>
+                        <div class="signal-meta">
+                            <span>Lead: ${leadLink}</span>
+                            <span style="color:var(--border-medium);">|</span>
                             <span>Vendedor: ${signal.seller}</span>
                         </div>
                     </div>
-                    
-                    ${signal.justification ? `<div style="background: var(--bg-body); border: 1px solid var(--border-light); padding: 10px 14px; border-radius: 8px; font-size: 12px; color: var(--text-secondary); display: flex; gap: 8px; align-items: flex-start;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-top:2px; flex-shrink:0;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> <span>${signal.justification}</span></div>` : ''}
-                    
-                    <div style="display: flex; gap: 10px; margin-top: 4px;">
-                        <button id="btn-exec-${signal.id}" onclick="handleRadarAction('${signal.id}')" ${signal.executed ? 'disabled' : ''} style="background: ${signal.executed ? 'var(--accent-green)' : 'var(--brand-blue)'}; color: #fff; border: none; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: ${signal.executed ? 'default' : 'pointer'}; max-width: max-content; display: flex; justify-content: center; align-items: center; gap: 6px;">
-                            ${signal.executed ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Executado' : signal.actionText}
+                    ${justHtml}
+                    <div class="card-actions">
+                        <button id="btn-exec-${signal.id}" onclick="handleRadarAction('${signal.id}')" ${signal.executed ? 'disabled' : ''} class="${execClass}" style="display:flex;align-items:center;gap:6px;">
+                            ${execLabel}
                         </button>
-                        <button onclick="handleRadarIgnore('${signal.id}')" style="background: transparent; color: var(--text-muted); border: 1px solid var(--border-light); padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='var(--bg-body)'" onmouseout="this.style.background='transparent'">
-                            Ignorar
-                        </button>
+                        <button onclick="handleRadarIgnore('${signal.id}')" class="btn-ignore">Ignorar</button>
                     </div>
                 </div>
             `;
