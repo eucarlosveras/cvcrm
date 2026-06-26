@@ -1857,67 +1857,32 @@
         /* =============================================================================
            MÓDULO MEU RADAR
            ============================================================================= */
-        .radar-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px 32px;
-            background: var(--card-bg);
-            border-bottom: 1px solid var(--border-light);
-        }
-        .summary-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 16px;
-            margin: 24px 32px;
-        }
-        .summary-card {
-            background: var(--card-bg);
-            padding: 20px;
-            border-radius: var(--radius-md);
-            border: 1px solid var(--border-light);
-            box-shadow: var(--shadow-sm);
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            transition: box-shadow 0.2s ease, transform 0.2s ease;
-        }
-        .summary-card:hover {
-            box-shadow: var(--shadow-md);
-            transform: translateY(-1px);
-        }
-        .summary-icon {
-            width: 44px;
-            height: 44px;
-            border-radius: var(--radius-sm);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2rem;
-            flex-shrink: 0;
-        }
-        .summary-icon.alerts    { background: #fee2e2; color: #b91c1c; }
-        .summary-icon.tips      { background: #dbeafe; color: #1d4ed8; }
-        .summary-icon.suggestions { background: #dcfce7; color: #15803d; }
 
+        /* O .radar-header legado não é mais gerado pelo JS — mantido vazio por compatibilidade */
+        .radar-header { display: none; }
+
+        /* .summary-grid e .summary-card são legado — o JS usa .kpi-row/.kpi-card nativos */
+        .summary-grid, .summary-card, .summary-icon { display: none; }
+
+        /* Container da lista de sinais — sem padding lateral próprio;
+           o .main-content já gerencia o espaço horizontal */
         .signal-list {
             display: flex;
             flex-direction: column;
             gap: 12px;
-            padding: 0 32px 32px 32px;
         }
 
-        /* Card principal — alinhado com .chart-card e .kcard */
+        /* Card principal — espelha exatamente .kpi-card / .chart-card */
         .signal-card {
             background: var(--card-bg);
             border: 1px solid var(--border-light);
             border-radius: var(--radius-md);
             box-shadow: var(--shadow-sm);
-            padding: 18px 20px;
+            padding: 20px 22px;
             display: flex;
             flex-direction: column;
-            gap: 12px;
-            transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+            gap: 14px;
+            transition: box-shadow var(--transition, 0.2s ease), transform var(--transition, 0.2s ease), border-color var(--transition, 0.2s ease);
         }
         .signal-card:hover {
             box-shadow: var(--shadow-md);
@@ -1925,40 +1890,42 @@
             transform: translateY(-1px);
         }
 
-        /* Badges de tipo */
+        /* Badge de tipo — mesma linguagem dos status pills do sistema */
         .badge {
             display: inline-flex;
             align-items: center;
-            gap: 6px;
-            padding: 3px 10px;
+            gap: 5px;
+            padding: 2px 9px;
             border-radius: var(--radius-full);
-            font-size: var(--font-xs);
+            font-size: var(--font-2xs);
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.06em;
         }
         .badge-alert      { background: #fee2e2; color: #b91c1c; }
-        .badge-tip        { background: #dbeafe; color: #1d4ed8; }
+        .badge-tip        { background: var(--brand-blue-subtle); color: var(--brand-blue-dark); }
         .badge-suggestion { background: #dcfce7; color: #15803d; }
 
-        /* Mensagem e meta */
+        /* Mensagem principal — tom igual ao .chart-card h3 */
         .signal-message {
             font-size: var(--font-base);
             font-weight: 700;
             color: var(--text-primary);
-            letter-spacing: -0.01em;
-            margin: 2px 0;
+            letter-spacing: -0.02em;
+            margin: 0;
         }
+
+        /* Meta (lead / vendedor) */
         .signal-meta {
             font-size: var(--font-sm);
             color: var(--text-secondary);
             display: flex;
-            gap: 12px;
+            gap: 10px;
             flex-wrap: wrap;
             align-items: center;
         }
 
-        /* Bloco de justificativa */
+        /* Bloco de justificativa — fundo sutil, sem destaque excessivo */
         .justification-block {
             background: var(--bg-body);
             border: 1px solid var(--border-light);
@@ -1971,22 +1938,19 @@
             align-items: flex-start;
         }
 
-        /* Botões de ação */
-        .card-actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 4px;
-        }
+        /* Botões — mesmos tokens dos .btn-primary-action do sistema */
+        .card-actions { display: flex; gap: 8px; }
+
         .btn-exec {
             background: var(--brand-blue);
             color: #fff;
-            padding: 7px 16px;
+            padding: 6px 14px;
             border-radius: var(--radius-sm);
             font-size: var(--font-sm);
             font-weight: 600;
             border: none;
             cursor: pointer;
-            transition: background 0.2s ease, box-shadow 0.2s ease;
+            transition: background 0.18s ease, box-shadow 0.18s ease;
         }
         .btn-exec:hover:not(:disabled) {
             background: var(--brand-blue-dark);
@@ -2000,12 +1964,12 @@
             background: transparent;
             color: var(--text-muted);
             border: 1px solid var(--border-light);
-            padding: 7px 16px;
+            padding: 6px 14px;
             border-radius: var(--radius-sm);
             font-size: var(--font-sm);
             font-weight: 600;
             cursor: pointer;
-            transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+            transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
         }
         .btn-ignore:hover {
             background: var(--bg-body);
