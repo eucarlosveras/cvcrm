@@ -3039,6 +3039,14 @@ function selectFilter(filter) {
 
                 <div class="detalhes-page-wrapper">
 
+                    <div id="ia-insights-container" style="display:none; grid-column: 1 / -1; background: linear-gradient(to right, var(--bg-body), var(--card-bg)); border: 1px dashed var(--brand-blue); border-left: 4px solid var(--brand-blue); border-radius: var(--radius-md); padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-weight: 700; color: var(--brand-blue-dark); font-size: 15px;">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+                            Estratégia sugerida pela IA
+                        </div>
+                        <div id="ia-insights-content" style="font-size: 13.5px; line-height: 1.6; color: var(--text-primary);"></div>
+                    </div>
+
                     <div class="det-col-wide">
                         <section class="det-section">
                             <div class="det-section-header">
@@ -3282,6 +3290,11 @@ function selectFilter(filter) {
                     </div>
 
                 </div>
+
+<button id="btnFabIA" onclick="analisarClienteComIA('${id}')" style="position: fixed; bottom: 32px; right: 32px; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; border: none; padding: 14px 24px; border-radius: 30px; font-weight: 700; font-size: 14px; cursor: pointer; box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.4); display: flex; align-items: center; gap: 8px; z-index: 1000; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 15px 20px -3px rgba(99, 102, 241, 0.5)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 10px 15px -3px rgba(99, 102, 241, 0.4)'">
+                    <span class="btn-text">✨ Destravar Venda</span>
+                    <span class="btn-spinner" style="display:none; width:16px; height:16px; border:2px solid rgba(255,255,255,0.3); border-top-color:#fff; border-radius:50%; animation:spin 1s linear infinite;"></span>
+                </button>
             `;
             // Injeta o fragment da timeline após o main.innerHTML ser construído
             const listaContainer = document.getElementById('listaComentarios');
@@ -5254,3 +5267,96 @@ window.handleRadarIgnore = function(id) {
         }, 300);
     }
 };
+
+// ==========================================
+// MÓDULO DE INTELIGÊNCIA ARTIFICIAL (IA)
+// ==========================================
+
+async function analisarClienteComIA(idOrcamentoAtual) {
+    const btn = document.getElementById('btnFabIA');
+    const container = document.getElementById('ia-insights-container');
+    const content = document.getElementById('ia-insights-content');
+    
+    if(btn) {
+        btn.querySelector('.btn-text').textContent = 'A analisar...';
+        btn.querySelector('.btn-spinner').style.display = 'inline-block';
+        btn.disabled = true;
+    }
+
+    try {
+        const orc = AppState.contextoVenda.clienteAtual;
+        if (!orc) throw new Error('Cliente atual não encontrado no estado.');
+
+        // 1. Puxar todos os orçamentos do cliente (Histórico de Compras/Tentativas)
+        const { data: todosOrcamentos, error: errOrc } = await db.from('orcamentos')
+            .select('id_orcamento, protocolo, valor_orcado, modelo_colchao, data_criacao, status_orcamento(nome)')
+            .eq('id_cliente', orc.id_cliente)
+            .order('data_criacao', { ascending: false });
+
+        // 2. Puxar todo o histórico (comentários) de TODOS os orçamentos desse cliente
+        const idsOrcamentos = (todosOrcamentos || []).map(o => o.id_orcamento);
+        let todosComentarios = [];
+        if (idsOrcamentos.length > 0) {
+            const { data: coms } = await db.from('comentarios')
+                .select('texto, tipo, autor, data_criacao')
+                .in('id_orcamento', idsOrcamentos)
+                .order('data_criacao', { ascending: true });
+            todosComentarios = coms || [];
+        }
+
+        // 3. Montar o Dossiê para a IA
+        let dossie = `=== DADOS DO CLIENTE ===\n`;
+        dossie += `Nome: ${orc.clientes?.nome_cliente || 'Desconhecido'}\n`;
+        dossie += `Origem: ${orc.origem || 'Não informada'}\n`;
+        dossie += `Interesse: ${orc.interesse || 'Não informado'}\n\n`;
+        
+        dossie += `=== ORÇAMENTO ATUAL ===\n`;
+        dossie += `Produto(s): ${orc.modelo_colchao || 'Nenhum'}\n`;
+        dossie += `Valor: R$ ${orc.valor_orcado}\n`;
+        dossie += `Status: ${orc.status}\n\n`;
+
+        dossie += `=== HISTÓRICO DE NEGÓCIOS ===\n`;
+        (todosOrcamentos || []).forEach(o => {
+            const dataFormatada = new Date(o.data_criacao).toLocaleDateString('pt-BR');
+            dossie += `- [${dataFormatada}] Status: ${o.status_orcamento?.nome || '-'} | Valor: R$ ${o.valor_orcado} | Produto: ${o.modelo_colchao}\n`;
+        });
+
+        dossie += `\n=== HISTÓRICO DE CONTATOS (TIMELINE) ===\n`;
+        todosComentarios.forEach(c => {
+            const dataFormatada = new Date(c.data_criacao).toLocaleDateString('pt-BR');
+            dossie += `[${dataFormatada}] ${c.autor} (${c.tipo}): ${c.texto}\n`;
+        });
+
+        // Validação no Console para Engenharia de Prompt
+        console.log("=== DOSSIÊ ENVIADO PARA IA ===");
+        console.log(dossie);
+
+        // 4. Mock Temporário (Aguardando Edge Function)
+        setTimeout(() => {
+            container.style.display = 'block';
+            content.innerHTML = `
+                <p><strong>Com base no histórico do cliente, aqui estão 2 estratégias de fecho:</strong></p>
+                <ul style="margin-top: 10px; padding-left: 20px; display: flex; flex-direction: column; gap: 8px;">
+                    <li><strong>Gatilho de Urgência:</strong> O cliente tem um padrão de negociação longo (analisando os orçamentos anteriores). Ofereça a entrega prioritária caso ele feche a venda até amanhã.</li>
+                    <li><strong>Quebra de Objeção:</strong> No contato anterior, o preço foi um obstáculo. Demonstre o valor fracionando o investimento total de R$ ${orc.valor_orcado} pelos meses de garantia do produto.</li>
+                </ul>
+            `;
+            if(btn) {
+                btn.querySelector('.btn-text').textContent = '✨ Destravar Venda';
+                btn.querySelector('.btn-spinner').style.display = 'none';
+                btn.disabled = false;
+            }
+            
+            container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 1500);
+
+    } catch (error) {
+        console.error("Erro ao analisar cliente:", error);
+        if(typeof showToast === 'function') showToast('Erro ao gerar análise da IA.', 'error');
+        if(btn) {
+            btn.querySelector('.btn-text').textContent = '✨ Destravar Venda';
+            btn.querySelector('.btn-spinner').style.display = 'none';
+            btn.disabled = false;
+        }
+    }
+}
