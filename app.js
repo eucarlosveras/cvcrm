@@ -5206,6 +5206,8 @@ function renderRadarSignals(sellerFilter) {
             `;
             container.insertAdjacentHTML('beforeend', cardHtml);
         });
+    } // Fecha o bloco else
+} // Fecha a função renderRadarSignals
 
 window.handleRadarAction = function(id) {
     // Redireciona para o detalhe do orçamento usando a função nativa do CRM
