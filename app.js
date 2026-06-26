@@ -5186,7 +5186,7 @@ function renderRadarSignals(sellerFilter) {
                     <div>
                         <h3 style="font-size: 16px; font-weight: 700; margin: 0 0 6px 0; color: var(--text-primary);">${signal.message}</h3>
                         <div style="font-size: 13px; color: var(--text-secondary); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                            <span>Lead: <strong style="color: var(--brand-blue); cursor: pointer;" onclick="abrirDetalhesCliente('${signal.id}')">${signal.leadName}</strong></span>
+                            <span>Lead: <strong style="color: var(--brand-blue); cursor: pointer;" onclick="abrirDetalhesCliente('${signal.id.split('-')[0]}')">${signal.leadName}</strong></span>
                             <span style="color: var(--border-light);">|</span>
                             <span>Vendedor: ${signal.seller}</span>
                         </div>
