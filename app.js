@@ -4931,4 +4931,141 @@ function renderMeuRadar() {
             </div>
         </div>
     `;
+    initMeuRadar();
 }
+
+// ==========================================
+// LÓGICA DO MEU RADAR (MOCK)
+// ==========================================
+
+let mockRadarSignals = [
+    { id: 1, seller: "Carlos", type: "alert", priority: "high", message: "A oportunidade 'Acme Corp' está há 12 dias sem interação.", leadName: "Acme Corp", time: "Hoje, 09:15", justification: "A média de tempo de resposta nesse estágio é de 3 dias.", actionText: "Agendar follow-up", executed: false },
+    { id: 2, seller: "Maria", type: "tip", priority: "medium", message: "O decisor abriu a sua proposta 3 vezes hoje.", leadName: "Tech Corp", time: "Hoje, 11:30", justification: "Picos de engajamento indicam momento de decisão.", actionText: "Ligar agora", executed: false },
+    { id: 3, seller: "Carlos", type: "suggestion", priority: "low", message: "Ofertar módulo 'Premium' baseado no uso recente.", leadName: "DataSys", time: "Ontem, 14:10", justification: "Baseado no histórico do cliente.", actionText: "Criar oportunidade", executed: false }
+];
+
+function initMeuRadar() {
+    const sellerSelect = document.getElementById('sellerFilter');
+    if (sellerSelect) {
+        // Puxa o nome do usuário real do CRM, ou usa fallback
+        let nomeLogado = (typeof currentUser !== 'undefined' && currentUser?.nome) ? currentUser.nome : 'Carlos';
+        
+        // Adapta o mock para mostrar os cards para o usuário logado
+        mockRadarSignals[0].seller = nomeLogado;
+        mockRadarSignals[2].seller = nomeLogado;
+
+        let opts = '<option value="Todos">Todos os vendedores</option>';
+        opts += `<option value="${nomeLogado}">Eu (${nomeLogado})</option>`;
+        opts += `<option value="Maria">Maria (Teste)</option>`;
+        
+        sellerSelect.innerHTML = opts;
+        sellerSelect.value = nomeLogado;
+
+        sellerSelect.addEventListener('change', (e) => {
+            renderRadarSignals(e.target.value);
+        });
+        
+        renderRadarSignals(nomeLogado);
+    }
+}
+
+function renderRadarSignals(sellerFilter) {
+    const container = document.getElementById('signalContainer');
+    const emptyState = document.getElementById('emptyState');
+    if(!container) return;
+
+    const filtered = mockRadarSignals.filter(s => {
+        if (s.ignored) return false;
+        if (sellerFilter === 'Todos') return true;
+        return s.seller === sellerFilter;
+    });
+
+    // Atualiza contadores
+    const elAlerts = document.getElementById('count-alerts');
+    const elTips = document.getElementById('count-tips');
+    const elSugs = document.getElementById('count-suggestions');
+    if(elAlerts) elAlerts.innerText = filtered.filter(s => s.type === 'alert').length;
+    if(elTips) elTips.innerText = filtered.filter(s => s.type === 'tip').length;
+    if(elSugs) elSugs.innerText = filtered.filter(s => s.type === 'suggestion').length;
+
+    if (filtered.length === 0) {
+        container.innerHTML = '';
+        if(emptyState) emptyState.style.display = 'block';
+    } else {
+        if(emptyState) emptyState.style.display = 'none';
+        container.innerHTML = '';
+        
+        const configMap = {
+            alert: { class: 'badge-alert', label: 'Alerta' },
+            tip: { class: 'badge-tip', label: 'Dica' },
+            suggestion: { class: 'badge-suggestion', label: 'Sugestão' }
+        };
+
+        filtered.forEach(signal => {
+            const conf = configMap[signal.type];
+            const btnExecClass = signal.executed ? 'btn-exec executed' : 'btn-exec';
+            const btnExecText = signal.executed ? '✓ Executado' : signal.actionText;
+            
+            // Renderização do Card com as classes de estilo do style.css
+            const cardHtml = `
+                <div class="signal-card" id="radar-card-${signal.id}">
+                    <div class="priority-stripe priority-${signal.priority}"></div>
+                    <div class="card-body">
+                        <div class="card-header">
+                            <span class="badge ${conf.class}">${conf.label}</span>
+                        </div>
+                        <h3 class="signal-message">${signal.message}</h3>
+                        <div class="signal-meta">
+                            <span>Lead: <strong>${signal.leadName}</strong></span>
+                            <span>•</span>
+                            <span>Vendedor: ${signal.seller}</span>
+                            <span>•</span>
+                            <span>${signal.time}</span>
+                        </div>
+                        ${signal.justification ? `<div class="justification-block">${signal.justification}</div>` : ''}
+                        <div class="card-actions">
+                            <button class="btn ${btnExecClass}" id="btn-exec-${signal.id}" onclick="handleRadarAction(${signal.id})" ${signal.executed ? 'disabled' : ''}>
+                                ${btnExecText}
+                            </button>
+                            <button class="btn btn-ignore" onclick="handleRadarIgnore(${signal.id})">
+                                Ignorar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            container.insertAdjacentHTML('beforeend', cardHtml);
+        });
+    }
+}
+
+window.handleRadarAction = function(id) {
+    const index = mockRadarSignals.findIndex(s => s.id === id);
+    if (index > -1) {
+        mockRadarSignals[index].executed = true;
+        const btn = document.getElementById(`btn-exec-${id}`);
+        if(btn) {
+            btn.className = 'btn btn-exec executed';
+            btn.innerHTML = '✓ Executado';
+            btn.disabled = true;
+        }
+        // Integração com o Toast nativo do CRM
+        if(typeof showToast === 'function') {
+            showToast(`Ação '${mockRadarSignals[index].actionText}' registrada no CRM.`, 'success');
+        }
+    }
+};
+
+window.handleRadarIgnore = function(id) {
+    const card = document.getElementById(`radar-card-${id}`);
+    if (card) {
+        card.style.opacity = '0';
+        card.style.transform = 'translateX(20px)';
+        setTimeout(() => {
+            const index = mockRadarSignals.findIndex(s => s.id === id);
+            if (index > -1) mockRadarSignals[index].ignored = true;
+            const select = document.getElementById('sellerFilter');
+            renderRadarSignals(select ? select.value : 'Todos');
+        }, 300);
+    }
+};
