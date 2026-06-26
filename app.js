@@ -5212,7 +5212,9 @@ function renderRadarSignals(sellerFilter) {
 window.handleRadarAction = function(id) {
     // Redireciona para o detalhe do orçamento usando a função nativa do CRM
     if (typeof abrirDetalhesCliente === 'function') {
-        abrirDetalhesCliente(id);
+        // Extrai o id_orcamento caso seja um sinal composto (ex: "12345-estagnado")
+        const orcamentoId = id.split('-')[0];
+        abrirDetalhesCliente(orcamentoId);
     }
 };
 
