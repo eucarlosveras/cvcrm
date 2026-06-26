@@ -5212,8 +5212,17 @@ function renderRadarSignals(sellerFilter) {
 window.handleRadarAction = function(id) {
     // Redireciona para o detalhe do orçamento usando a função nativa do CRM
     if (typeof abrirDetalhesCliente === 'function') {
-        // Extrai o id_orcamento caso seja um sinal composto (ex: "12345-estagnado")
-        const orcamentoId = id.split('-')[0];
+        // IDs de estoque não correspondem a orçamentos — ignora
+        if (id.startsWith('est-')) return;
+        // O id_orcamento é um UUID (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx).
+        // Os sinais usam o padrão "{uuid}-{sufixo}" (ex: "-estagnado", "-entrega", "-crosssell").
+        // split('-')[0] retornava apenas o 1º segmento do UUID — bug.
+        // Solução: remove o sufixo conhecido pelo final, preservando o UUID completo.
+        const sufixos = ['-estagnado', '-entrega', '-crosssell'];
+        let orcamentoId = id;
+        for (const s of sufixos) {
+            if (id.endsWith(s)) { orcamentoId = id.slice(0, -s.length); break; }
+        }
         abrirDetalhesCliente(orcamentoId);
     }
 };
