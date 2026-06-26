@@ -4940,6 +4940,20 @@ function renderMeuRadar() {
 
 let radarSignalsData = [];
 
+// Helpers para gerenciar sinais ignorados na sessão atual
+function getIgnoredRadarIds() {
+    const stored = sessionStorage.getItem('radar_ignorados');
+    return stored ? JSON.parse(stored) : [];
+}
+
+function addIgnoredRadarId(idOrcamento) {
+    const ignored = getIgnoredRadarIds();
+    if (!ignored.includes(idOrcamento)) {
+        ignored.push(idOrcamento);
+        sessionStorage.setItem('radar_ignorados', JSON.stringify(ignored));
+    }
+}
+
 async function carregarSinaisRadar() {
     const hoje = new Date();
     hoje.setHours(0, 0, 0, 0);
@@ -4964,13 +4978,18 @@ async function carregarSinaisRadar() {
     }
     
     radarSignalsData = [];
-    let signalIdCounter = 1;
     
     orcamentos.forEach(orc => {
         const statusNome = orc.status_orcamento?.nome || '';
         
         // Filtra orçamentos que NÃO estão "Fechado" ou "Perdido"
         if (statusNome === 'Fechado' || statusNome === 'Perdido') {
+            return;
+        }
+        
+        // Verifica se o orçamento já foi ignorado na sessão atual
+        const ignoredIds = getIgnoredRadarIds();
+        if (ignoredIds.includes(orc.id_orcamento)) {
             return;
         }
         
@@ -4983,7 +5002,7 @@ async function carregarSinaisRadar() {
         // ALERTA: data_contato anterior a hoje e ligacao_confirmada false/null
         if (dataContato && dataContato < hoje && !ligacaoConfirmada) {
             radarSignalsData.push({
-                id: signalIdCounter++,
+                id: orc.id_orcamento,
                 seller: nomeVendedor,
                 type: 'alert',
                 priority: 'high',
@@ -4999,7 +5018,7 @@ async function carregarSinaisRadar() {
         // DICA: data_contato igual a hoje e ligacao_confirmada false/null
         else if (dataContato && dataContato.getTime() === hoje.getTime() && !ligacaoConfirmada) {
             radarSignalsData.push({
-                id: signalIdCounter++,
+                id: orc.id_orcamento,
                 seller: nomeVendedor,
                 type: 'tip',
                 priority: 'medium',
@@ -5018,7 +5037,7 @@ async function carregarSinaisRadar() {
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
             if (diffDays > 5) {
                 radarSignalsData.push({
-                    id: signalIdCounter++,
+                    id: orc.id_orcamento,
                     seller: nomeVendedor,
                     type: 'suggestion',
                     priority: 'low',
@@ -5156,33 +5175,39 @@ function renderRadarSignals(sellerFilter) {
 }
 
 window.handleRadarAction = function(id) {
-    const index = radarSignalsData.findIndex(s => s.id === id);
-    if (index > -1) {
-        radarSignalsData[index].executed = true;
-        const btn = document.getElementById(`btn-exec-${id}`);
-        if(btn) {
-            btn.className = 'btn btn-exec executed';
-            btn.innerHTML = '✓ Executado';
-            btn.disabled = true;
-        }
-        // TODO: update no supabase
-        // Integração com o Toast nativo do CRM
-        if(typeof showToast === 'function') {
-            showToast(`Ação '${radarSignalsData[index].actionText}' registrada no CRM.`, 'success');
-        }
+    // Redireciona para o detalhe do orçamento para registrar a interação
+    if (typeof abrirDetalhes === 'function') {
+        abrirDetalhes(id);
+    } else if (typeof verOrcamento === 'function') {
+        verOrcamento(id);
+    } else {
+        // Fallback: navega para a view de detalhes passando o ID
+        currentBudgetId = id;
+        MapsTo('detalhes_orcamento');
     }
 };
 
 window.handleRadarIgnore = function(id) {
     const card = document.getElementById(`radar-card-${id}`);
     if (card) {
+        // Efeito visual de desaparecimento
+        card.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
         card.style.opacity = '0';
         card.style.transform = 'translateX(20px)';
+
         setTimeout(() => {
-            const index = radarSignalsData.findIndex(s => s.id === id);
-            if (index > -1) radarSignalsData[index].ignored = true;
-            const select = document.getElementById('sellerFilter');
-            renderRadarSignals(select ? select.value : 'Todos');
+            // Salva no sessionStorage (usa o próprio ID do signal que corresponde ao id_orcamento)
+            addIgnoredRadarId(id);
+
+            // Remove do DOM
+            card.remove();
+
+            // Verifica se a lista ficou vazia para mostrar o empty state
+            const container = document.getElementById('signalContainer');
+            const emptyState = document.getElementById('emptyState');
+            if (container && container.children.length === 0 && emptyState) {
+                emptyState.style.display = 'block';
+            }
         }, 300);
     }
 };
