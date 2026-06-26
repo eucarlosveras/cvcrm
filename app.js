@@ -5159,10 +5159,10 @@ function renderRadarSignals(sellerFilter) {
                         </div>
                         ${signal.justification ? `<div class="justification-block">${signal.justification}</div>` : ''}
                         <div class="card-actions">
-                            <button class="btn ${btnExecClass}" id="btn-exec-${signal.id}" onclick="handleRadarAction(${signal.id})" ${signal.executed ? 'disabled' : ''}>
+                            <button class="btn ${btnExecClass}" id="btn-exec-${signal.id}" onclick="handleRadarAction('${signal.id}')" ${signal.executed ? 'disabled' : ''}>
                                 ${btnExecText}
                             </button>
-                            <button class="btn btn-ignore" onclick="handleRadarIgnore(${signal.id})">
+                            <button class="btn btn-ignore" onclick="handleRadarIgnore('${signal.id}')">
                                 Ignorar
                             </button>
                         </div>
@@ -5175,39 +5175,26 @@ function renderRadarSignals(sellerFilter) {
 }
 
 window.handleRadarAction = function(id) {
-    // Redireciona para o detalhe do orçamento para registrar a interação
-    if (typeof abrirDetalhes === 'function') {
-        abrirDetalhes(id);
-    } else if (typeof verOrcamento === 'function') {
-        verOrcamento(id);
-    } else {
-        // Fallback: navega para a view de detalhes passando o ID
-        currentBudgetId = id;
-        MapsTo('detalhes_orcamento');
+    // Redireciona para o detalhe do orçamento usando a função nativa do CRM
+    if (typeof abrirDetalhesCliente === 'function') {
+        abrirDetalhesCliente(id);
     }
 };
 
 window.handleRadarIgnore = function(id) {
     const card = document.getElementById(`radar-card-${id}`);
     if (card) {
-        // Efeito visual de desaparecimento
         card.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
         card.style.opacity = '0';
         card.style.transform = 'translateX(20px)';
 
         setTimeout(() => {
-            // Salva no sessionStorage (usa o próprio ID do signal que corresponde ao id_orcamento)
             addIgnoredRadarId(id);
-
-            // Remove do DOM
-            card.remove();
-
-            // Verifica se a lista ficou vazia para mostrar o empty state
-            const container = document.getElementById('signalContainer');
-            const emptyState = document.getElementById('emptyState');
-            if (container && container.children.length === 0 && emptyState) {
-                emptyState.style.display = 'block';
-            }
+            const index = radarSignalsData.findIndex(s => s.id === id);
+            if (index > -1) radarSignalsData[index].ignored = true;
+            
+            const select = document.getElementById('sellerFilter');
+            renderRadarSignals(select ? select.value : 'Todos');
         }, 300);
     }
 };
