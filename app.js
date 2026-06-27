@@ -5284,6 +5284,7 @@ async function analisarClienteComIA(idOrcamentoAtual) {
     try {
         const orc = AppState.contextoVenda.clienteAtual;
         if (!orc) throw new Error('Cliente atual não encontrado no estado.');
+        const nomeCliente = orc.clientes?.nome_cliente || 'Cliente';
 
         // 1. Puxar todos os orçamentos do cliente (Histórico de Compras/Tentativas)
         const { data: todosOrcamentos, error: errOrc } = await db.from('orcamentos')
@@ -5339,14 +5340,12 @@ ${dossie}`;
 
         const resposta = await chamarIA(promptFinal);
 
-        // Abre o modal de chat com a resposta
-        abrirModalChatIA(resposta);
-
         if(btn) {
             btn.querySelector('.btn-text').textContent = '✨ Destravar Venda';
             btn.querySelector('.btn-spinner').style.display = 'none';
             btn.disabled = false;
         }
+        abrirModalChatIA(resposta, nomeCliente);
 
     } catch (error) {
         console.error("Erro ao analisar cliente:", error);
@@ -5356,6 +5355,218 @@ ${dossie}`;
             btn.querySelector('.btn-spinner').style.display = 'none';
             btn.disabled = false;
         }
+    }
+}
+
+function abrirModalChatIA(resposta, nomeCliente) {
+    const anterior = document.getElementById('modalChatIA');
+    if (anterior) anterior.remove();
+
+    const formatado = resposta
+        .replace(/\*\*(.*?)\*\*/g, '$1')
+        .replace(/^\* /gm, '• ')
+        .replace(/\n/g, '<br>');
+
+    const modal = document.createElement('div');
+    modal.id = 'modalChatIA';
+    modal.style.cssText = `
+        position: fixed; inset: 0; z-index: 9999;
+        display: flex; align-items: flex-end; justify-content: flex-end;
+        padding: 100px 24px 100px 0; pointer-events: none;
+    `;
+
+    modal.innerHTML = `
+        <div style="background: white; border-radius: 16px 16px 0 0; width: 100%; max-width: 400px; 
+                    box-shadow: 0 -4px 24px rgba(0,0,0,0.2); pointer-events: auto; display: flex; flex-direction: column; 
+                    max-height: 80vh;">
+            <div style="background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); padding: 16px 20px; 
+                        border-radius: 16px 16px 0 0; display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="background: rgba(255,255,255,0.2); padding: 8px; border-radius: 8px;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+                            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                            <line x1="12" x2="12" y1="19" y2="22"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 style="color: white; font-weight: 600; font-size: 16px; margin: 0;">Assistente de Vendas</h3>
+                        <p style="color: rgba(255,255,255,0.8); font-size: 12px; margin: 0;">Análise de ${escapeHtml(nomeCliente)}</p>
+                    </div>
+                </div>
+                <button onclick="fecharModalChatIA()" style="background: rgba(255,255,255,0.2); border: none; 
+                           color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; 
+                           display: flex; align-items: center; justify-content: center; font-size: 18px;">×</button>
+            </div>
+            
+            <div id="chatIAPanel" style="flex: 1; overflow-y: auto; padding: 16px; background: #f9fafb;">
+                <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+                    <div style="background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); 
+                                width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0; 
+                                display: flex; align-items: center; justify-content: center;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+                            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                            <line x1="12" x2="12" y1="19" y2="22"/>
+                        </svg>
+                    </div>
+                    <div style="background: white; padding: 12px 16px; border-radius: 12px; 
+                                box-shadow: 0 1px 3px rgba(0,0,0,0.1); flex: 1; max-width: calc(100% - 44px);">
+                        <p style="margin: 0; line-height: 1.5; color: #1f2937;">${formatado}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="padding: 16px; border-top: 1px solid #e5e7eb; background: white;">
+                <div style="display: flex; gap: 8px; align-items: flex-end;">
+                    <textarea id="chatIAInput" placeholder="Pergunte algo sobre este cliente..." 
+                              style="flex: 1; padding: 12px; border: 1px solid #d1d5db; border-radius: 12px; 
+                                     resize: none; font-family: inherit; font-size: 14px; outline: none; 
+                                     max-height: 100px; min-height: 44px;" rows="1"></textarea>
+                    <button onclick="enviarMensagemChatIA()" style="background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); 
+                               border: none; color: white; width: 44px; height: 44px; border-radius: 12px; 
+                               cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="22" x2="11" y1="2" y2="13"/>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    setTimeout(() => document.getElementById('chatIAInput')?.focus(), 100);
+
+    window._chatIAHistorico = [
+        { role: 'user', content: 'Analise este cliente e sugira estratégias de venda.' },
+        { role: 'assistant', content: resposta }
+    ];
+}
+
+async function enviarMensagemChatIA() {
+    const input = document.getElementById('chatIAInput');
+    const texto = input?.value?.trim();
+    if (!texto) return;
+
+    const chatBody = document.querySelector('#chatIAPanel > div[style*="overflow-y"]');
+    if (!chatBody) return;
+
+    input.value = '';
+    input.disabled = true;
+
+    chatBody.insertAdjacentHTML('beforeend', `
+        <div style="display: flex; gap: 12px; margin-bottom: 16px; justify-content: flex-end;">
+            <div style="background: #7c3aed; padding: 12px 16px; border-radius: 12px; 
+                        box-shadow: 0 1px 3px rgba(0,0,0,0.1); flex: 1; max-width: calc(100% - 44px);">
+                <p style="margin: 0; line-height: 1.5; color: white;">${escapeHtml(texto)}</p>
+            </div>
+            <div style="width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0; 
+                        background: #e5e7eb; display: flex; align-items: center; justify-content: center;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2">
+                    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                </svg>
+            </div>
+        </div>
+    `);
+
+    const typingId = 'typing_' + Date.now();
+    chatBody.insertAdjacentHTML('beforeend', `
+        <div style="display: flex; gap: 12px; margin-bottom: 16px;" id="${typingId}">
+            <div style="background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); 
+                        width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0; 
+                        display: flex; align-items: center; justify-content: center;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                    <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                    <line x1="12" x2="12" y1="19" y2="22"/>
+                </svg>
+            </div>
+            <div style="background: white; padding: 12px 16px; border-radius: 12px; 
+                        box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                <div style="display: flex; gap: 4px;">
+                    <div style="width: 8px; height: 8px; background: #7c3aed; border-radius: 50%; 
+                                animation: bounce 1.4s infinite ease-in-out both;"></div>
+                    <div style="width: 8px; height: 8px; background: #7c3aed; border-radius: 50%; 
+                                animation: bounce 1.4s infinite ease-in-out both; animation-delay: 0.16s;"></div>
+                    <div style="width: 8px; height: 8px; background: #7c3aed; border-radius: 50%; 
+                                animation: bounce 1.4s infinite ease-in-out both; animation-delay: 0.32s;"></div>
+                </div>
+            </div>
+        </div>
+    `);
+    chatBody.scrollTop = chatBody.scrollHeight;
+
+    try {
+        window._chatIAHistorico = window._chatIAHistorico || [];
+        window._chatIAHistorico.push({ role: 'user', content: texto });
+
+        const { data: { session } } = await db.auth.getSession();
+        const res = await fetch(
+            'https://blumqkxwasdbyozdvrsp.supabase.co/functions/v1/gemini-proxy ',
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+                body: JSON.stringify({
+                    prompt: texto,
+                    systemPrompt: `Você é um assistente especialista em vendas de colchões da Euro Colchões.
+Responda de forma direta e prática. Contexto anterior: ${JSON.stringify(window._chatIAHistorico.slice(0,-1))}`
+                }),
+            }
+        );
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+
+        const respostaFormatada = (data.text || '')
+            .replace(/\*\*(.*?)\*\*/g, '$1')
+            .replace(/^\* /gm, '• ')
+            .replace(/\n/g, '<br>');
+
+        window._chatIAHistorico.push({ role: 'assistant', content: data.text });
+
+        document.getElementById(typingId)?.remove();
+        chatBody.insertAdjacentHTML('beforeend', `
+            <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+                <div style="background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); 
+                            width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0; 
+                            display: flex; align-items: center; justify-content: center;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                        <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                        <line x1="12" x2="12" y1="19" y2="22"/>
+                    </svg>
+                </div>
+                <div style="background: white; padding: 12px 16px; border-radius: 12px; 
+                            box-shadow: 0 1px 3px rgba(0,0,0,0.1); flex: 1; max-width: calc(100% - 44px);">
+                    <p style="margin: 0; line-height: 1.5; color: #1f2937;">${respostaFormatada}</p>
+                </div>
+            </div>
+        `);
+    } catch(e) {
+        document.getElementById(typingId)?.remove();
+        chatBody.insertAdjacentHTML('beforeend', `
+            <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+                <div style="background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); 
+                            width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0; 
+                            display: flex; align-items: center; justify-content: center;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                        <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                        <line x1="12" x2="12" y1="19" y2="22"/>
+                    </svg>
+                </div>
+                <div style="background: white; padding: 12px 16px; border-radius: 12px; 
+                            box-shadow: 0 1px 3px rgba(0,0,0,0.1); flex: 1; max-width: calc(100% - 44px);">
+                    <p style="margin: 0; line-height: 1.5; color: #ef4444;">Erro ao responder. Tente novamente.</p>
+                </div>
+            </div>
+        `);
+    } finally {
+        input.disabled = false;
+        input.focus();
+        chatBody.scrollTop = chatBody.scrollHeight;
     }
 }
 
