@@ -5339,7 +5339,7 @@ Responda em português do Brasil, em formato de lista com bullet points.
 
 ${dossie}`;
 
-        const resposta = await chamarGemini(promptFinal);
+        const resposta = await chamarIA(promptFinal);
 
         container.style.display = 'block';
         content.innerHTML = resposta
@@ -5365,23 +5365,23 @@ ${dossie}`;
     }
 }
 
-async function chamarGemini(prompt, contexto = '') {
+async function chamarIA(prompt, contexto = '') {
     const { data: { session } } = await db.auth.getSession();
     if (!session) throw new Error('Usuário não autenticado.');
 
     const res = await fetch(
-        'https://blumqkxwasdbyozdvrsp.supabase.co/functions/v1/gemini-proxy',
+        'https://blumqkxwasdbyozdvrsp.supabase.co/functions/v1/gemini-proxy ',
         {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${session.access_token}`,
             },
-            body: JSON.stringify({ prompt, contexto }),
+            body: JSON.stringify({ prompt }),
         }
     );
 
     const data = await res.json();
     if (data.error) throw new Error(data.error);
-    return data.resposta;
+    return data.text;
 }
