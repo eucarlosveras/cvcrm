@@ -3039,10 +3039,10 @@ function selectFilter(filter) {
 
                 <div class="detalhes-page-wrapper">
 
-                    <div id="ia-insights-container" style="display:none; grid-column: 1 / -1; background: linear-gradient(to right, var(--bg-body), var(--card-bg)); border: 1px dashed var(--brand-blue); border-left: 4px solid var(--brand-blue); border-radius: var(--radius-md); padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+                    <div style="grid-column: 1 / -1; background: linear-gradient(to right, var(--bg-body), var(--card-bg)); border: 1px dashed var(--brand-blue); border-left: 4px solid var(--brand-blue); border-radius: var(--radius-md); padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); display:none;" id="ia-insights-container-removido">
                         <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-weight: 700; color: var(--brand-blue-dark); font-size: 15px;">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
-                            Estratégia sugerida pela IA
+                            Estratégia sugerida pela IA (funcionalidade movida para modal)
                         </div>
                         <div id="ia-insights-content" style="font-size: 13.5px; line-height: 1.6; color: var(--text-primary);"></div>
                     </div>
@@ -5274,8 +5274,6 @@ window.handleRadarIgnore = function(id) {
 
 async function analisarClienteComIA(idOrcamentoAtual) {
     const btn = document.getElementById('btnFabIA');
-    const container = document.getElementById('ia-insights-container');
-    const content = document.getElementById('ia-insights-content');
     
     if(btn) {
         btn.querySelector('.btn-text').textContent = 'A analisar...';
@@ -5341,18 +5339,14 @@ ${dossie}`;
 
         const resposta = await chamarIA(promptFinal);
 
-        container.style.display = 'block';
-        content.innerHTML = resposta
-            .replace(/\n/g, '<br>')
-            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        // Abre o modal de chat com a resposta
+        abrirModalChatIA(resposta);
 
         if(btn) {
             btn.querySelector('.btn-text').textContent = '✨ Destravar Venda';
             btn.querySelector('.btn-spinner').style.display = 'none';
             btn.disabled = false;
         }
-        
-        container.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
     } catch (error) {
         console.error("Erro ao analisar cliente:", error);
@@ -5384,4 +5378,157 @@ async function chamarIA(prompt, contexto = '') {
     const data = await res.json();
     if (data.error) throw new Error(data.error);
     return data.text;
+}
+
+// ==========================================
+// FUNÇÕES DO MODAL CHAT IA
+// ==========================================
+
+let chatIAMessages = [];
+let currentOrcamentoId = null;
+
+function abrirModalChatIA(respostaInicial = '') {
+    const modal = document.getElementById('modalChatIA');
+    if (!modal) return;
+    
+    // Pega o ID do orçamento atual
+    const orc = AppState.contextoVenda.clienteAtual;
+    currentOrcamentoId = orc?.id_orcamento || null;
+    
+    // Inicializa as mensagens
+    chatIAMessages = [];
+    
+    // Adiciona mensagem inicial da IA se houver resposta
+    if (respostaInicial) {
+        chatIAMessages.push({
+            id: Date.now().toString(),
+            role: 'assistant',
+            content: respostaInicial
+        });
+    }
+    
+    // Renderiza as mensagens
+    renderizarMensagensChat();
+    
+    // Abre o modal usando a função padrão
+    openModal('modalChatIA');
+    
+    // Focus no input
+    setTimeout(() => {
+        const input = document.getElementById('chatInputIA');
+        if (input) input.focus();
+    }, 200);
+}
+
+function fecharModalChatIA() {
+    closeModal('modalChatIA');
+}
+
+function renderizarMensagensChat() {
+    const container = document.getElementById('chatMessagesContainer');
+    if (!container) return;
+    
+    container.innerHTML = chatIAMessages.map(msg => {
+        const isUser = msg.role === 'user';
+        return `
+            <div style="display:flex; gap:12px; ${isUser ? 'flex-direction:row-reverse;' : ''}">
+                <div style="width:32px; height:32px; border-radius:50%; background:${isUser ? 'linear-gradient(135deg, #6366f1, #8b5cf6)' : 'linear-gradient(135deg, #10b981, #059669)'}; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                    ${isUser 
+                        ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'
+                        : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>'
+                    }
+                </div>
+                <div style="max-width:75%; padding:12px 16px; border-radius:16px; background:${isUser ? 'linear-gradient(135deg, #6366f1, #8b5cf6)' : 'white'}; color:${isUser ? 'white' : 'var(--text-primary)'}; box-shadow:0 1px 3px rgba(0,0,0,0.1);">
+                    <div style="font-size:13.5px; line-height:1.6; white-space:pre-wrap;">${formatarMensagemIA(msg.content)}</div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    // Auto-scroll para o final
+    setTimeout(() => {
+        container.scrollTop = container.scrollHeight;
+    }, 50);
+}
+
+function formatarMensagemIA(texto) {
+    return texto
+        .replace(/\n/g, '<br>')
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/^\s*[-•*]\s+/gm, '<li>')
+        .replace(/<\/li>(?!\s*<li>)/g, '</li>');
+}
+
+async function enviarMensagemChatIA() {
+    const input = document.getElementById('chatInputIA');
+    const btn = document.getElementById('btnEnviarChatIA');
+    
+    if (!input || !btn) return;
+    
+    const texto = input.value.trim();
+    if (!texto) return;
+    
+    // Desabilita botão e mostra loading
+    btn.disabled = true;
+    btn.style.opacity = '0.6';
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<span class="btn-spinner" style="display:inline-block; width:14px; height:14px; border:2px solid rgba(255,255,255,0.3); border-top-color:#fff; border-radius:50%; animation:spin 1s linear infinite;"></span>';
+    
+    // Adiciona mensagem do usuário
+    chatIAMessages.push({
+        id: Date.now().toString(),
+        role: 'user',
+        content: texto
+    });
+    
+    input.value = '';
+    renderizarMensagensChat();
+    
+    try {
+        // Monta o contexto com o dossiê do cliente
+        const orc = AppState.contextoVenda.clienteAtual;
+        if (!orc) throw new Error('Cliente atual não encontrado.');
+        
+        let contexto = `=== CONTEXTO ATUAL ===\n`;
+        contexto += `Cliente: ${orc.clientes?.nome_cliente || 'Desconhecido'}\n`;
+        contexto += `Produto: ${orc.modelo_colchao || 'Nenhum'}\n`;
+        contexto += `Valor: R$ ${orc.valor_orcado}\n`;
+        contexto += `Status: ${orc.status}\n\n`;
+        
+        // Histórico de mensagens do chat
+        const historicoChat = chatIAMessages.slice(0, -1).map(m => 
+            `${m.role === 'user' ? 'Usuário' : 'IA'}: ${m.content}`
+        ).join('\n');
+        
+        const promptFinal = `${contexto}\n=== HISTÓRICO DA CONVERSA ===\n${historicoChat}\n\nÚltima mensagem do usuário: ${texto}\n\nResponda de forma útil e objetiva como assistente de vendas especializado em colchões.`;
+        
+        const resposta = await chamarIA(promptFinal);
+        
+        // Adiciona resposta da IA
+        chatIAMessages.push({
+            id: Date.now().toString(),
+            role: 'assistant',
+            content: resposta
+        });
+        
+        renderizarMensagensChat();
+        
+    } catch (error) {
+        console.error("Erro ao enviar mensagem:", error);
+        if(typeof showToast === 'function') showToast('Erro ao enviar mensagem.', 'error');
+        
+        // Adiciona mensagem de erro
+        chatIAMessages.push({
+            id: Date.now().toString(),
+            role: 'assistant',
+            content: 'Desculpe, ocorreu um erro ao processar sua solicitação. Tente novamente.'
+        });
+        renderizarMensagensChat();
+    } finally {
+        // Restaura botão
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        btn.innerHTML = originalText;
+        input.focus();
+    }
 }

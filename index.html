@@ -270,6 +270,83 @@
     <div class="notification-dropdown" id="notificationDropdown"></div>
 
     <!-- Modal: Editar Cliente -->
+    <div class="modal-overlay" id="modalAjusteProposta" onclick="if(event.target===this)closeModal('modalAjusteProposta')">
+        <div class="modal-card" style="max-width:540px; width:96%;">
+            <h3>Ajustar Proposta</h3>
+            <div class="form-group">
+                <label class="form-label">Novo Valor</label>
+                <input type="text" id="novoValorProposta" class="form-input" placeholder="R$ 0,00">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Observações</label>
+                <textarea id="obsProposta" class="form-input" rows="3" placeholder="Adicione observações..."></textarea>
+            </div>
+            <div class="total-modal-box" style="margin-bottom:14px;">
+                <span class="total-label">Valor Atual:</span>
+                <span class="total-value" id="valorAtualModal">R$ 0,00</span>
+            </div>
+            <div class="modal-btns">
+                <button type="button" class="btn-cancelar-modal" onclick="closeModal('modalAjusteProposta')">Cancelar</button>
+                <button type="button" class="btn-salvar-modal" onclick="salvarAjusteProposta()">
+                    <span class="btn-spinner"></span>
+                    <span class="btn-text">Salvar Ajuste</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Chat IA - Destravar Vendas -->
+    <div class="modal-overlay" id="modalChatIA" onclick="if(event.target===this)fecharModalChatIA()">
+        <div class="modal-card modal-chat-card" style="max-width:600px; width:95%; height:80vh; display:flex; flex-direction:column; padding:0; overflow:hidden;">
+            <!-- Header -->
+            <div class="modal-chat-header" style="display:flex; justify-content:space-between; align-items:center; padding:16px 20px; border-bottom:1px solid var(--border-light); background:linear-gradient(135deg, #6366f1, #8b5cf6);">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                        <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                    </svg>
+                    <h3 style="color:white; margin:0; font-size:16px; font-weight:700;">✨ Destravar Vendas</h3>
+                </div>
+                <button onclick="fecharModalChatIA()" style="background:none; border:none; cursor:pointer; padding:4px; border-radius:4px; transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='transparent'">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <!-- Messages Area -->
+            <div id="chatMessagesContainer" style="flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:16px; background:var(--bg-body);">
+                <!-- Messages will be injected here -->
+            </div>
+            
+            <!-- Input Area -->
+            <div class="modal-chat-input" style="padding:16px 20px; border-top:1px solid var(--border-light); background:white;">
+                <div style="display:flex; gap:10px; align-items:flex-end;">
+                    <textarea 
+                        id="chatInputIA" 
+                        placeholder="Digite sua pergunta ou solicitação..." 
+                        rows="2"
+                        style="flex:1; resize:none; border:1px solid var(--border-medium); border-radius:8px; padding:10px 12px; font-family:var(--font-primary); font-size:14px; line-height:1.5; outline:none; transition:border-color 0.2s;"
+                        onfocus="this.style.borderColor='var(--brand-blue)'"
+                        onblur="this.style.borderColor='var(--border-medium)'"
+                        onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault(); enviarMensagemChatIA();}"
+                    ></textarea>
+                    <button 
+                        id="btnEnviarChatIA"
+                        onclick="enviarMensagemChatIA()"
+                        style="background:linear-gradient(135deg, #6366f1, #8b5cf6); color:white; border:none; border-radius:8px; padding:10px 16px; font-weight:600; font-size:14px; cursor:pointer; display:flex; align-items:center; gap:6px; transition:transform 0.2s, opacity 0.2s;"
+                        onmouseover="this.style.transform='translateY(-1px)'"
+                        onmouseout="this.style.transform='translateY(0)'"
+                    >
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                        </svg>
+                        Enviar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="modal-overlay" id="modalEditarCliente" onclick="if(event.target===this)closeModal('modalEditarCliente')">
         <div class="modal-card" style="max-width:500px;">
             <h3 id="modalEditarClienteTitle">Editar Cliente</h3>
