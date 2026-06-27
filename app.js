@@ -2473,13 +2473,6 @@ function selectFilter(filter) {
                 divAcoes.appendChild(btnExcluir);
             }
 
-            const btnNegocio = document.createElement('button');
-            btnNegocio.className = 'btn-action-icon green';
-            btnNegocio.title = 'Criar negócio';
-            btnNegocio.innerHTML = `<svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`;
-            btnNegocio.addEventListener('click', () => abrirModalCriarNegocio(c._pk, c.nome_cliente || '', c.cpf || '', c.whatsapp || '', c.email || ''));
-            divAcoes.appendChild(btnNegocio);
-
             tdAcoes.appendChild(divAcoes);
 
             tr.appendChild(tdCod);
@@ -2583,10 +2576,6 @@ function selectFilter(filter) {
                             <button class="btn-primary-action" onclick="abrirModalEditarCliente('${c._pk}')">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                                 Editar
-                            </button>
-                            <button class="btn-primary-action" style="background:var(--accent-green);" onclick="abrirModalCriarNegocio('${c._pk}','${escapeHtml(c.nome_cliente||'')}','${escapeHtml(c.cpf||'')}','${escapeHtml(c.whatsapp||'')}','${escapeHtml(c.email||'')}')">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                                Criar Negócio
                             </button>
                             ${currentUser.perfil !== 'Vendedor' ? `<button class="btn-danger-ghost" onclick="abrirModalExcluirCliente('${c._pk}','${escapeHtml(c.nome_cliente||'')}')">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/></svg>
@@ -2799,14 +2788,7 @@ function selectFilter(filter) {
             finally { btn.classList.remove('saving'); btn.disabled = false; }
         }
 
-        function abrirModalCriarNegocio(idCliente, nomeCliente, cpf, tel, email) {
-            clienteParaOrcamento = { id: idCliente, nome: nomeCliente, cpf, tel, email };
-            document.getElementById('nomeClienteNegocio').textContent = nomeCliente;
-            openModal('modalCriarNegocio');
-        }
-
         function irParaNovoOrcamentoComCliente() {
-            closeModal('modalCriarNegocio');
             navigateTo('novo_orcamento');
             // Pre-fill after render
             setTimeout(() => {
