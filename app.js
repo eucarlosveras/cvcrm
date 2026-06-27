@@ -5378,7 +5378,7 @@ function abrirModalChatIA(resposta, nomeCliente) {
     modal.innerHTML = `
         <div style="background: white; border-radius: 16px 16px 0 0; width: 100%; max-width: 400px; 
                     box-shadow: 0 -4px 24px rgba(0,0,0,0.2); pointer-events: auto; display: flex; flex-direction: column; 
-                    max-height: 80vh;">
+                    max-height: 80vh; color: #1f2937;">
             <div style="background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); padding: 16px 20px; 
                         border-radius: 16px 16px 0 0; display: flex; align-items: center; justify-content: space-between;">
                 <div style="display: flex; align-items: center; gap: 12px;">
@@ -5399,7 +5399,7 @@ function abrirModalChatIA(resposta, nomeCliente) {
                            display: flex; align-items: center; justify-content: center; font-size: 18px;">×</button>
             </div>
             
-            <div id="chatIAPanel" style="flex: 1; overflow-y: auto; padding: 16px; background: #f9fafb;">
+            <div id="chatIAPanel" style="flex: 1; overflow-y: auto; padding: 16px; background: #f3f4f6; color: #1f2937;">
                 <div style="display: flex; gap: 12px; margin-bottom: 16px;">
                     <div style="background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); 
                                 width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0; 
@@ -5412,7 +5412,7 @@ function abrirModalChatIA(resposta, nomeCliente) {
                     </div>
                     <div style="background: white; padding: 12px 16px; border-radius: 12px; 
                                 box-shadow: 0 1px 3px rgba(0,0,0,0.1); flex: 1; max-width: calc(100% - 44px);">
-                        <p style="margin: 0; line-height: 1.5; color: #1f2937;">${formatado}</p>
+                        <p style="margin: 0; line-height: 1.5; color: #000000; font-weight: 400;">${formatado}</p>
                     </div>
                 </div>
             </div>
@@ -5540,7 +5540,7 @@ Responda de forma direta e prática. Contexto anterior: ${JSON.stringify(window.
                 </div>
                 <div style="background: white; padding: 12px 16px; border-radius: 12px; 
                             box-shadow: 0 1px 3px rgba(0,0,0,0.1); flex: 1; max-width: calc(100% - 44px);">
-                    <p style="margin: 0; line-height: 1.5; color: #1f2937;">${respostaFormatada}</p>
+                    <p style="margin: 0; line-height: 1.5; color: #000000; font-weight: 400;">${respostaFormatada}</p>
                 </div>
             </div>
         `);
@@ -5559,7 +5559,7 @@ Responda de forma direta e prática. Contexto anterior: ${JSON.stringify(window.
                 </div>
                 <div style="background: white; padding: 12px 16px; border-radius: 12px; 
                             box-shadow: 0 1px 3px rgba(0,0,0,0.1); flex: 1; max-width: calc(100% - 44px);">
-                    <p style="margin: 0; line-height: 1.5; color: #ef4444;">Erro ao responder. Tente novamente.</p>
+                    <p style="margin: 0; line-height: 1.5; color: #ef4444; font-weight: 400;">Erro ao responder. Tente novamente.</p>
                 </div>
             </div>
         `);
