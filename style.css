@@ -1976,3 +1976,88 @@
             border-color: var(--border-medium);
             color: var(--text-secondary);
         }
+
+        /* ────────────────────────────────────────────────────────
+           MODAL CHAT "DESTRAVAR VENDA" - TEMA ESCURO
+        ──────────────────────────────────────────────────────── */
+        body.dark #modalChatIA {
+            /* Overlay mais escuro */
+        }
+        body.dark #modalChatIA > div:first-child {
+            background-color: #1e1e2e !important;
+            border: 1px solid #3f3f46 !important;
+        }
+        body.dark #modalChatIA .chat-header {
+            background: linear-gradient(135deg, #2d2d44 0%, #1e1e2e 100%) !important;
+            border-bottom-color: #3f3f46 !important;
+        }
+        body.dark #modalChatIA .chat-header h3,
+        body.dark #modalChatIA .chat-header span {
+            color: #e0e0e0 !important;
+        }
+        body.dark #modalChatIA #chatIAPanel {
+            background-color: #1a1a28 !important;
+            color: #e0e0e0 !important;
+        }
+        /* Balão da IA */
+        body.dark #modalChatIA .message-assistant {
+            background-color: #2d2d44 !important;
+            border: 1px solid #444466 !important;
+            color: #e0e0e0 !important;
+        }
+        body.dark #modalChatIA .message-assistant strong {
+            color: #ffffff !important;
+        }
+        /* Balão do Usuário */
+        body.dark #modalChatIA .message-user {
+            background-color: #4f46e5 !important;
+            color: #ffffff !important;
+        }
+        /* Campo de Input */
+        body.dark #modalChatIA #chatIAInput {
+            background-color: #2d2d44 !important;
+            border-color: #444466 !important;
+            color: #e0e0e0 !important;
+        }
+        body.dark #modalChatIA #chatIAInput::placeholder {
+            color: #9ca3af !important;
+        }
+        body.dark #modalChatIA #chatIAInput:focus {
+            border-color: #6366f1 !important;
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3) !important;
+        }
+        /* Botão de Enviar */
+        body.dark #modalChatIA #chatIASendBtn {
+            background-color: #6366f1 !important;
+            color: #ffffff !important;
+        }
+        body.dark #modalChatIA #chatIASendBtn:hover {
+            background-color: #4f46e5 !important;
+        }
+        body.dark #modalChatIA #chatIASendBtn:disabled {
+            background-color: #3f3f46 !important;
+            color: #71717a !important;
+            cursor: not-allowed;
+        }
+        /* Bolha de digitando */
+        body.dark #modalChatIA .typing-bubble {
+            background-color: #2d2d44 !important;
+            border: 1px solid #444466 !important;
+        }
+        body.dark #modalChatIA .typing-dot {
+            background-color: #9ca3af !important;
+        }
+        /* Scrollbar personalizada para tema escuro */
+        body.dark #modalChatIA #chatIAPanel::-webkit-scrollbar {
+            width: 6px;
+        }
+        body.dark #modalChatIA #chatIAPanel::-webkit-scrollbar-track {
+            background: #1a1a28;
+        }
+        body.dark #modalChatIA #chatIAPanel::-webkit-scrollbar-thumb {
+            background: #3f3f46;
+            border-radius: 3px;
+        }
+        body.dark #modalChatIA #chatIAPanel::-webkit-scrollbar-thumb:hover {
+            background: #52525b;
+        }
