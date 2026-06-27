@@ -5344,17 +5344,31 @@ function abrirModalChatIA(resposta, nomeCliente) {
     const anterior = document.getElementById('modalChatIA');
     if (anterior) anterior.remove();
 
-    const formatado = resposta
-        .replace(/\*\*(.*?)\*\*/g, '$1')
-        .replace(/^\* /gm, '• ')
-        .replace(/\n/g, '<br>');
+	// Remove negrito primeiro
+	let textoTemp = resposta.replace(/\*\*(.*?)\*\*/g, '$1');
+	
+	// Contador para a numeração
+	let contador = 0;
+	
+	// Substitui '* ' ou '- ' no início da linha por "1. ", "2. ", etc.
+	textoTemp = textoTemp.replace(/^[\*\-]\s+/gm, () => {
+	    contador++;
+	    return `${contador}. `;
+	});
+	
+	// Adiciona um <br> extra após cada item numerado para dar o espaço (enter)
+	// Procura por "Número. Texto" seguido de quebra de linha e outro número
+	textoTemp = textoTemp.replace(/(\d+\..*?)\n(?=\d+\.)/g, '$1<br><br>');
+	
+	// Por fim, converte as quebras de linha restantes em <br> simples
+	const formatado = textoTemp.replace(/\n/g, '<br>');
 
     const modal = document.createElement('div');
     modal.id = 'modalChatIA';
     modal.style.cssText = `
         position: fixed; inset: 0; z-index: 9999;
         display: flex; align-items: flex-end; justify-content: flex-end;
-        padding: 100px 24px 100px 0; pointer-events: none;
+asasdasd        padding: 100px 24px 100px 0; pointer-events: none;
     `;
 
     modal.innerHTML = `
