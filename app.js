@@ -4896,7 +4896,7 @@ function renderMeuRadar() {
     main.innerHTML = `
         <header class="dashboard-header">
             <div style="display:flex; align-items:center; gap:16px;">
-                <h1>📡 Meu Radar</h1>
+                <h1>Meu Radar</h1>
             </div>
             <div class="header-controls">
                 <div class="filter-wrapper">
