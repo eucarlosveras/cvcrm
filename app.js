@@ -5363,7 +5363,16 @@ function abrirModalChatIA(resposta, nomeCliente) {
     if (anterior) anterior.remove();
 
 	// 1. Remove negrito
-let textoTemp = resposta.replace(/\*\*(.*?)\*\*/g, '$1');
+// 0. Remove raciocínio interno do modelo (tudo antes de "1. Estratégia" ou "1. Situação")
+let textoLimpo = resposta;
+const marcadorInicio = /1\.\s*(Estratégia|Situação Pós-Venda)/i;
+const matchInicio = textoLimpo.match(marcadorInicio);
+if (matchInicio) {
+    textoLimpo = textoLimpo.slice(textoLimpo.indexOf(matchInicio[0]));
+}
+
+// 1. Remove negrito
+let textoTemp = textoLimpo.replace(/\*\*(.*?)\*\*/g, '$1');
 
 // 2. REMOVE totalmente o asterisco ou hífen no início da linha
 textoTemp = textoTemp.replace(/^[\*\-]\s*/gm, ''); 
