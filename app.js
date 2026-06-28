@@ -5270,7 +5270,7 @@ async function analisarClienteComIA(idOrcamentoAtual) {
 
         // 1. Puxar todos os orçamentos do cliente (Histórico de Compras/Tentativas)
         const { data: todosOrcamentos, error: errOrc } = await db.from('orcamentos')
-            .select('id_orcamento, protocolo, valor_orcado, modelo_colchao, data_criacao, status_orcamento(nome)')
+            .select('id_orcamento, protocolo, valor_orcado, modelo_colchao, data_criacao, data_entrega, status_orcamento(nome)')
             .eq('id_cliente', orc.id_cliente)
             .order('data_criacao', { ascending: false });
 
@@ -5285,16 +5285,37 @@ async function analisarClienteComIA(idOrcamentoAtual) {
             todosComentarios = coms || [];
         }
 
-        // 3. Montar o Dossiê para a IA
+        // 3. Verificar se é pós-venda (status Fechado)
+        const statusAtual = orc.status || '';
+        const isFechado = statusAtual === 'Fechado';
+
+        // Calcular dias desde a entrega (se houver data_entrega)
+        const dataEntrega = orc.data_entrega || null;
+        let diasDesdeEntrega = null;
+        if (dataEntrega) {
+            const hoje = new Date();
+            const entrega = new Date(dataEntrega);
+            diasDesdeEntrega = Math.floor((hoje - entrega) / (1000 * 60 * 60 * 24));
+        }
+
+        // 4. Montar o Dossiê para a IA
         let dossie = `=== DADOS DO CLIENTE ===\n`;
         dossie += `Nome: ${orc.clientes?.nome_cliente || 'Desconhecido'}\n`;
         dossie += `Origem: ${orc.origem || 'Não informada'}\n`;
         dossie += `Interesse: ${orc.interesse || 'Não informado'}\n\n`;
-        
+
         dossie += `=== ORÇAMENTO ATUAL ===\n`;
         dossie += `Produto(s): ${orc.modelo_colchao || 'Nenhum'}\n`;
         dossie += `Valor: R$ ${orc.valor_orcado}\n`;
-        dossie += `Status: ${orc.status}\n\n`;
+        dossie += `Status: ${statusAtual}\n`;
+
+        if (isFechado) {
+            dossie += `Data de entrega prevista: ${dataEntrega ? new Date(dataEntrega).toLocaleDateString('pt-BR') : 'Não informada'}\n`;
+            dossie += `Dias desde a entrega: ${diasDesdeEntrega !== null ? diasDesdeEntrega + ' dias' : 'Entrega ainda não realizada'}\n`;
+            dossie += `MODO: PÓS-VENDA — foco em satisfação, fidelização e indicação. NÃO tente vender nada novo neste momento.\n\n`;
+        } else {
+            dossie += `\n`;
+        }
 
         dossie += `=== HISTÓRICO DE NEGÓCIOS ===\n`;
         (todosOrcamentos || []).forEach(o => {
@@ -5312,8 +5333,10 @@ async function analisarClienteComIA(idOrcamentoAtual) {
         console.log("=== DOSSIÊ ENVIADO PARA IA ===");
         console.log(dossie);
 
-        // 4. Chamada real ao Groq via Edge Function
-        const promptFinal = `Analise o dossiê abaixo e gere a resposta no formato padrão (Estratégia, Argumentos e Mensagem WhatsApp).\n\n${dossie}`;
+        // 5. Chamada real ao Groq via Edge Function
+        const promptFinal = isFechado
+            ? `Analise o dossiê abaixo. Esta é uma venda já realizada. Gere a resposta no formato de pós-venda (Situação Pós-Venda, Ação Recomendada e Mensagem WhatsApp).\n\n${dossie}`
+            : `Analise o dossiê abaixo e gere a resposta no formato padrão (Estratégia, Argumentos e Mensagem WhatsApp).\n\n${dossie}`;
 
         const resposta = await chamarIA(promptFinal);
 
