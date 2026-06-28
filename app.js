@@ -5312,13 +5312,8 @@ async function analisarClienteComIA(idOrcamentoAtual) {
         console.log("=== DOSSIÊ ENVIADO PARA IA ===");
         console.log(dossie);
 
-        // 4. Chamada real ao Gemini via Edge Function
-        const promptFinal = `Você é um especialista em vendas de colchões na loja Euro Colchões. 
-Analise o dossiê abaixo e sugira 3 estratégias práticas e objetivas para o vendedor fechar esta venda.
-Responda em português do Brasil, em formato de lista com bullet points.
-
-
-${dossie}`;
+        // 4. Chamada real ao Groq via Edge Function
+        const promptFinal = `Analise o dossiê abaixo e gere a resposta no formato padrão (Estratégia, Argumentos e Mensagem WhatsApp).\n\n${dossie}`;
 
         const resposta = await chamarIA(promptFinal);
 
@@ -5499,9 +5494,7 @@ async function enviarMensagemChatIA() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
                 body: JSON.stringify({
-                    prompt: texto,
-                    systemPrompt: `Você é um assistente especialista em vendas de colchões da Euro Colchões.
-Responda de forma direta e prática. Contexto anterior: ${JSON.stringify(window._chatIAHistorico.slice(0,-1))}`
+                    prompt: `${texto}\n\nContexto da conversa anterior: ${JSON.stringify(window._chatIAHistorico.slice(0,-1))}`
                 }),
             }
         );
