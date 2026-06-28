@@ -5652,11 +5652,18 @@ function renderizarMensagensChat() {
 }
 
 function formatarMensagemIA(texto) {
-    return texto
-        .replace(/\n/g, '<br>')
-        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-        .replace(/^\s*[-•*]\s+/gm, '<li>')
-        .replace(/<\/li>(?!\s*<li>)/g, '</li>');
+    // 1. Remove negrito (**texto** vira texto)
+    let textoTemp = texto.replace(/\*\*(.*?)\*\*/g, '$1');
+
+    // 2. REMOVE totalmente o asterisco, hífen ou bolinha no início da linha
+    // Isso garante que "* Estratégia" vire apenas "Estratégia"
+    textoTemp = textoTemp.replace(/^[\*\-•]\s*/gm, ''); 
+
+    // 3. Garante um espaço extra (enter) entre parágrafos distintos
+    textoTemp = textoTemp.replace(/\n\n/g, '<br><br>');
+
+    // 4. Converte as quebras de linha restantes em <br> para o HTML
+    return textoTemp.replace(/\n/g, '<br>');
 }
 
 async function enviarMensagemChatIA() {
