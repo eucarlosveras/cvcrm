@@ -3867,7 +3867,7 @@ function selectFilter(filter) {
                     await db.from('orcamentos').update({
                         data_contato: dataEntrega,
                         hora_contato: '09:00',
-                        observacao_agendamento: `Confirmação de recebimento - Entrega prevista para ${dataEntregaFormatada}`
+                        observacao_agendamento: `Confirmação de recebimento - ${dataEntregaFormatada}`
                     }).eq('id_orcamento', id);
 
                     await db.from('comentarios').insert([{
