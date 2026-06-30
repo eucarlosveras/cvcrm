@@ -878,12 +878,17 @@ const SUPABASE_URL = 'https://blumqkxwasdbyozdvrsp.supabase.co';
             return filtrados.reduce((s, v) => s + getMetaVendedor(v.id_usuario), 0);
         }
 
+        // Helper para ler variáveis CSS do tema (suporta dark mode)
+        function getCSSVar(name) {
+            return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+        }
+
         function getGamifiedColors(perc) {
-            const chartBlue = getComputedStyle(document.body).getPropertyValue('--chart-blue').trim() || '#6366f1';
-            const chartGreen = getComputedStyle(document.body).getPropertyValue('--chart-green').trim() || '#10b981';
-            const chartOrange = getComputedStyle(document.body).getPropertyValue('--chart-orange').trim() || '#f59e0b';
-            const chartRed = getComputedStyle(document.body).getPropertyValue('--chart-red').trim() || '#ef4444';
-            const accentPurple = getComputedStyle(document.body).getPropertyValue('--accent-purple').trim() || '#8b5cf6';
+            const chartBlue = getCSSVar('--chart-blue') || '#6366f1';
+            const chartGreen = getCSSVar('--chart-green') || '#10b981';
+            const chartOrange = getCSSVar('--chart-orange') || '#f59e0b';
+            const chartRed = getCSSVar('--chart-red') || '#ef4444';
+            const accentPurple = getCSSVar('--accent-purple') || '#8b5cf6';
             
             if (perc > 100) return { bg: `linear-gradient(90deg, ${chartBlue}, ${accentPurple})`, shadow: '0 0 12px var(--brand-blue-glow)', iconBg: chartBlue, iconSvg: '<svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>', motive: 'Performance extraordinária!', motiveColor: chartBlue };
             if (perc >= 100) return { bg: `linear-gradient(90deg, ${chartGreen}, var(--accent-green-dark))`, shadow: '0 0 8px rgba(16,185,129,0.3)', iconBg: chartGreen, iconSvg: '<svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>', motive: 'Meta batida!', motiveColor: chartGreen };
@@ -1579,6 +1584,14 @@ function selectFilter(filter) {
             
             const orcadosCount = total - fechados;
             
+            // Cores dos gráficos via variáveis CSS (suporta dark mode)
+            const chartBlue = getCSSVar('--chart-blue') || '#6366f1';
+            const chartGreen = getCSSVar('--chart-green') || '#10b981';
+            const tooltipBg = getCSSVar('--tooltip-bg') || '#1e293b';
+            const tooltipText = getCSSVar('--tooltip-text') || '#f1f5f9';
+            const tooltipBody = getCSSVar('--tooltip-body') || '#cbd5e1';
+            const borderColor = '#fff';
+            
             if(donutChartInstance) { donutChartInstance.destroy(); }
             donutChartInstance = new Chart(ctxDonut, {
                 type: 'doughnut',
@@ -1586,11 +1599,8 @@ function selectFilter(filter) {
                     labels: ['Orçados', 'Fechados'],
                     datasets: [{
                         data: [orcadosCount, fechados],
-                        backgroundColor: [
-                            getComputedStyle(document.body).getPropertyValue('--chart-blue').trim() || '#3b82f6',
-                            getComputedStyle(document.body).getPropertyValue('--chart-green').trim() || '#10b981'
-                        ],
-                        borderColor: '#fff',
+                        backgroundColor: [chartBlue, chartGreen],
+                        borderColor: borderColor,
                         borderWidth: 3,
                         borderRadius: 6,
                         hoverBorderWidth: 4
@@ -1601,9 +1611,9 @@ function selectFilter(filter) {
                     plugins: {
                         legend: { display: false },
                         tooltip: {
-                            backgroundColor: getComputedStyle(document.body).getPropertyValue('--tooltip-bg').trim() || '#1e293b',
-                            titleColor: getComputedStyle(document.body).getPropertyValue('--tooltip-text').trim() || '#f1f5f9',
-                            bodyColor: getComputedStyle(document.body).getPropertyValue('--tooltip-body').trim() || '#cbd5e1',
+                            backgroundColor: tooltipBg,
+                            titleColor: tooltipText,
+                            bodyColor: tooltipBody,
                             padding: 12, cornerRadius: 8,
                             callbacks: {
                                 label: function(ctx) {
@@ -1627,7 +1637,7 @@ function selectFilter(filter) {
                         datasets: [{
                             label: 'Vendido',
                             data: historicoFaturamento.map(h => h.valor),
-                            backgroundColor: getComputedStyle(document.body).getPropertyValue('--chart-green').trim() || '#10b981',
+                            backgroundColor: chartGreen,
                             borderRadius: 6, borderSkipped: false, maxBarThickness: 40
                         }]
                     },
@@ -1636,9 +1646,9 @@ function selectFilter(filter) {
                         plugins: {
                             legend: { display: false },
                             tooltip: {
-                                backgroundColor: getComputedStyle(document.body).getPropertyValue('--tooltip-bg').trim() || '#1e293b',
-                                titleColor: getComputedStyle(document.body).getPropertyValue('--tooltip-text').trim() || '#f1f5f9',
-                                bodyColor: getComputedStyle(document.body).getPropertyValue('--tooltip-body').trim() || '#cbd5e1',
+                                backgroundColor: tooltipBg,
+                                titleColor: tooltipText,
+                                bodyColor: tooltipBody,
                                 padding: 10, cornerRadius: 6,
                                 callbacks: {
                                     label: function(ctx) { return 'R$ ' + ctx.raw.toLocaleString('pt-BR', { minimumFractionDigits: 2 }); }
@@ -3040,7 +3050,7 @@ function selectFilter(filter) {
                     </button>
                     <div style="flex:1; min-width:0; display:flex; align-items:center; gap:12px; overflow:hidden;">
                         <div style="font-size:1.25rem; font-weight:800; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1; min-width:0;">${escapeHtml(orc.clientes?.nome_cliente || 'Cliente')}</div>
-                        ${orc.protocolo ? `<span style="font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:700; color:var(--brand-blue-dark); background:#eff6ff; border:1px solid #bfdbfe; padding:2px 9px; border-radius:5px; white-space:nowrap; flex-shrink:0;">${escapeHtml(orc.protocolo)}</span>` : ''}
+                        ${orc.protocolo ? `<span class="protocolo-tag">${escapeHtml(orc.protocolo)}</span>` : ''}
                     </div>
                 </header>
 
@@ -3361,7 +3371,7 @@ function selectFilter(filter) {
             const qtdExtra = produtos.length - 1;
             const tagPlural = qtdExtra > 1 ? 'itens' : 'item';
             
-            return `${primeiroProduto} <br><span style="display:inline-block; margin-top:4px; font-size:10px; font-weight:700; color:var(--brand-blue-dark); background:#eff6ff; border: 1px solid #bfdbfe; padding:2px 8px; border-radius:12px;">+ ${qtdExtra} ${tagPlural}</span>`;
+            return `${primeiroProduto} <br><span class="qtd-extra-tag">+ ${qtdExtra} ${tagPlural}</span>`;
         }
 
 
@@ -3414,9 +3424,11 @@ function selectFilter(filter) {
         
             if (produtoExiste && produtoDigitado !== '') {
                 checkSpan.style.display = 'inline';
-                input.style.borderColor = '#10b981';
+                input.classList.add('is-success');
+                input.style.borderColor = 'var(--color-success)';
             } else {
                 checkSpan.style.display = 'none';
+                input.classList.remove('is-success');
                 input.style.borderColor = 'var(--border-light)';
             }
         }
@@ -3513,10 +3525,10 @@ function selectFilter(filter) {
                             <h2 class="section-title">Dados do Cliente</h2>
                         </div>
                         
-                        <div class="form-group"><label for="modNome">Nome ou Razão Social *</label><input type="text" id="modNome" class="form-input" placeholder="Ex: João da Silva" onblur="validateField('modNome','errNome')"><div class="field-error" id="errNome" style="color:#ef4444; font-size:12px; margin-top:4px;"></div></div>
+                        <div class="form-group"><label for="modNome">Nome ou Razão Social *</label><input type="text" id="modNome" class="form-input" placeholder="Ex: João da Silva" onblur="validateField('modNome','errNome')"><div class="field-error" id="errNome"></div></div>
                         
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                            <div class="form-group"><label for="modCpf">CPF / CNPJ</label><input type="text" id="modCpf" class="form-input font-data" placeholder="Opcional" onblur="validarCPF()"><div class="field-error" id="errCpf" style="color:#ef4444; font-size:12px; margin-top:4px;"></div></div>                            <div class="form-group"><label for="modWhats">WhatsApp *</label><input type="tel" id="modWhats" class="form-input font-data" placeholder="(00) 00000-0000" onblur="validateField('modWhats','errWhats')"><div class="field-error" id="errWhats" style="color:#ef4444; font-size:12px; margin-top:4px;"></div></div>
+                            <div class="form-group"><label for="modCpf">CPF / CNPJ</label><input type="text" id="modCpf" class="form-input font-data" placeholder="Opcional" onblur="validarCPF()"><div class="field-error" id="errCpf"></div></div>                            <div class="form-group"><label for="modWhats">WhatsApp *</label><input type="tel" id="modWhats" class="form-input font-data" placeholder="(00) 00000-0000" onblur="validateField('modWhats','errWhats')"><div class="field-error" id="errWhats"></div></div>
                         </div>
 
                         <div class="form-group"><label for="modEmail">E-mail</label><input type="email" id="modEmail" class="form-input" placeholder="cliente@email.com"></div>
@@ -3541,7 +3553,7 @@ function selectFilter(filter) {
                         <button type="button" class="btn-add-item-premium" onclick="adicionarProdutoRow()">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Adicionar linha de produto
                         </button>
-                        <div class="field-error" id="errItens" style="text-align: center; color:#ef4444; font-size:12px; margin-top:8px;"></div>
+                        <div class="field-error" id="errItens"></div>
                         
                         <div class="total-modal-box">
                             <span>Total</span>
@@ -3556,13 +3568,13 @@ function selectFilter(filter) {
                             <h2 class="section-title">Agendar Contato</h2>
                         </div>
                         
-                        <div class="form-group"><label for="modDataOrcamento">Data do Orçamento</label><input type="date" id="modDataOrcamento" class="form-input font-data" value="${hoje}" onblur="validateField('modDataOrcamento','errDataOrc')"><div class="field-error" id="errDataOrc" style="color:#ef4444; font-size:12px; margin-top:4px;"></div></div>
+                        <div class="form-group"><label for="modDataOrcamento">Data do Orçamento</label><input type="date" id="modDataOrcamento" class="form-input font-data" value="${hoje}" onblur="validateField('modDataOrcamento','errDataOrc')"><div class="field-error" id="errDataOrc"></div></div>
                         
                         <div class="form-group"><label for="modMotivoContato">Tipo de Contato</label><select id="modMotivoContato" class="form-input"><option value="">Selecionar...</option><optgroup label="Vendas"><option value="Apresentação de Campanha/Promoção">Apresentação de Campanha/Promoção</option><option value="Reativação de Contato Antigo">Reativação de Contato Antigo</option><option value="Acompanhamento de Orçamento">Acompanhamento de Orçamento</option><option value="Virada de Tabela">Virada de Tabela</option><option value="Quebra de Objeção">Quebra de Objeção</option><option value="Cross-sell (Venda Cruzada)">Cross-sell (Venda Cruzada)</option></optgroup><optgroup label="Pós-Venda"><option value="Alinhamento Logístico">Alinhamento Logístico</option><option value="Acompanhamento de Adaptação (Pós-Entrega)">Acompanhamento de Adaptação (Pós-Entrega)</option><option value="Assistência Técnica">Assistência Técnica</option></optgroup></select></div>
                         
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                            <div class="form-group"><label for="modDataContato">Data</label><input type="date" id="modDataContato" class="form-input font-data" onblur="validateField('modDataContato','errDataContato')"><div class="field-error" id="errDataContato" style="color:#ef4444; font-size:12px; margin-top:4px;"></div></div>
-                            <div class="form-group"><label for="modHoraContato">Horário *</label><input type="time" id="modHoraContato" class="form-input font-data" onblur="validateField('modHoraContato','errHoraContato')"><div class="field-error" id="errHoraContato" style="color:#ef4444; font-size:12px; margin-top:4px;"></div></div>
+                            <div class="form-group"><label for="modDataContato">Data</label><input type="date" id="modDataContato" class="form-input font-data" onblur="validateField('modDataContato','errDataContato')"><div class="field-error" id="errDataContato"></div></div>
+                            <div class="form-group"><label for="modHoraContato">Horário *</label><input type="time" id="modHoraContato" class="form-input font-data" onblur="validateField('modHoraContato','errHoraContato')"><div class="field-error" id="errHoraContato"></div></div>
                         </div>
 
                         <div class="footer-actions">
@@ -3783,12 +3795,8 @@ function selectFilter(filter) {
             if (errModo) errModo.textContent = '';
 
             // Highlight selecionado
-            btnEntrega.style.borderColor = modo === 'entrega' ? 'var(--brand-blue)' : 'var(--border-light)';
-            btnEntrega.style.background = modo === 'entrega' ? '#eff6ff' : 'var(--card-bg)';
-            btnEntrega.style.color = modo === 'entrega' ? 'var(--brand-blue-dark)' : 'var(--text-primary)';
-            btnRetirada.style.borderColor = modo === 'retirada' ? 'var(--accent-green)' : 'var(--border-light)';
-            btnRetirada.style.background = modo === 'retirada' ? '#f0fdf4' : 'var(--card-bg)';
-            btnRetirada.style.color = modo === 'retirada' ? 'var(--accent-green-dark)' : 'var(--text-primary)';
+            btnEntrega.className = 'btn-fechamento-opcao ' + (modo === 'entrega' ? 'is-selected-entrega' : '');
+            btnRetirada.className = 'btn-fechamento-opcao ' + (modo === 'retirada' ? 'is-selected-retirada' : '');
 
             if (modo === 'entrega') {
                 step2.style.display = 'block';
@@ -3806,8 +3814,8 @@ function selectFilter(filter) {
             // Reset visual
             const btnEntrega = document.getElementById('btnOpcaoEntrega');
             const btnRetirada = document.getElementById('btnOpcaoRetirada');
-            if (btnEntrega) { btnEntrega.style.borderColor = 'var(--border-light)'; btnEntrega.style.background = 'var(--card-bg)'; btnEntrega.style.color = 'var(--text-primary)'; }
-            if (btnRetirada) { btnRetirada.style.borderColor = 'var(--border-light)'; btnRetirada.style.background = 'var(--card-bg)'; btnRetirada.style.color = 'var(--text-primary)'; }
+            if (btnEntrega) btnEntrega.className = 'btn-fechamento-opcao';
+            if (btnRetirada) btnRetirada.className = 'btn-fechamento-opcao';
 
             const step2 = document.getElementById('fechamentoStep2');
             if (step2) step2.style.display = 'none';
@@ -3929,8 +3937,19 @@ function selectFilter(filter) {
             const tipoErro = document.getElementById('agendarTipoErro');
             
             if (!data) return showToast('Selecione uma data para o agendamento.', 'error');
-            if (!tipo) { tipoErro.textContent = 'Selecione o tipo de contato.'; document.getElementById('agendarTipo').style.borderColor = '#ef4444'; return; }
-            else { tipoErro.textContent = ''; document.getElementById('agendarTipo').style.borderColor = 'var(--border-light)'; }
+            if (!tipo) { 
+                tipoErro.textContent = 'Selecione o tipo de contato.'; 
+                const inputTipo = document.getElementById('agendarTipo');
+                inputTipo.style.borderColor = 'var(--color-danger)';
+                inputTipo.classList.add('is-error');
+                return; 
+            }
+            else { 
+                tipoErro.textContent = ''; 
+                const inputTipo = document.getElementById('agendarTipo');
+                inputTipo.style.borderColor = 'var(--border-light)';
+                inputTipo.classList.remove('is-error');
+            }
             
             const btn = document.getElementById('btnConfirmarAgendamento');
             btn.querySelector('.btn-spinner').style.display = 'inline-block'; btn.querySelector('.btn-text').textContent = 'Salvando...'; btn.disabled = true;
@@ -4263,11 +4282,27 @@ function selectFilter(filter) {
                 board.appendChild(boardDiv);
 
             } catch (e) {
-                board.innerHTML = `<div style="padding:24px; text-align:center; color:#ef4444;">Erro ao carregar pipeline: ${e.message}</div>`;
+                board.innerHTML = `<div class="pipeline-error-msg">Erro ao carregar pipeline: ${escapeHtml(e.message)}</div>`;
             }
         }
 
-        function validateField(idInput, idErro) { const el = document.getElementById(idInput); const err = document.getElementById(idErro); if (!el || !err) return; const val = el.value.trim(); if (!val) { err.textContent = 'Obrigatório'; el.style.borderColor = '#ef4444'; return false; } else { err.textContent = ''; el.style.borderColor = 'var(--border-light)'; return true; } }
+        function validateField(idInput, idErro) { 
+            const el = document.getElementById(idInput); 
+            const err = document.getElementById(idErro); 
+            if (!el || !err) return false; 
+            const val = el.value.trim(); 
+            if (!val) { 
+                err.textContent = 'Obrigatório'; 
+                el.style.borderColor = 'var(--color-danger)';
+                el.classList.add('is-error');
+                return false; 
+            } else { 
+                err.textContent = ''; 
+                el.style.borderColor = 'var(--border-light)';
+                el.classList.remove('is-error');
+                return true; 
+            } 
+        }
 
         function renderAdminInicio(main) {
             const isGerente = currentUser.perfil === 'Gerente' || currentUser.perfil === 'Administrador' || currentUser.perfil === 'Admin';
@@ -5174,9 +5209,9 @@ function renderRadarSignals(sellerFilter) {
         container.innerHTML = '';
         
         const configMap = {
-            alert: { bg: '#fee2e2', color: '#b91c1c', label: 'Alerta' },
-            tip: { bg: '#dbeafe', color: '#1d4ed8', label: 'Dica' },
-            suggestion: { bg: '#dcfce7', color: '#15803d', label: 'Sugestão' }
+            alert: { badgeClass: 'badge-alert', cardClass: 'alert', label: 'Alerta' },
+            tip: { badgeClass: 'badge-tip', cardClass: 'tip', label: 'Dica' },
+            suggestion: { badgeClass: 'badge-suggestion', cardClass: 'suggestion', label: 'Sugestão' }
         };
 
         filtered.forEach(signal => {
@@ -5184,9 +5219,9 @@ function renderRadarSignals(sellerFilter) {
             
             // Renderização do Card com variáveis CSS nativas e design aprimorado
             const cardHtml = `
-                <div class="signal-card" id="radar-card-${signal.id}" style="background: var(--card-bg); border: 1px solid var(--border-light); border-left: 4px solid ${conf.color}; border-radius: var(--radius-md); padding: 20px; display: flex; flex-direction: column; gap: 14px; transition: opacity 0.3s ease, transform 0.3s ease;">
+                <div class="signal-card ${conf.cardClass}" id="radar-card-${signal.id}">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span style="background: ${conf.bg}; color: ${conf.color}; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">${conf.label}</span>
+                        <span class="${conf.badgeClass}">${conf.label}</span>
                         <span style="font-size: 12px; color: var(--text-muted);">${signal.time}</span>
                     </div>
                     
