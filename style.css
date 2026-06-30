@@ -101,9 +101,55 @@
             --status-info-bg: #eff6ff;
             --status-info-border: #bfdbfe;
             --status-info-text: #1e40af;
+            --status-primary-bg: #eff6ff;
+            --status-primary-text: #1e40af;
+
+            /* Signal Badge Colors (Radar) */
+            --signal-alert-bg: #fee2e2;
+            --signal-alert-text: #b91c1c;
+            --signal-tip-bg: #dbeafe;
+            --signal-tip-text: #1d4ed8;
+            --signal-suggestion-bg: #dcfce7;
+            --signal-suggestion-text: #15803d;
+
+            /* Status tag semantic variables */
+            --status-danger-light: var(--status-error-bg);
+            --status-danger-text: var(--status-error-text);
+            --status-success-light: var(--status-success-bg);
+            --status-success-text: var(--status-success-text);
+            --status-warning-light: var(--status-warning-bg);
+            --status-warning-text: var(--status-warning-text);
+            --status-info-light: var(--status-info-bg);
+            --status-info-text: var(--status-info-text);
+            --status-primary-light: var(--status-primary-bg);
+            --status-primary-text: var(--status-primary-text);
 
             /* New comment accent */
             --new-comment-accent: var(--brand-blue);
+
+            /* Variáveis semânticas para Dark Mode */
+            --bg-surface: var(--card-bg);
+            --bg-surface-secondary: var(--surface-2);
+            --bg-overlay: rgba(0, 0, 0, 0.5);
+            --text-on-accent: #ffffff;
+            --color-primary: var(--brand-blue);
+            --color-primary-light: #eff6ff;
+            --color-success: var(--accent-green);
+            --color-success-light: #d1fae5;
+            --color-warning: var(--accent-orange);
+            --color-warning-light: #fef3c7;
+            --color-danger: #ef4444;
+            --color-danger-light: #fee2e2;
+            --color-info: #6366f1;
+            --status-novo: #6366f1;
+            --status-contato: #3b82f6;
+            --status-proposta: #f59e0b;
+            --status-fechado: #10b981;
+            --status-perdido: #6b7280;
+            --border-color: var(--border-light);
+            --border-radius-md: var(--radius-md);
+            --border-radius-lg: var(--radius-lg);
+            --shadow-card: var(--shadow-sm);
         }
 
         /* ────────────────────────────────────────────────────────
@@ -157,10 +203,29 @@
             --status-info-bg: #1e3a5f;
             --status-info-border: #1e40af;
             --status-info-text: #93c5fd;
+            --status-primary-bg: #1e3a5f;
+            --status-primary-text: #93c5fd;
+
+            /* Signal Badge Colors (Radar) - dark mode */
+            --signal-alert-bg: #450a0a;
+            --signal-alert-text: #fca5a5;
+            --signal-tip-bg: #1e3a5f;
+            --signal-tip-text: #93c5fd;
+            --signal-suggestion-bg: #064e3b;
+            --signal-suggestion-text: #6ee7b7;
 
             --danger-light-bg: #2d1515;
             --danger-border: #7f1d1d;
             --danger-text: #fca5a5;
+
+            /* Variáveis semânticas para Dark Mode */
+            --bg-surface: var(--card-bg);
+            --bg-surface-secondary: var(--surface-2);
+            --color-primary-light: rgba(99,102,241,0.15);
+            --color-success-light: rgba(16,185,129,0.15);
+            --color-warning-light: rgba(245,158,11,0.15);
+            --color-danger-light: rgba(239,68,68,0.15);
+            --border-color: var(--border-light);
         }
 
         /* ────────────────────────────────────────────────────────
@@ -233,13 +298,13 @@
         }
         .status-tag.contato-inicial   { background: #e0f2fe; color: #0369a1; }
         .status-tag.negociacao-valores { background: #fef9c3; color: #854d0e; }
-        .status-tag.aguardando-decisao { background: #ffedd5; color: #c2410c; }
+        .status-tag.aguardando-decisao { background: var(--status-warning-light); color: var(--status-warning-text); }
         .status-tag.vendido,
-        .status-tag.fechado            { background: #d1fae5; color: #065f46; }
+        .status-tag.fechado            { background: var(--status-success-light); color: var(--status-success-text); }
         .status-tag.perdido,
-        .status-tag.declinado          { background: #fee2e2; color: #991b1b; }
-        .status-tag.pos-venda          { background: #ede9fe; color: #5b21b6; }
-        .status-tag.em-atendimento     { background: #dbeafe; color: #1e40af; }
+        .status-tag.declinado          { background: var(--status-danger-light); color: var(--status-danger-text); }
+        .status-tag.pos-venda          { background: var(--status-info-light); color: var(--status-info-text); }
+        .status-tag.em-atendimento     { background: var(--status-primary-light); color: var(--status-primary-text); }
 
         body.dark .status-tag.contato-inicial   { background: rgba(3,105,161,0.2);  color: #7dd3fc; }
         body.dark .status-tag.negociacao-valores { background: rgba(133,77,14,0.2);  color: #fde047; }
@@ -356,6 +421,33 @@
             border-radius: var(--radius-xs);
             flex-shrink: 0;
             white-space: nowrap;
+        }
+
+        /* Tag de protocolo destacada (detalhes do orçamento) */
+        .protocolo-tag {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--brand-blue-dark);
+            background: var(--color-primary-light);
+            border: 1px solid var(--status-info-border);
+            padding: 2px 9px;
+            border-radius: 5px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        /* Tag de quantidade extra de produtos */
+        .qtd-extra-tag {
+            display: inline-block;
+            margin-top: 4px;
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--brand-blue-dark);
+            background: var(--color-primary-light);
+            border: 1px solid var(--status-info-border);
+            padding: 2px 8px;
+            border-radius: 12px;
         }
 
         /* Produto: UMA linha, obrigatoriamente com reticências */
@@ -1532,7 +1624,7 @@
         .btn-cancelar-modal:hover { background: var(--surface-3); border-color: var(--border-medium); }
         body.dark .btn-cancelar-modal { background: var(--surface-3); color: #a1a1aa; }
 
-        .field-error { font-size: var(--font-xs); color: #ef4444; margin-top: 3px; min-height: 17px; font-weight: 500; }
+        .field-error { font-size: var(--font-xs); color: var(--color-danger); margin-top: 3px; min-height: 17px; font-weight: 500; }
 
         /* Listas de produto nos modais antigos */
         .produtos-list {
@@ -1892,7 +1984,50 @@
         /* =============================================================================
            MÓDULO MEU RADAR
            ============================================================================= */
-
+        .radar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 32px;
+            background: #fff;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            margin: 32px;
+        }
+        .summary-card {
+            background: #fff;
+            padding: 24px;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .summary-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+        .summary-icon.alerts {
+            background: var(--signal-alert-bg);
+            color: var(--signal-alert-text);
+        }
+        .summary-icon.tips {
+            background: var(--signal-tip-bg);
+            color: var(--signal-tip-text);
+        }
+        .summary-icon.suggestions {
+            background: var(--signal-suggestion-bg);
+            color: var(--signal-suggestion-text);
+        }
         /* O .radar-header legado não é mais gerado pelo JS — mantido vazio por compatibilidade */
         .radar-header { display: none; }
 
@@ -1910,6 +2045,42 @@
         /* Card principal — espelha exatamente .kpi-card / .chart-card */
         .signal-card {
             background: var(--card-bg);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            overflow: hidden;
+            border: 1px solid var(--border-light);
+            border-left-width: 4px;
+            padding: 20px;
+            flex-direction: column;
+            gap: 14px;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        .signal-card.alert {
+            border-left-color: var(--signal-alert-text);
+        }
+        .signal-card.tip {
+            border-left-color: var(--signal-tip-text);
+        }
+        .signal-card.suggestion {
+            border-left-color: var(--signal-suggestion-text);
+        }
+        .priority-stripe {
+            width: 6px;
+            flex-shrink: 0;
+        }
+        .priority-high {
+            background-color: #ef4444;
+        }
+        .priority-medium {
+            background-color: #f59e0b;
+        }
+        .priority-low {
+            background-color: #3b82f6;
+        }
+        .card-body {
+            padding: 24px;
+            flex-grow: 1;
             border: 1px solid var(--border-light);
             border-radius: var(--radius-md);
             box-shadow: var(--shadow-sm);
@@ -1929,6 +2100,25 @@
         .badge {
             display: inline-flex;
             align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .badge-alert {
+            background: var(--signal-alert-bg);
+            color: var(--signal-alert-text);
+        }
+        .badge-tip {
+            background: var(--signal-tip-bg);
+            color: var(--signal-tip-text);
+        }
+        .badge-suggestion {
+            background: var(--signal-suggestion-bg);
+            color: var(--signal-suggestion-text);
             gap: 5px;
             padding: 2px 9px;
             border-radius: var(--radius-full);
