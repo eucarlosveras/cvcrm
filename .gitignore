@@ -1,23 +1,25 @@
-```
+```gitignore
 # Compiled and build artifacts
 *.pyc
 __pycache__/
 *.o
 *.obj
-dist/
-build/
-target/
+*.exe
+*.dll
+*.so
+*.a
+*.out
 
 # Dependencies
 .venv/
 venv/
 node_modules/
+dist/
+build/
+target/
+.gradle/
 .mypy_cache/
 .pytest_cache/
-.gradle/
-
-# Dependencies
-node_modules/
 
 # Logs and temp files
 *.log
@@ -38,7 +40,7 @@ node_modules/
 .DS_Store
 Thumbs.db
 
-# Coverage
+# Coverage reports
 coverage/
 htmlcov/
 .coverage
@@ -66,3 +68,4 @@ htmlcov/
 *.tar.bz2
 *.tar.xz
 *.tar.zst
+```
