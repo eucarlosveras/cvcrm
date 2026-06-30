@@ -78,14 +78,29 @@
             /* Charts */
             --chart-blue: #6366f1;
             --chart-green: #10b981;
+            --chart-orange: #f59e0b;
+            --chart-red: #ef4444;
+            --chart-blue-light: #eff6ff;
+            --chart-green-light: #f0fdf4;
+            --chart-yellow-light: #fefce8;
+            --chart-red-light: #fef2f2;
             --tooltip-bg: #18181b;
             --tooltip-text: #fafafa;
             --tooltip-body: #a1a1aa;
 
-            /* Danger */
-            --danger-light-bg: #fef2f2;
-            --danger-border: #fecaca;
-            --danger-text: #b91c1c;
+            /* Status & Feedback Colors */
+            --status-error-bg: #fef2f2;
+            --status-error-border: #fecaca;
+            --status-error-text: #b91c1c;
+            --status-success-bg: #f0fdf4;
+            --status-success-border: #bbf7d0;
+            --status-success-text: #166534;
+            --status-warning-bg: #fefce8;
+            --status-warning-border: #fde68a;
+            --status-warning-text: #854d0e;
+            --status-info-bg: #eff6ff;
+            --status-info-border: #bfdbfe;
+            --status-info-text: #1e40af;
 
             /* New comment accent */
             --new-comment-accent: var(--brand-blue);
@@ -122,6 +137,26 @@
             --shadow-md: 0 4px 12px rgba(0,0,0,0.35), 0 1px 3px rgba(0,0,0,0.25);
             --shadow-lg: 0 16px 40px rgba(0,0,0,0.50), 0 4px 12px rgba(0,0,0,0.35);
             --shadow-modal: 0 24px 64px rgba(0,0,0,0.70), 0 8px 24px rgba(0,0,0,0.45);
+
+            /* Chart colors - dark mode variants */
+            --chart-blue-light: rgba(99,102,241,0.15);
+            --chart-green-light: rgba(16,185,129,0.15);
+            --chart-yellow-light: rgba(245,158,11,0.15);
+            --chart-red-light: rgba(239,68,68,0.15);
+
+            /* Status & Feedback Colors - dark mode */
+            --status-error-bg: #450a0a;
+            --status-error-border: #7f1d1d;
+            --status-error-text: #fca5a5;
+            --status-success-bg: #064e3b;
+            --status-success-border: #059669;
+            --status-success-text: #6ee7b7;
+            --status-warning-bg: #422006;
+            --status-warning-border: #b45309;
+            --status-warning-text: #fde047;
+            --status-info-bg: #1e3a5f;
+            --status-info-border: #1e40af;
+            --status-info-text: #93c5fd;
 
             --danger-light-bg: #2d1515;
             --danger-border: #7f1d1d;

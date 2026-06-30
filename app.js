@@ -227,7 +227,7 @@ const SUPABASE_URL = 'https://blumqkxwasdbyozdvrsp.supabase.co';
                 document.getElementById('loginOverlay').classList.add('hidden');
                 initAppAfterLogin();
             } catch (err) {
-                msg.innerHTML = `<span style="color: #ef4444; font-size: 13px; font-weight: 600;">${err.message}</span>`;
+                msg.innerHTML = `<span class="error-message">${escapeHtml(err.message)}</span>`;
             } finally {
                 btn.classList.remove('loading');
                 btn.disabled = false;
@@ -599,7 +599,7 @@ const SUPABASE_URL = 'https://blumqkxwasdbyozdvrsp.supabase.co';
                 fragPag.appendChild(btnProximo);
                 pagination.innerHTML = '';
                 pagination.appendChild(fragPag);
-            } catch (error) { tbody.innerHTML = `<tr><td colspan="${isGerente ? '6' : '5'}" style="text-align:center; padding:24px; color:#ef4444;">Erro ao carregar dados da tabela.</td></tr>`; }
+            } catch (error) { tbody.innerHTML = `<tr><td colspan="${isGerente ? '6' : '5'}" class="table-error-cell">Erro ao carregar dados da tabela.</td></tr>`; }
         }
 
         async function exportarCSV() {
@@ -879,11 +879,17 @@ const SUPABASE_URL = 'https://blumqkxwasdbyozdvrsp.supabase.co';
         }
 
         function getGamifiedColors(perc) {
-            if (perc > 100) return { bg: 'linear-gradient(90deg, #3b82f6, #8b5cf6)', shadow: '0 0 12px rgba(139,92,246,0.5)', iconBg: '#3b82f6', iconSvg: '<svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>', motive: 'Performance extraordinária!', motiveColor: '#3b82f6' };
-            if (perc >= 100) return { bg: 'linear-gradient(90deg, #10b981, #059669)', shadow: '0 0 8px rgba(16,185,129,0.3)', iconBg: '#10b981', iconSvg: '<svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>', motive: 'Meta batida!', motiveColor: '#10b981' };
-            if (perc >= 80) return { bg: 'linear-gradient(90deg, #10b981, #059669)', shadow: '0 0 6px rgba(16,185,129,0.2)', iconBg: '#10b981', iconSvg: '<svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>', motive: 'Quase lá!', motiveColor: '#10b981' };
-            if (perc >= 50) return { bg: 'linear-gradient(90deg, #f59e0b, #eab308)', shadow: '0 0 6px rgba(245,158,11,0.25)', iconBg: '#f59e0b', iconSvg: '<svg viewBox="0 0 24 24"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>', motive: 'Em tração, continue!', motiveColor: '#f59e0b' };
-            return { bg: 'linear-gradient(90deg, #ef4444, #f97316)', shadow: '0 0 8px rgba(239,68,68,0.3)', iconBg: '#ef4444', iconSvg: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>', motive: 'Hora de acelerar!', motiveColor: '#ef4444' };
+            const chartBlue = getComputedStyle(document.body).getPropertyValue('--chart-blue').trim() || '#6366f1';
+            const chartGreen = getComputedStyle(document.body).getPropertyValue('--chart-green').trim() || '#10b981';
+            const chartOrange = getComputedStyle(document.body).getPropertyValue('--chart-orange').trim() || '#f59e0b';
+            const chartRed = getComputedStyle(document.body).getPropertyValue('--chart-red').trim() || '#ef4444';
+            const accentPurple = getComputedStyle(document.body).getPropertyValue('--accent-purple').trim() || '#8b5cf6';
+            
+            if (perc > 100) return { bg: `linear-gradient(90deg, ${chartBlue}, ${accentPurple})`, shadow: '0 0 12px var(--brand-blue-glow)', iconBg: chartBlue, iconSvg: '<svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>', motive: 'Performance extraordinária!', motiveColor: chartBlue };
+            if (perc >= 100) return { bg: `linear-gradient(90deg, ${chartGreen}, var(--accent-green-dark))`, shadow: '0 0 8px rgba(16,185,129,0.3)', iconBg: chartGreen, iconSvg: '<svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>', motive: 'Meta batida!', motiveColor: chartGreen };
+            if (perc >= 80) return { bg: `linear-gradient(90deg, ${chartGreen}, var(--accent-green-dark))`, shadow: '0 0 6px rgba(16,185,129,0.2)', iconBg: chartGreen, iconSvg: '<svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>', motive: 'Quase lá!', motiveColor: chartGreen };
+            if (perc >= 50) return { bg: `linear-gradient(90deg, ${chartOrange}, #eab308)`, shadow: '0 0 6px rgba(245,158,11,0.25)', iconBg: chartOrange, iconSvg: '<svg viewBox="0 0 24 24"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>', motive: 'Em tração, continue!', motiveColor: chartOrange };
+            return { bg: `linear-gradient(90deg, ${chartRed}, #f97316)`, shadow: '0 0 8px rgba(239,68,68,0.3)', iconBg: chartRed, iconSvg: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>', motive: 'Hora de acelerar!', motiveColor: chartRed };
         }
 
         function renderComentariosHtml(comentarios, clienteId) {
@@ -1094,7 +1100,7 @@ const SUPABASE_URL = 'https://blumqkxwasdbyozdvrsp.supabase.co';
 
             if (!texto) {
                 msg.textContent = 'Digite um comentário.';
-                msg.style.color = '#ef4444';
+                msg.className = 'field-error';
                 return;
             }
 
@@ -1154,7 +1160,8 @@ const SUPABASE_URL = 'https://blumqkxwasdbyozdvrsp.supabase.co';
                 } catch (_) { /* se falhar, mantém o estado anterior */ }
                 renderDetalhesClientePage();
             } catch (e) {
-                msg.textContent = 'Erro ao salvar: ' + e.message; msg.style.color = '#ef4444';
+                msg.textContent = 'Erro ao salvar: ' + e.message;
+                msg.className = 'field-error';
             } finally {
                 isSavingComment = false;
                 btn.querySelector('.btn-spinner').style.display = 'none';
@@ -1179,7 +1186,7 @@ const SUPABASE_URL = 'https://blumqkxwasdbyozdvrsp.supabase.co';
                 }
             } catch (e) {
                 if (loader) {
-                    loader.textContent = 'Erro ao salvar'; loader.style.color = '#ef4444'; loader.classList.add('visible');
+                    loader.textContent = 'Erro ao salvar'; loader.className = 'field-error visible';
                     setTimeout(() => loader.classList.remove('visible'), 3000);
                 }
             }
@@ -1325,7 +1332,7 @@ const SUPABASE_URL = 'https://blumqkxwasdbyozdvrsp.supabase.co';
 
             if (!valido || itens.length === 0) {
                 msgEl.textContent = 'Selecione um produto em todas as linhas antes de salvar.';
-                msgEl.style.color = '#ef4444';
+                msgEl.className = 'field-error';
                 return;
             }
 
@@ -1394,7 +1401,7 @@ const SUPABASE_URL = 'https://blumqkxwasdbyozdvrsp.supabase.co';
 
             } catch (e) {
                 msgEl.textContent = 'Erro ao salvar: ' + (e.message || e);
-                msgEl.style.color = '#ef4444';
+                msgEl.className = 'field-error';
             } finally {
                 btn.querySelector('.btn-spinner').style.display = 'none';
                 btn.querySelector('.btn-text').textContent = 'Salvar Alteração';
@@ -1880,12 +1887,12 @@ function selectFilter(filter) {
                             return { nome: v.nome, vendido, meta, pct };
                         }).sort((a, b) => b.vendido - a.vendido);
 
-                        // cores da barra por atingimento
+                        // cores da barra por atingimento - usando variáveis CSS
                         const barColor = pct => {
-                            if (pct >= 100) return 'linear-gradient(90deg,#059669,#10b981)';
-                            if (pct >= 70)  return 'linear-gradient(90deg,#2563eb,#6366f1)';
-                            if (pct >= 40)  return 'linear-gradient(90deg,#f59e0b,#fbbf24)';
-                            return 'linear-gradient(90deg,#ef4444,#f87171)';
+                            if (pct >= 100) return 'linear-gradient(90deg, var(--accent-green-dark), var(--chart-green))';
+                            if (pct >= 70)  return 'linear-gradient(90deg, #2563eb, var(--brand-blue))';
+                            if (pct >= 40)  return 'linear-gradient(90deg, var(--accent-orange), #fbbf24)';
+                            return 'linear-gradient(90deg, var(--chart-red), #f87171)';
                         };
                         const posClass = i => i === 0 ? 'pos-1' : i === 1 ? 'pos-2' : i === 2 ? 'pos-3' : '';
                         const posLabel = i => i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i+1}`;
@@ -1934,7 +1941,7 @@ function selectFilter(filter) {
                 <span style="flex:1; font-size: 13px; font-weight: 500; text-transform: capitalize; padding-right: 8px; line-height: 1.4;" title="${escapeHtml(p.nome)}">
                     ${escapeHtml(nomeLimpo)}
                 </span>
-                <span style="font-size:11px; font-weight:700; color:var(--brand-blue-dark); background:#eff6ff; border: 1px solid #bfdbfe; padding:2px 8px; border-radius:12px; flex-shrink: 0;">
+                <span class="top5-count-badge">
                     ${p.count} unid.
                 </span>
             </li>
@@ -2327,7 +2334,7 @@ function selectFilter(filter) {
 
                 renderNotificationBadge && renderNotificationBadge(buildNotifications().length);
             } catch(e) {
-                main.innerHTML = `<div style="padding:40px;text-align:center;color:#ef4444;">Erro ao carregar clientes: ${escapeHtml(e.message)}</div>`;
+                main.innerHTML = `<div class="error-empty-state">Erro ao carregar clientes: ${escapeHtml(e.message)}</div>`;
             }
         }
 
@@ -2622,7 +2629,7 @@ function selectFilter(filter) {
                         </div>
                     </div>`;
             } catch(e) {
-                main.innerHTML = `<div style="padding:40px;text-align:center;color:#ef4444;">Erro ao carregar ficha: ${escapeHtml(e.message)}</div>`;
+                main.innerHTML = `<div class="error-empty-state">Erro ao carregar ficha: ${escapeHtml(e.message)}</div>`;
             }
         }
 
@@ -2695,8 +2702,8 @@ function selectFilter(filter) {
                     // Inserir aviso visual no modal
                     const aviso = document.createElement('div');
                     aviso.id = 'avisoEdicaoCliente';
-                    aviso.style.cssText = 'background:#fef3c7;border:1px solid #fcd34d;color:#92400e;padding:10px 14px;border-radius:8px;font-size:var(--font-xs);font-weight:600;margin-top:10px;display:flex;align-items:center;gap:8px;';
-                    aviso.innerHTML = '⚠️ Você só pode editar e-mail e telefone. Nome e CPF estão bloqueados.';
+                    aviso.className = 'warning-notice';
+                    aviso.innerHTML = '<svg class="warning-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><span>Você só pode editar e-mail e telefone. Nome e CPF estão bloqueados.</span>';
                     document.getElementById('modalEditarCliente').querySelector('.modal-btns').before(aviso);
                 } else {
                     campoNome.disabled = false;
