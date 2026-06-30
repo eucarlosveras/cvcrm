@@ -1892,149 +1892,207 @@
         /* =============================================================================
            MÓDULO MEU RADAR
            ============================================================================= */
-        .radar-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px 32px;
-            background: #fff;
-            border-bottom: 1px solid #e2e8f0;
-        }
-        .summary-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 24px;
-            margin: 32px;
-        }
-        .summary-card {
-            background: #fff;
-            padding: 24px;
-            border-radius: 16px;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-        .summary-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.25rem;
-        }
-        .summary-icon.alerts {
-            background: #fee2e2;
-            color: #b91c1c;
-        }
-        .summary-icon.tips {
-            background: #dbeafe;
-            color: #1d4ed8;
-        }
-        .summary-icon.suggestions {
-            background: #dcfce7;
-            color: #15803d;
-        }
+
+        /* O .radar-header legado não é mais gerado pelo JS — mantido vazio por compatibilidade */
+        .radar-header { display: none; }
+
+        /* .summary-grid e .summary-card são legado — o JS usa .kpi-row/.kpi-card nativos */
+        .summary-grid, .summary-card, .summary-icon { display: none; }
+
+        /* Container da lista de sinais — sem padding lateral próprio;
+           o .main-content já gerencia o espaço horizontal */
         .signal-list {
             display: flex;
             flex-direction: column;
-            gap: 16px;
-            padding: 0 32px 32px 32px;
-        }
-        .signal-card {
-            background: #fff;
-            border-radius: 16px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-            display: flex;
-            overflow: hidden;
-        }
-        .priority-stripe {
-            width: 6px;
-            flex-shrink: 0;
-        }
-        .priority-high {
-            background-color: #ef4444;
-        }
-        .priority-medium {
-            background-color: #f59e0b;
-        }
-        .priority-low {
-            background-color: #3b82f6;
-        }
-        .card-body {
-            padding: 24px;
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
             gap: 12px;
         }
+
+        /* Card principal — espelha exatamente .kpi-card / .chart-card */
+        .signal-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+            padding: 20px 22px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            transition: box-shadow var(--transition, 0.2s ease), transform var(--transition, 0.2s ease), border-color var(--transition, 0.2s ease);
+        }
+        .signal-card:hover {
+            box-shadow: var(--shadow-md);
+            border-color: var(--border-medium);
+            transform: translateY(-1px);
+        }
+
+        /* Badge de tipo — mesma linguagem dos status pills do sistema */
         .badge {
             display: inline-flex;
             align-items: center;
-            gap: 6px;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 600;
+            gap: 5px;
+            padding: 2px 9px;
+            border-radius: var(--radius-full);
+            font-size: var(--font-2xs);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
         }
-        .badge-alert {
-            background: #fee2e2;
-            color: #b91c1c;
-        }
-        .badge-tip {
-            background: #dbeafe;
-            color: #1d4ed8;
-        }
-        .badge-suggestion {
-            background: #dcfce7;
-            color: #15803d;
-        }
+        .badge-alert      { background: #fee2e2; color: #b91c1c; }
+        .badge-tip        { background: var(--brand-blue-subtle); color: var(--brand-blue-dark); }
+        .badge-suggestion { background: #dcfce7; color: #15803d; }
+
+        /* Mensagem principal — tom igual ao .chart-card h3 */
         .signal-message {
-            font-size: 1.1rem;
-            font-weight: 600;
-            margin: 4px 0;
+            font-size: var(--font-base);
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.02em;
+            margin: 0;
         }
+
+        /* Meta (lead / vendedor) */
         .signal-meta {
-            font-size: 0.85rem;
-            color: #64748b;
-            display: flex;
-            gap: 16px;
-        }
-        .justification-block {
-            background: #f8fafc;
-            border-radius: 8px;
-            padding: 12px 16px;
-            font-size: 0.85rem;
-            color: #64748b;
+            font-size: var(--font-sm);
+            color: var(--text-secondary);
             display: flex;
             gap: 10px;
-            border: 1px solid #e2e8f0;
+            flex-wrap: wrap;
+            align-items: center;
         }
-        .card-actions {
+
+        /* Bloco de justificativa — fundo sutil, sem destaque excessivo */
+        .justification-block {
+            background: var(--bg-body);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-sm);
+            padding: 10px 14px;
+            font-size: var(--font-sm);
+            color: var(--text-secondary);
             display: flex;
-            gap: 12px;
-            margin-top: 8px;
+            gap: 8px;
+            align-items: flex-start;
         }
+
+        /* Botões — mesmos tokens dos .btn-primary-action do sistema */
+        .card-actions { display: flex; gap: 8px; }
+
         .btn-exec {
-            background: #1e293b;
+            background: var(--brand-blue);
             color: #fff;
-            padding: 8px 16px;
-            border-radius: 20px;
+            padding: 6px 14px;
+            border-radius: var(--radius-sm);
+            font-size: var(--font-sm);
             font-weight: 600;
             border: none;
             cursor: pointer;
+            transition: background 0.18s ease, box-shadow 0.18s ease;
+        }
+        .btn-exec:hover:not(:disabled) {
+            background: var(--brand-blue-dark);
+            box-shadow: 0 0 0 3px var(--brand-blue-subtle);
         }
         .btn-exec.executed {
-            background: #10b981;
+            background: var(--accent-green);
             cursor: default;
         }
         .btn-ignore {
             background: transparent;
-            color: #64748b;
-            border: 1px solid #e2e8f0;
-            padding: 8px 16px;
-            border-radius: 20px;
+            color: var(--text-muted);
+            border: 1px solid var(--border-light);
+            padding: 6px 14px;
+            border-radius: var(--radius-sm);
+            font-size: var(--font-sm);
             font-weight: 600;
             cursor: pointer;
+            transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+        }
+        .btn-ignore:hover {
+            background: var(--bg-body);
+            border-color: var(--border-medium);
+            color: var(--text-secondary);
+        }
+
+        /* ────────────────────────────────────────────────────────
+           MODAL CHAT "DESTRAVAR VENDA" - TEMA ESCURO
+        ──────────────────────────────────────────────────────── */
+        body.dark #modalChatIA {
+            /* Overlay mais escuro */
+        }
+        body.dark #modalChatIA > div:first-child {
+            background-color: #1e1e2e !important;
+            border: 1px solid #3f3f46 !important;
+        }
+        body.dark #modalChatIA .chat-header {
+            background: linear-gradient(135deg, #2d2d44 0%, #1e1e2e 100%) !important;
+            border-bottom-color: #3f3f46 !important;
+        }
+        body.dark #modalChatIA .chat-header h3,
+        body.dark #modalChatIA .chat-header span {
+            color: #e0e0e0 !important;
+        }
+        body.dark #modalChatIA #chatIAPanel {
+            background-color: #1a1a28 !important;
+            color: #e0e0e0 !important;
+        }
+        /* Balão da IA */
+        body.dark #modalChatIA .message-assistant {
+            background-color: #2d2d44 !important;
+            border: 1px solid #444466 !important;
+            color: #e0e0e0 !important;
+        }
+        body.dark #modalChatIA .message-assistant strong {
+            color: #ffffff !important;
+        }
+        /* Balão do Usuário */
+        body.dark #modalChatIA .message-user {
+            background-color: #4f46e5 !important;
+            color: #ffffff !important;
+        }
+        /* Campo de Input */
+        body.dark #modalChatIA #chatIAInput {
+            background-color: #2d2d44 !important;
+            border-color: #444466 !important;
+            color: #e0e0e0 !important;
+        }
+        body.dark #modalChatIA #chatIAInput::placeholder {
+            color: #9ca3af !important;
+        }
+        body.dark #modalChatIA #chatIAInput:focus {
+            border-color: #6366f1 !important;
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3) !important;
+        }
+        /* Botão de Enviar */
+        body.dark #modalChatIA #chatIASendBtn {
+            background-color: #6366f1 !important;
+            color: #ffffff !important;
+        }
+        body.dark #modalChatIA #chatIASendBtn:hover {
+            background-color: #4f46e5 !important;
+        }
+        body.dark #modalChatIA #chatIASendBtn:disabled {
+            background-color: #3f3f46 !important;
+            color: #71717a !important;
+            cursor: not-allowed;
+        }
+        /* Bolha de digitando */
+        body.dark #modalChatIA .typing-bubble {
+            background-color: #2d2d44 !important;
+            border: 1px solid #444466 !important;
+        }
+        body.dark #modalChatIA .typing-dot {
+            background-color: #9ca3af !important;
+        }
+        /* Scrollbar personalizada para tema escuro */
+        body.dark #modalChatIA #chatIAPanel::-webkit-scrollbar {
+            width: 6px;
+        }
+        body.dark #modalChatIA #chatIAPanel::-webkit-scrollbar-track {
+            background: #1a1a28;
+        }
+        body.dark #modalChatIA #chatIAPanel::-webkit-scrollbar-thumb {
+            background: #3f3f46;
+            border-radius: 3px;
+        }
+        body.dark #modalChatIA #chatIAPanel::-webkit-scrollbar-thumb:hover {
+            background: #52525b;
         }

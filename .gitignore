@@ -19,11 +19,20 @@ venv/
 .env.local
 .env.*
 
+# Dependencies
+node_modules/
+
 # Logs and temp files
 *.log
 *.tmp
 *.swp
 *.swo
+
+# Environment
+.env
+.env.local
+*.env.*
+
 
 # Editors
 .vscode/
@@ -71,4 +80,3 @@ target/
 *.tar.bz2
 *.tar.xz
 *.tar.zst
-```
