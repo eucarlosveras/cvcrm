@@ -16,6 +16,9 @@ node_modules/
 .pytest_cache/
 .gradle/
 
+# Dependencies
+node_modules/
+
 # Logs and temp files
 *.log
 *.tmp
@@ -63,4 +66,3 @@ htmlcov/
 *.tar.bz2
 *.tar.xz
 *.tar.zst
-```

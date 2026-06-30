@@ -2490,13 +2490,6 @@ function selectFilter(filter) {
                 divAcoes.appendChild(btnExcluir);
             }
 
-            const btnNegocio = document.createElement('button');
-            btnNegocio.className = 'btn-action-icon green';
-            btnNegocio.title = 'Criar negócio';
-            btnNegocio.innerHTML = `<svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`;
-            btnNegocio.addEventListener('click', () => abrirModalCriarNegocio(c._pk, c.nome_cliente || '', c.cpf || '', c.whatsapp || '', c.email || ''));
-            divAcoes.appendChild(btnNegocio);
-
             tdAcoes.appendChild(divAcoes);
 
             tr.appendChild(tdCod);
@@ -2600,10 +2593,6 @@ function selectFilter(filter) {
                             <button class="btn-primary-action" onclick="abrirModalEditarCliente('${c._pk}')">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                                 Editar
-                            </button>
-                            <button class="btn-primary-action" style="background:var(--accent-green);" onclick="abrirModalCriarNegocio('${c._pk}','${escapeHtml(c.nome_cliente||'')}','${escapeHtml(c.cpf||'')}','${escapeHtml(c.whatsapp||'')}','${escapeHtml(c.email||'')}')">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                                Criar Negócio
                             </button>
                             ${currentUser.perfil !== 'Vendedor' ? `<button class="btn-danger-ghost" onclick="abrirModalExcluirCliente('${c._pk}','${escapeHtml(c.nome_cliente||'')}')">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/></svg>
@@ -2816,14 +2805,7 @@ function selectFilter(filter) {
             finally { btn.classList.remove('saving'); btn.disabled = false; }
         }
 
-        function abrirModalCriarNegocio(idCliente, nomeCliente, cpf, tel, email) {
-            clienteParaOrcamento = { id: idCliente, nome: nomeCliente, cpf, tel, email };
-            document.getElementById('nomeClienteNegocio').textContent = nomeCliente;
-            openModal('modalCriarNegocio');
-        }
-
         function irParaNovoOrcamentoComCliente() {
-            closeModal('modalCriarNegocio');
             navigateTo('novo_orcamento');
             // Pre-fill after render
             setTimeout(() => {
@@ -3055,6 +3037,14 @@ function selectFilter(filter) {
                 </header>
 
                 <div class="detalhes-page-wrapper">
+
+                    <div style="grid-column: 1 / -1; background: linear-gradient(to right, var(--bg-body), var(--card-bg)); border: 1px dashed var(--brand-blue); border-left: 4px solid var(--brand-blue); border-radius: var(--radius-md); padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); display:none;" id="ia-insights-container-removido">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-weight: 700; color: var(--brand-blue-dark); font-size: 15px;">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+                            Estratégia sugerida pela IA (funcionalidade movida para modal)
+                        </div>
+                        <div id="ia-insights-content" style="font-size: 13.5px; line-height: 1.6; color: var(--text-primary);"></div>
+                    </div>
 
                     <div class="det-col-wide">
                         <section class="det-section">
@@ -3299,6 +3289,11 @@ function selectFilter(filter) {
                     </div>
 
                 </div>
+
+<button id="btnFabIA" onclick="analisarClienteComIA('${id}')" style="position: fixed; bottom: 32px; right: 32px; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; border: none; padding: 14px 24px; border-radius: 30px; font-weight: 700; font-size: 14px; cursor: pointer; box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.4); display: flex; align-items: center; gap: 8px; z-index: 1000; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 15px 20px -3px rgba(99, 102, 241, 0.5)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 10px 15px -3px rgba(99, 102, 241, 0.4)'">
+                    <span class="btn-text">✨ Destravar Venda</span>
+                    <span class="btn-spinner" style="display:none; width:16px; height:16px; border:2px solid rgba(255,255,255,0.3); border-top-color:#fff; border-radius:50%; animation:spin 1s linear infinite;"></span>
+                </button>
             `;
             // Injeta o fragment da timeline após o main.innerHTML ser construído
             const listaContainer = document.getElementById('listaComentarios');
@@ -3887,7 +3882,7 @@ function selectFilter(filter) {
                     await db.from('orcamentos').update({
                         data_contato: dataEntrega,
                         hora_contato: '09:00',
-                        observacao_agendamento: `Confirmação de recebimento - Entrega prevista para ${dataEntregaFormatada}`
+                        observacao_agendamento: `Confirmação de recebimento - ${dataEntregaFormatada}`
                     }).eq('id_orcamento', id);
 
                     await db.from('comentarios').insert([{
@@ -4943,7 +4938,7 @@ function renderMeuRadar() {
     main.innerHTML = `
         <header class="dashboard-header">
             <div style="display:flex; align-items:center; gap:16px;">
-                <h1>📡 Meu Radar</h1>
+                <h1>Meu Radar</h1>
             </div>
             <div class="header-controls">
                 <div class="filter-wrapper">
@@ -4953,29 +4948,27 @@ function renderMeuRadar() {
                 </div>
             </div>
         </header>
-        <div style="max-width: 1000px; margin: 0 auto; padding: 24px; width: 100%;">
-            <div class="kpi-row" style="margin-bottom: 32px;">
-                <div class="kpi-card">
-                    <div class="kpi-label-row"><span class="kpi-dot red"></span><span class="kpi-label">Alertas urgentes</span></div>
-                    <div class="kpi-value" id="count-alerts">0</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label-row"><span class="kpi-dot blue"></span><span class="kpi-label">Dicas de abordagem</span></div>
-                    <div class="kpi-value" id="count-tips">0</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label-row"><span class="kpi-dot green"></span><span class="kpi-label">Sugestões de ação</span></div>
-                    <div class="kpi-value" id="count-suggestions">0</div>
-                </div>
+        <div class="kpi-row" style="grid-template-columns: repeat(3, 1fr);">
+            <div class="kpi-card">
+                <div class="kpi-label-row"><span class="kpi-dot red"></span><span class="kpi-label">Alertas urgentes</span></div>
+                <div class="kpi-value" id="count-alerts">0</div>
             </div>
-            
-            <div id="signalContainer" style="display: flex; flex-direction: column; gap: 16px;"></div>
-            
-            <div class="empty-state" id="emptyState" style="display: none; text-align: center; padding: 64px 24px; color: var(--text-muted); background: var(--card-bg); border: 1px solid var(--border-light); border-radius: var(--radius-md);">
-                <svg viewBox="0 0 24 24" width="48" height="48" stroke="var(--brand-blue)" fill="none" stroke-width="2" style="opacity: 0.5; margin-bottom: 16px;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                <h3 style="font-weight: 600; margin-bottom: 8px; font-size: 18px; color: var(--text-primary);">Nenhum sinal no momento.</h3>
-                <p style="font-size: 14px;">Seu radar está limpo. Vá fechar negócios.</p>
+            <div class="kpi-card">
+                <div class="kpi-label-row"><span class="kpi-dot blue"></span><span class="kpi-label">Dicas de abordagem</span></div>
+                <div class="kpi-value" id="count-tips">0</div>
             </div>
+            <div class="kpi-card">
+                <div class="kpi-label-row"><span class="kpi-dot green"></span><span class="kpi-label">Sugestões de ação</span></div>
+                <div class="kpi-value" id="count-suggestions">0</div>
+            </div>
+        </div>
+
+        <div id="signalContainer" class="signal-list"></div>
+
+        <div class="empty-state" id="emptyState" style="display: none; text-align: center; padding: 64px 24px; color: var(--text-muted); background: var(--card-bg); border: 1px solid var(--border-light); border-radius: var(--radius-md);">
+            <svg viewBox="0 0 24 24" width="48" height="48" stroke="var(--brand-blue)" fill="none" stroke-width="2" style="opacity: 0.5; margin-bottom: 16px;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            <h3 style="font-weight: 600; margin-bottom: 8px; font-size: 18px; color: var(--text-primary);">Nenhum sinal no momento.</h3>
+            <p style="font-size: 14px;">Seu radar está limpo. Vá fechar negócios.</p>
         </div>
     `;
     initMeuRadar();
@@ -5216,33 +5209,49 @@ function renderRadarSignals(sellerFilter) {
 
         filtered.forEach(signal => {
             const conf = configMap[signal.type];
-            
-            // Renderização do Card com variáveis CSS nativas e design aprimorado
+
+            // Extrai UUID correto removendo sufixo pelo final (UUIDs contêm hífens)
+            const sufixos = ['-estagnado', '-entrega', '-crosssell'];
+            let orcId = signal.id;
+            for (const s of sufixos) { if (signal.id.endsWith(s)) { orcId = signal.id.slice(0, -s.length); break; } }
+
+            const leadLink = signal.id.startsWith('est-')
+                ? `<strong>${signal.leadName}</strong>`
+                : `<strong style="color:var(--brand-blue);cursor:pointer;" onclick="abrirDetalhesCliente('${orcId}')">${signal.leadName}</strong>`;
+
+            const justHtml = signal.justification
+                ? `<div class="justification-block"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-top:2px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><span>${signal.justification}</span></div>`
+                : '';
+
+            const execClass = signal.executed ? 'btn-exec executed' : 'btn-exec';
+            const execLabel = signal.executed
+                ? '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Executado'
+                : signal.actionText;
+
             const cardHtml = `
                 <div class="signal-card ${conf.cardClass}" id="radar-card-${signal.id}">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <span class="${conf.badgeClass}">${conf.label}</span>
                         <span style="font-size: 12px; color: var(--text-muted);">${signal.time}</span>
+                <div class="signal-card" id="radar-card-${signal.id}">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <span class="badge badge-${signal.type}">${conf.label}</span>
+                        <span style="font-size:var(--font-xs);color:var(--text-muted);">${signal.time}</span>
                     </div>
-                    
                     <div>
-                        <h3 style="font-size: 16px; font-weight: 700; margin: 0 0 6px 0; color: var(--text-primary);">${signal.message}</h3>
-                        <div style="font-size: 13px; color: var(--text-secondary); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                            <span>Lead: <strong style="color: var(--brand-blue); cursor: pointer;" onclick="abrirDetalhesCliente('${signal.id.split('-')[0]}')">${signal.leadName}</strong></span>
-                            <span style="color: var(--border-light);">|</span>
+                        <p class="signal-message">${signal.message}</p>
+                        <div class="signal-meta">
+                            <span>Lead: ${leadLink}</span>
+                            <span style="color:var(--border-medium);">|</span>
                             <span>Vendedor: ${signal.seller}</span>
                         </div>
                     </div>
-                    
-                    ${signal.justification ? `<div style="background: var(--bg-body); border: 1px solid var(--border-light); padding: 10px 14px; border-radius: 8px; font-size: 12px; color: var(--text-secondary); display: flex; gap: 8px; align-items: flex-start;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-top:2px; flex-shrink:0;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> <span>${signal.justification}</span></div>` : ''}
-                    
-                    <div style="display: flex; gap: 10px; margin-top: 4px;">
-                        <button id="btn-exec-${signal.id}" onclick="handleRadarAction('${signal.id}')" ${signal.executed ? 'disabled' : ''} style="background: ${signal.executed ? 'var(--accent-green)' : 'var(--brand-blue)'}; color: #fff; border: none; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: ${signal.executed ? 'default' : 'pointer'}; max-width: max-content; display: flex; justify-content: center; align-items: center; gap: 6px;">
-                            ${signal.executed ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Executado' : signal.actionText}
+                    ${justHtml}
+                    <div class="card-actions">
+                        <button id="btn-exec-${signal.id}" onclick="handleRadarAction('${signal.id}')" ${signal.executed ? 'disabled' : ''} class="${execClass}" style="display:flex;align-items:center;gap:6px;">
+                            ${execLabel}
                         </button>
-                        <button onclick="handleRadarIgnore('${signal.id}')" style="background: transparent; color: var(--text-muted); border: 1px solid var(--border-light); padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='var(--bg-body)'" onmouseout="this.style.background='transparent'">
-                            Ignorar
-                        </button>
+                        <button onclick="handleRadarIgnore('${signal.id}')" class="btn-ignore">Ignorar</button>
                     </div>
                 </div>
             `;
@@ -5254,8 +5263,17 @@ function renderRadarSignals(sellerFilter) {
 window.handleRadarAction = function(id) {
     // Redireciona para o detalhe do orçamento usando a função nativa do CRM
     if (typeof abrirDetalhesCliente === 'function') {
-        // Extrai o id_orcamento caso seja um sinal composto (ex: "12345-estagnado")
-        const orcamentoId = id.split('-')[0];
+        // IDs de estoque não correspondem a orçamentos — ignora
+        if (id.startsWith('est-')) return;
+        // O id_orcamento é um UUID (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx).
+        // Os sinais usam o padrão "{uuid}-{sufixo}" (ex: "-estagnado", "-entrega", "-crosssell").
+        // split('-')[0] retornava apenas o 1º segmento do UUID — bug.
+        // Solução: remove o sufixo conhecido pelo final, preservando o UUID completo.
+        const sufixos = ['-estagnado', '-entrega', '-crosssell'];
+        let orcamentoId = id;
+        for (const s of sufixos) {
+            if (id.endsWith(s)) { orcamentoId = id.slice(0, -s.length); break; }
+        }
         abrirDetalhesCliente(orcamentoId);
     }
 };
@@ -5277,3 +5295,511 @@ window.handleRadarIgnore = function(id) {
         }, 300);
     }
 };
+
+// ==========================================
+// MÓDULO DE INTELIGÊNCIA ARTIFICIAL (IA)
+// ==========================================
+
+async function analisarClienteComIA(idOrcamentoAtual) {
+    const btn = document.getElementById('btnFabIA');
+    
+    if(btn) {
+        btn.querySelector('.btn-text').textContent = 'A analisar...';
+        btn.querySelector('.btn-spinner').style.display = 'inline-block';
+        btn.disabled = true;
+    }
+
+    try {
+        const orc = AppState.contextoVenda.clienteAtual;
+        if (!orc) throw new Error('Cliente atual não encontrado no estado.');
+        const nomeCliente = orc.clientes?.nome_cliente || 'Cliente';
+
+        // 1. Puxar todos os orçamentos do cliente (Histórico de Compras/Tentativas)
+        const { data: todosOrcamentos, error: errOrc } = await db.from('orcamentos')
+            .select('id_orcamento, protocolo, valor_orcado, modelo_colchao, data_criacao, data_entrega, status_orcamento(nome)')
+            .eq('id_cliente', orc.id_cliente)
+            .order('data_criacao', { ascending: false });
+
+        // 2. Puxar todo o histórico (comentários) de TODOS os orçamentos desse cliente
+        const idsOrcamentos = (todosOrcamentos || []).map(o => o.id_orcamento);
+        let todosComentarios = [];
+        if (idsOrcamentos.length > 0) {
+            const { data: coms } = await db.from('comentarios')
+                .select('texto, tipo, autor, data_criacao')
+                .in('id_orcamento', idsOrcamentos)
+                .order('data_criacao', { ascending: true });
+            todosComentarios = coms || [];
+        }
+
+        // 3. Verificar se é pós-venda (status Fechado)
+        const statusAtual = orc.status || '';
+        const isFechado = statusAtual === 'Fechado';
+
+        // Calcular dias desde a entrega (se houver data_entrega)
+        const dataEntrega = orc.data_entrega || null;
+        let diasDesdeEntrega = null;
+        if (dataEntrega) {
+            const hoje = new Date();
+            const entrega = new Date(dataEntrega);
+            diasDesdeEntrega = Math.floor((hoje - entrega) / (1000 * 60 * 60 * 24));
+        }
+
+        // 4. Montar o Dossiê para a IA
+        let dossie = `=== DADOS DO CLIENTE ===\n`;
+        dossie += `Nome: ${orc.clientes?.nome_cliente || 'Desconhecido'}\n`;
+        dossie += `Origem: ${orc.origem || 'Não informada'}\n`;
+        dossie += `Interesse: ${orc.interesse || 'Não informado'}\n\n`;
+
+        dossie += `=== ORÇAMENTO ATUAL ===\n`;
+        dossie += `Produto(s): ${orc.modelo_colchao || 'Nenhum'}\n`;
+        dossie += `Valor: R$ ${orc.valor_orcado}\n`;
+        dossie += `Status: ${statusAtual}\n`;
+
+        if (isFechado) {
+            dossie += `Data de entrega prevista: ${dataEntrega ? new Date(dataEntrega).toLocaleDateString('pt-BR') : 'Não informada'}\n`;
+            dossie += `Dias desde a entrega: ${diasDesdeEntrega !== null ? diasDesdeEntrega + ' dias' : 'Entrega ainda não realizada'}\n`;
+            dossie += `MODO: PÓS-VENDA — foco em satisfação, fidelização e indicação. NÃO tente vender nada novo neste momento.\n\n`;
+        } else {
+            dossie += `\n`;
+        }
+
+        dossie += `=== HISTÓRICO DE NEGÓCIOS ===\n`;
+        (todosOrcamentos || []).forEach(o => {
+            const dataFormatada = new Date(o.data_criacao).toLocaleDateString('pt-BR');
+            dossie += `- [${dataFormatada}] Status: ${o.status_orcamento?.nome || '-'} | Valor: R$ ${o.valor_orcado} | Produto: ${o.modelo_colchao}\n`;
+        });
+
+        dossie += `\n=== HISTÓRICO DE CONTATOS (TIMELINE) ===\n`;
+        todosComentarios.forEach(c => {
+            const dataFormatada = new Date(c.data_criacao).toLocaleDateString('pt-BR');
+            dossie += `[${dataFormatada}] ${c.autor} (${c.tipo}): ${c.texto}\n`;
+        });
+
+        // Validação no Console para Engenharia de Prompt
+        console.log("=== DOSSIÊ ENVIADO PARA IA ===");
+        console.log(dossie);
+
+        // 5. Chamada real ao Groq via Edge Function
+        const promptFinal = isFechado
+            ? `Analise o dossiê abaixo. Esta é uma venda já realizada. Gere a resposta no formato de pós-venda (Situação Pós-Venda, Ação Recomendada e Mensagem WhatsApp).\n\n${dossie}`
+            : `Analise o dossiê abaixo e gere a resposta no formato padrão (Estratégia, Argumentos e Mensagem WhatsApp).\n\n${dossie}`;
+
+        const resposta = await chamarIA(promptFinal);
+
+        if(btn) {
+            btn.querySelector('.btn-text').textContent = '✨ Destravar Venda';
+            btn.querySelector('.btn-spinner').style.display = 'none';
+            btn.disabled = false;
+        }
+        abrirModalChatIA(resposta, nomeCliente);
+
+    } catch (error) {
+        console.error("Erro ao analisar cliente:", error);
+        if(typeof showToast === 'function') showToast('Erro ao gerar análise da IA.', 'error');
+        if(btn) {
+            btn.querySelector('.btn-text').textContent = '✨ Destravar Venda';
+            btn.querySelector('.btn-spinner').style.display = 'none';
+            btn.disabled = false;
+        }
+    }
+}
+
+function abrirModalChatIA(resposta, nomeCliente) {
+    const anterior = document.getElementById('modalChatIA');
+    if (anterior) anterior.remove();
+
+	// 1. Remove negrito
+// 0. Remove raciocínio interno do modelo (tudo antes de "1. Estratégia" ou "1. Situação")
+let textoLimpo = resposta;
+const marcadorInicio = /1\.\s*(Estratégia|Situação Pós-Venda)/i;
+const matchInicio = textoLimpo.match(marcadorInicio);
+if (matchInicio) {
+    textoLimpo = textoLimpo.slice(textoLimpo.indexOf(matchInicio[0]));
+}
+
+// 1. Remove negrito
+let textoTemp = textoLimpo.replace(/\*\*(.*?)\*\*/g, '$1');
+
+// 2. REMOVE totalmente o asterisco ou hífen no início da linha
+textoTemp = textoTemp.replace(/^[\*\-]\s*/gm, ''); 
+
+// 3. Garante espaço entre linhas principais
+textoTemp = textoTemp.replace(/\n\n/g, '<br><br>');
+
+// 4. Converte quebras restantes
+const formatado = textoTemp.replace(/\n/g, '<br>');
+	
+    const modal = document.createElement('div');
+    modal.id = 'modalChatIA';
+    modal.style.cssText = `
+        position: fixed; inset: 0; z-index: 9999;
+        display: flex; align-items: flex-end; justify-content: flex-end;
+asasdasd        padding: 100px 24px 100px 0; pointer-events: none;
+    `;
+
+    modal.innerHTML = `
+        <div class="chat-modal-container" style="background: white; border-radius: 16px 16px 0 0; width: 100%; max-width: 400px; 
+                    box-shadow: 0 -4px 24px rgba(0,0,0,0.2); pointer-events: auto; display: flex; flex-direction: column; 
+                    max-height: 80vh; color: #1f2937;">
+            <div class="chat-header" style="background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); padding: 16px 20px; 
+                        border-radius: 16px 16px 0 0; display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="background: rgba(255,255,255,0.2); padding: 8px; border-radius: 8px;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+                            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                            <line x1="12" x2="12" y1="19" y2="22"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 style="color: white; font-weight: 600; font-size: 16px; margin: 0;">Assistente de Vendas</h3>
+                        <p style="color: rgba(255,255,255,0.8); font-size: 12px; margin: 0;">Análise de ${escapeHtml(nomeCliente)}</p>
+                    </div>
+                </div>
+                <button onclick="fecharModalChatIA()" style="background: rgba(255,255,255,0.2); border: none; 
+                           color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; 
+                           display: flex; align-items: center; justify-content: center; font-size: 18px;">×</button>
+            </div>
+            
+            <div id="chatIAPanel" class="chat-messages-area" style="flex: 1; overflow-y: auto; padding: 16px; background: #f3f4f6; color: #1f2937;">
+                <div class="message-assistant" style="display: flex; gap: 12px; margin-bottom: 16px;">
+                    <div style="background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); 
+                                width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0; 
+                                display: flex; align-items: center; justify-content: center;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+                            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                            <line x1="12" x2="12" y1="19" y2="22"/>
+                        </svg>
+                    </div>
+                    <div class="message-bubble" style="background: white; padding: 12px 16px; border-radius: 12px; 
+                                box-shadow: 0 1px 3px rgba(0,0,0,0.1); flex: 1; max-width: calc(100% - 44px);">
+                        <p style="margin: 0; line-height: 1.5; color: #000000; font-weight: 400;">${formatado}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="chat-input-area" style="padding: 16px; border-top: 1px solid #e5e7eb; background: white;">
+                <div style="display: flex; gap: 8px; align-items: flex-end;">
+                    <textarea id="chatIAInput" class="chat-input" placeholder="Pergunte algo sobre este cliente..." 
+                              style="flex: 1; padding: 12px; border: 1px solid #d1d5db; border-radius: 12px; 
+                                     resize: none; font-family: inherit; font-size: 14px; outline: none; 
+                                     max-height: 100px; min-height: 44px;" rows="1"></textarea>
+                    <button id="chatIASendBtn" onclick="enviarMensagemChatIA()" class="chat-send-btn" style="background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); 
+                               border: none; color: white; width: 44px; height: 44px; border-radius: 12px; 
+                               cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="22" x2="11" y1="2" y2="13"/>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    setTimeout(() => document.getElementById('chatIAInput')?.focus(), 100);
+
+    window._chatIAHistorico = [
+        { role: 'user', content: 'Analise este cliente e sugira estratégias de venda.' },
+        { role: 'assistant', content: resposta }
+    ];
+}
+
+async function enviarMensagemChatIA() {
+    const input = document.getElementById('chatIAInput');
+    const texto = input?.value?.trim();
+    if (!texto) return;
+
+    const chatBody = document.querySelector('#chatIAPanel > div[style*="overflow-y"]');
+    if (!chatBody) return;
+
+    input.value = '';
+    input.disabled = true;
+
+    chatBody.insertAdjacentHTML('beforeend', `
+        <div class="message-user" style="display: flex; gap: 12px; margin-bottom: 16px; justify-content: flex-end;">
+            <div class="message-bubble" style="background: #7c3aed; padding: 12px 16px; border-radius: 12px; 
+                        box-shadow: 0 1px 3px rgba(0,0,0,0.1); flex: 1; max-width: calc(100% - 44px);">
+                <p style="margin: 0; line-height: 1.5; color: white;">${escapeHtml(texto)}</p>
+            </div>
+            <div style="width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0; 
+                        background: #e5e7eb; display: flex; align-items: center; justify-content: center;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2">
+                    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                </svg>
+            </div>
+        </div>
+    `);
+
+    const typingId = 'typing_' + Date.now();
+    chatBody.insertAdjacentHTML('beforeend', `
+        <div class="message-assistant typing-bubble" style="display: flex; gap: 12px; margin-bottom: 16px;" id="${typingId}">
+            <div style="background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); 
+                        width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0; 
+                        display: flex; align-items: center; justify-content: center;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                    <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                    <line x1="12" x2="12" y1="19" y2="22"/>
+                </svg>
+            </div>
+            <div class="message-bubble" style="background: white; padding: 12px 16px; border-radius: 12px; 
+                        box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                <div class="typing-dots" style="display: flex; gap: 4px;">
+                    <div class="typing-dot" style="width: 8px; height: 8px; background: #7c3aed; border-radius: 50%; 
+                                animation: bounce 1.4s infinite ease-in-out both;"></div>
+                    <div class="typing-dot" style="width: 8px; height: 8px; background: #7c3aed; border-radius: 50%; 
+                                animation: bounce 1.4s infinite ease-in-out both; animation-delay: 0.16s;"></div>
+                    <div class="typing-dot" style="width: 8px; height: 8px; background: #7c3aed; border-radius: 50%; 
+                                animation: bounce 1.4s infinite ease-in-out both; animation-delay: 0.32s;"></div>
+                </div>
+            </div>
+        </div>
+    `);
+    chatBody.scrollTop = chatBody.scrollHeight;
+
+    try {
+        window._chatIAHistorico = window._chatIAHistorico || [];
+        window._chatIAHistorico.push({ role: 'user', content: texto });
+
+        const { data: { session } } = await db.auth.getSession();
+        const res = await fetch(
+            'https://blumqkxwasdbyozdvrsp.supabase.co/functions/v1/gemini-proxy ',
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+                body: JSON.stringify({
+                    prompt: `${texto}\n\nContexto da conversa anterior: ${JSON.stringify(window._chatIAHistorico.slice(0,-1))}`
+                }),
+            }
+        );
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+
+        const respostaFormatada = (data.text || '')
+            .replace(/\*\*(.*?)\*\*/g, '$1')
+            .replace(/^\* /gm, '• ')
+            .replace(/\n/g, '<br>');
+
+        window._chatIAHistorico.push({ role: 'assistant', content: data.text });
+
+        document.getElementById(typingId)?.remove();
+        chatBody.insertAdjacentHTML('beforeend', `
+            <div class="message-assistant" style="display: flex; gap: 12px; margin-bottom: 16px;">
+                <div style="background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); 
+                            width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0; 
+                            display: flex; align-items: center; justify-content: center;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                        <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                        <line x1="12" x2="12" y1="19" y2="22"/>
+                    </svg>
+                </div>
+                <div class="message-bubble" style="background: white; padding: 12px 16px; border-radius: 12px; 
+                            box-shadow: 0 1px 3px rgba(0,0,0,0.1); flex: 1; max-width: calc(100% - 44px);">
+                    <p style="margin: 0; line-height: 1.5; color: #000000; font-weight: 400;">${respostaFormatada}</p>
+                </div>
+            </div>
+        `);
+    } catch(e) {
+        document.getElementById(typingId)?.remove();
+        chatBody.insertAdjacentHTML('beforeend', `
+            <div class="message-assistant" style="display: flex; gap: 12px; margin-bottom: 16px;">
+                <div style="background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); 
+                            width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0; 
+                            display: flex; align-items: center; justify-content: center;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                        <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                        <line x1="12" x2="12" y1="19" y2="22"/>
+                    </svg>
+                </div>
+                <div class="message-bubble" style="background: white; padding: 12px 16px; border-radius: 12px; 
+                            box-shadow: 0 1px 3px rgba(0,0,0,0.1); flex: 1; max-width: calc(100% - 44px);">
+                    <p style="margin: 0; line-height: 1.5; color: #ef4444; font-weight: 400;">Erro ao responder. Tente novamente.</p>
+                </div>
+            </div>
+        `);
+    } finally {
+        input.disabled = false;
+        input.focus();
+        chatBody.scrollTop = chatBody.scrollHeight;
+    }
+}
+
+async function chamarIA(prompt, contexto = '') {
+    const { data: { session } } = await db.auth.getSession();
+    if (!session) throw new Error('Usuário não autenticado.');
+
+    const res = await fetch(
+        'https://blumqkxwasdbyozdvrsp.supabase.co/functions/v1/gemini-proxy ',
+        {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify({ prompt }),
+        }
+    );
+
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    return data.text;
+}
+
+// ==========================================
+// FUNÇÕES DO MODAL CHAT IA
+// ==========================================
+
+let chatIAMessages = [];
+let currentOrcamentoId = null;
+
+function abrirModalChatIA(respostaInicial = '') {
+    const modal = document.getElementById('modalChatIA');
+    if (!modal) return;
+    
+    // Pega o ID do orçamento atual
+    const orc = AppState.contextoVenda.clienteAtual;
+    currentOrcamentoId = orc?.id_orcamento || null;
+    
+    // Inicializa as mensagens
+    chatIAMessages = [];
+    
+    // Adiciona mensagem inicial da IA se houver resposta
+    if (respostaInicial) {
+        chatIAMessages.push({
+            id: Date.now().toString(),
+            role: 'assistant',
+            content: respostaInicial
+        });
+    }
+    
+    // Renderiza as mensagens
+    renderizarMensagensChat();
+    
+    // Abre o modal usando a função padrão
+    openModal('modalChatIA');
+    
+    // Focus no input
+    setTimeout(() => {
+        const input = document.getElementById('chatInputIA');
+        if (input) input.focus();
+    }, 200);
+}
+
+function fecharModalChatIA() {
+    closeModal('modalChatIA');
+}
+
+function renderizarMensagensChat() {
+    const container = document.getElementById('chatMessagesContainer');
+    if (!container) return;
+    
+    container.innerHTML = chatIAMessages.map(msg => {
+        const isUser = msg.role === 'user';
+        return `
+            <div style="display:flex; gap:12px; ${isUser ? 'flex-direction:row-reverse;' : ''}">
+                <div style="width:32px; height:32px; border-radius:50%; background:${isUser ? 'linear-gradient(135deg, #6366f1, #8b5cf6)' : 'linear-gradient(135deg, #10b981, #059669)'}; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                    ${isUser 
+                        ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'
+                        : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>'
+                    }
+                </div>
+                <div style="max-width:75%; padding:12px 16px; border-radius:16px; background:${isUser ? 'linear-gradient(135deg, #6366f1, #8b5cf6)' : 'white'}; color:${isUser ? 'white' : 'var(--text-primary)'}; box-shadow:0 1px 3px rgba(0,0,0,0.1);">
+                    <div style="font-size:13.5px; line-height:1.6; white-space:pre-wrap;">${formatarMensagemIA(msg.content)}</div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    // Auto-scroll para o final
+    setTimeout(() => {
+        container.scrollTop = container.scrollHeight;
+    }, 50);
+}
+
+function formatarMensagemIA(texto) {
+    return texto
+        .replace(/\n/g, '<br>')
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/^\s*[-•*]\s+/gm, '<li>')
+        .replace(/<\/li>(?!\s*<li>)/g, '</li>');
+}
+
+async function enviarMensagemChatIA() {
+    const input = document.getElementById('chatInputIA');
+    const btn = document.getElementById('btnEnviarChatIA');
+    
+    if (!input || !btn) return;
+    
+    const texto = input.value.trim();
+    if (!texto) return;
+    
+    // Desabilita botão e mostra loading
+    btn.disabled = true;
+    btn.style.opacity = '0.6';
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<span class="btn-spinner" style="display:inline-block; width:14px; height:14px; border:2px solid rgba(255,255,255,0.3); border-top-color:#fff; border-radius:50%; animation:spin 1s linear infinite;"></span>';
+    
+    // Adiciona mensagem do usuário
+    chatIAMessages.push({
+        id: Date.now().toString(),
+        role: 'user',
+        content: texto
+    });
+    
+    input.value = '';
+    renderizarMensagensChat();
+    
+    try {
+        // Monta o contexto com o dossiê do cliente
+        const orc = AppState.contextoVenda.clienteAtual;
+        if (!orc) throw new Error('Cliente atual não encontrado.');
+        
+        let contexto = `=== CONTEXTO ATUAL ===\n`;
+        contexto += `Cliente: ${orc.clientes?.nome_cliente || 'Desconhecido'}\n`;
+        contexto += `Produto: ${orc.modelo_colchao || 'Nenhum'}\n`;
+        contexto += `Valor: R$ ${orc.valor_orcado}\n`;
+        contexto += `Status: ${orc.status}\n\n`;
+        
+        // Histórico de mensagens do chat
+        const historicoChat = chatIAMessages.slice(0, -1).map(m => 
+            `${m.role === 'user' ? 'Usuário' : 'IA'}: ${m.content}`
+        ).join('\n');
+        
+        const promptFinal = `${contexto}\n=== HISTÓRICO DA CONVERSA ===\n${historicoChat}\n\nÚltima mensagem do usuário: ${texto}\n\nResponda de forma útil e objetiva como assistente de vendas especializado em colchões.`;
+        
+        const resposta = await chamarIA(promptFinal);
+        
+        // Adiciona resposta da IA
+        chatIAMessages.push({
+            id: Date.now().toString(),
+            role: 'assistant',
+            content: resposta
+        });
+        
+        renderizarMensagensChat();
+        
+    } catch (error) {
+        console.error("Erro ao enviar mensagem:", error);
+        if(typeof showToast === 'function') showToast('Erro ao enviar mensagem.', 'error');
+        
+        // Adiciona mensagem de erro
+        chatIAMessages.push({
+            id: Date.now().toString(),
+            role: 'assistant',
+            content: 'Desculpe, ocorreu um erro ao processar sua solicitação. Tente novamente.'
+        });
+        renderizarMensagensChat();
+    } finally {
+        // Restaura botão
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        btn.innerHTML = originalText;
+        input.focus();
+    }
+}
