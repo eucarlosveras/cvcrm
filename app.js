@@ -335,8 +335,8 @@ const SUPABASE_URL = 'https://blumqkxwasdbyozdvrsp.supabase.co';
             try {
                 // Chama a função direto no banco, passando apenas os filtros
                 const { data: kpisData, error: rpcError } = await db.rpc('calcular_kpis_dashboard', {
-                    p_mes: AppState.filtros.mes,
-                    p_ano: AppState.filtros.ano,
+                    p_mes: currentMonth,
+                    p_ano: currentYear,
                     p_id_usuario: AppState.usuarioLogado.id_usuario,
                     p_perfil: (AppState.usuarioLogado.perfil || '').toLowerCase() === 'terminal' ? 'Gerente' : AppState.usuarioLogado.perfil,
                     p_id_loja: AppState.usuarioLogado.id_loja
@@ -349,21 +349,27 @@ const SUPABASE_URL = 'https://blumqkxwasdbyozdvrsp.supabase.co';
                 let queryDetalhes = db.from('orcamentos')
                     .select('id_orcamento, id_usuario, valor_orcado, modelo_colchao, data_criacao, data_contato, hora_contato, ligacao_confirmada, clientes(nome_cliente), status_orcamento(nome)');
 
-                const start = new Date(AppState.filtros.ano, AppState.filtros.mes - 1, 1).toISOString();
-                const end = new Date(AppState.filtros.ano, AppState.filtros.mes, 0, 23, 59, 59).toISOString();
-                queryDetalhes = queryDetalhes.gte('data_criacao', start).lte('data_criacao', end);
+                if (currentDay) {
+                    const startDia = new Date(currentYear, currentMonth - 1, currentDay).toISOString();
+                    const endDia = new Date(currentYear, currentMonth - 1, currentDay, 23, 59, 59).toISOString();
+                    queryDetalhes = queryDetalhes.gte('data_criacao', startDia).lte('data_criacao', endDia);
+                } else {
+                    const start = new Date(currentYear, currentMonth - 1, 1).toISOString();
+                    const end = new Date(currentYear, currentMonth, 0, 23, 59, 59).toISOString();
+                    queryDetalhes = queryDetalhes.gte('data_criacao', start).lte('data_criacao', end);
+                }
 
                 if (AppState.usuarioLogado.perfil === 'Gerente' || (AppState.usuarioLogado.perfil || '').toLowerCase() === 'terminal') {
                     const ids = todosVendedores.filter(v => v.id_loja === AppState.usuarioLogado.id_loja).map(v => v.id_usuario);
                     if (ids.length > 0) queryDetalhes = queryDetalhes.in('id_usuario', ids);
-                    if (AppState.filtros.vendedor !== 'todos') queryDetalhes = queryDetalhes.eq('id_usuario', AppState.filtros.vendedor);
+                    if (selectedVendedor !== 'todos') queryDetalhes = queryDetalhes.eq('id_usuario', selectedVendedor);
                 } else if (AppState.usuarioLogado.perfil === 'Vendedor') {
                     queryDetalhes = queryDetalhes.eq('id_usuario', AppState.usuarioLogado.id_usuario);
                 } else {
-                    if (AppState.filtros.vendedor !== 'todos') {
-                        queryDetalhes = queryDetalhes.eq('id_usuario', AppState.filtros.vendedor);
-                    } else if (AppState.filtros.loja !== 'todas') {
-                        const ids = todosVendedores.filter(v => v.id_loja === AppState.filtros.loja).map(v => v.id_usuario);
+                    if (selectedVendedor !== 'todos') {
+                        queryDetalhes = queryDetalhes.eq('id_usuario', selectedVendedor);
+                    } else if (selectedLoja !== 'todas') {
+                        const ids = todosVendedores.filter(v => v.id_loja === selectedLoja).map(v => v.id_usuario);
                         if (ids.length > 0) queryDetalhes = queryDetalhes.in('id_usuario', ids);
                     }
                 }
