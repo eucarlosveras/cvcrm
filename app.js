@@ -444,19 +444,17 @@ const SUPABASE_URL = 'https://blumqkxwasdbyozdvrsp.supabase.co';
                     if(uuidsPermitidos.length > 0) query = query.in('id_status', uuidsPermitidos);
                 }
 
-                /* 
-                 // FILTRO DE MÊS E DIA ATIVADO PARA A CARTEIRA DE NEGOCIAÇÕES
-	if (currentDay) {
-   	 const start = new Date(currentYear, currentMonth - 1, currentDay).toISOString();
-    	const end = new Date(currentYear, currentMonth - 1, currentDay, 23, 59, 59).toISOString();
-    	query = query.gte('data_criacao', start).lte('data_criacao', end);
-	} else if (currentMonth && currentYear) {
-   	  const startDate = new Date(currentYear, currentMonth - 1, 1).toISOString();
-  	  const endDate = new Date(currentYear, currentMonth, 0, 23, 59, 59).toISOString();
-  	  query = query.gte('data_criacao', startDate).lte('data_criacao', endDate);
-	}
+                // Filtro de mês e dia para a tabela da tela inicial
+                if (currentDay) {
+                    const start = new Date(currentYear, currentMonth - 1, currentDay).toISOString();
+                    const end = new Date(currentYear, currentMonth - 1, currentDay, 23, 59, 59).toISOString();
+                    query = query.gte('data_criacao', start).lte('data_criacao', end);
+                } else if (currentMonth && currentYear) {
+                    const startDate = new Date(currentYear, currentMonth - 1, 1).toISOString();
+                    const endDate = new Date(currentYear, currentMonth, 0, 23, 59, 59).toISOString();
+                    query = query.gte('data_criacao', startDate).lte('data_criacao', endDate);
+                }
 
-                */
 
                 const from = (currentPage - 1) * ITEMS_PER_PAGE;
                 const to = from + ITEMS_PER_PAGE - 1;
@@ -1469,6 +1467,11 @@ const SUPABASE_URL = 'https://blumqkxwasdbyozdvrsp.supabase.co';
     selectedLoja = val; 
     selectedVendedor = 'todos'; 
     currentPage = 1; 
+    
+    // Atualiza AppState.filtros para a consulta no banco
+    AppState.filtros.loja = val;
+    AppState.filtros.vendedor = 'todos';
+    
     await carregarKpisEDashboard(); 
     
     if (currentView === 'carteira') {
@@ -1481,6 +1484,10 @@ const SUPABASE_URL = 'https://blumqkxwasdbyozdvrsp.supabase.co';
 async function filtrarPorVendedor(val) { 
     selectedVendedor = val; 
     currentPage = 1; 
+    
+    // Atualiza AppState.filtros para a consulta no banco
+    AppState.filtros.vendedor = val;
+    
     await carregarKpisEDashboard(); 
     
     if (currentView === 'carteira') {
@@ -1494,6 +1501,12 @@ async function filtrarPorVendedor(val) {
     currentYear = year; 
     currentMonth = month; 
     currentDay = null; 
+    
+    // Atualiza AppState.filtros para a consulta no banco
+    AppState.filtros.ano = year;
+    AppState.filtros.mes = month;
+    AppState.filtros.dia = null;
+    
     await carregarKpisEDashboard(); 
 
     if (currentView === 'carteira') {
@@ -1505,6 +1518,10 @@ async function filtrarPorVendedor(val) {
 
 async function changeDay(val) { 
     currentDay = val === 'todos' ? null : parseInt(val); 
+    
+    // Atualiza AppState.filtros para a consulta no banco
+    AppState.filtros.dia = val === 'todos' ? null : parseInt(val);
+    
     await carregarKpisEDashboard(); 
 
     if (currentView === 'carteira') {
