@@ -4054,8 +4054,9 @@ function selectFilter(filter) {
                 }
 
                 // 2. APLICA O FILTRO DE PERÍODO (mês/dia selecionado)
-                // Em andamento (Contato Inicial, Negociação, Em Fechamento) => filtra por data_criacao
-                // Finalizados (Fechado, Perdido) => filtra por data_fechamento (data da conclusão)
+                // Em andamento (Contato Inicial, Negociação, Em Fechamento) => SEMPRE visível,
+                //   independente do mês, pois ainda está em tratativa.
+                // Finalizados (Fechado, Perdido) => só aparece no mês/dia da CONCLUSÃO (data_fechamento).
                 let startPeriodo, endPeriodo;
                 if (currentDay) {
                     startPeriodo = new Date(currentYear, currentMonth - 1, currentDay);
@@ -4076,7 +4077,7 @@ function selectFilter(filter) {
 
                 const orParts = [];
                 if (statusAbertosIds.length) {
-                    orParts.push(`and(id_status.in.(${statusAbertosIds.join(',')}),data_criacao.gte.${startPeriodoISO},data_criacao.lt.${endPeriodoISO})`);
+                    orParts.push(`id_status.in.(${statusAbertosIds.join(',')})`);
                 }
                 if (statusFinalizadosIds.length) {
                     orParts.push(`and(id_status.in.(${statusFinalizadosIds.join(',')}),data_fechamento.gte.${startPeriodoISO},data_fechamento.lt.${endPeriodoISO})`);
