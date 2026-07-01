@@ -3761,7 +3761,7 @@ function selectFilter(filter) {
                 }
                 const statusPerdido = mapStatusUUID.find(s => s.nome === STATUS.PERDIDO);
                 if (!statusPerdido) throw new Error('Status "Perdido" não encontrado');
-                const { error } = await db.from('orcamentos').update({ id_status: statusPerdido.id_status }).eq('id_orcamento', idOrcamentoParaPerder);
+                const { error } = await db.from('orcamentos').update({ id_status: statusPerdido.id_status, data_fechamento: new Date().toISOString() }).eq('id_orcamento', idOrcamentoParaPerder);
                 if (error) throw error;
                 const comentario = `Venda perdida. Motivo: ${motivo}${motivoDetalhes ? ' - Detalhes: ' + motivoDetalhes : ''}`;
                 await db.from('comentarios').insert([{ id_orcamento: idOrcamentoParaPerder, texto: comentario, tipo: 'Perda', autor: currentUser.nome }]);
@@ -3857,7 +3857,7 @@ function selectFilter(filter) {
                 const statusFechado = mapStatusUUID.find(s => s.nome === STATUS.FECHADO);
                 if (!statusFechado) throw new Error('Status "Fechado" não encontrado');
 
-                const updatePayload = { id_status: statusFechado.id_status };
+                const updatePayload = { id_status: statusFechado.id_status, data_fechamento: new Date().toISOString() };
                 if (dataEntrega) updatePayload.data_entrega = dataEntrega;
 
                 const { error } = await db.from('orcamentos').update(updatePayload).eq('id_orcamento', id);
@@ -4020,9 +4020,9 @@ function selectFilter(filter) {
             try {
                 const isGerente = currentUser.perfil === 'Gerente' || currentUser.perfil === 'Administrador' || currentUser.perfil === 'Admin';
 
-                // Busca TODOS os orçamentos em aberto (sem paginação — kanban precisa do total)
+                // Busca orçamentos do período selecionado (sem paginação — kanban precisa do total)
                 let query = db.from('orcamentos')
-                    .select('id_orcamento, protocolo, data_criacao, valor_orcado, modelo_colchao, data_contato, hora_contato, usuarios(nome, id_loja), clientes(nome_cliente), status_orcamento(nome)')
+                    .select('id_orcamento, protocolo, data_criacao, data_fechamento, valor_orcado, modelo_colchao, data_contato, hora_contato, usuarios(nome, id_loja), clientes(nome_cliente), status_orcamento(nome)')
                     .not('id_status', 'is', null);
 
                 if (currentUser.perfil === 'Gerente') {
@@ -4052,6 +4052,36 @@ function selectFilter(filter) {
                         query = query.in('id_status', uuidsPermitidos);
                     }
                 }
+
+                // 2. APLICA O FILTRO DE PERÍODO (mês/dia selecionado)
+                // Em andamento (Contato Inicial, Negociação, Em Fechamento) => filtra por data_criacao
+                // Finalizados (Fechado, Perdido) => filtra por data_fechamento (data da conclusão)
+                let startPeriodo, endPeriodo;
+                if (currentDay) {
+                    startPeriodo = new Date(currentYear, currentMonth - 1, currentDay);
+                    endPeriodo = new Date(currentYear, currentMonth - 1, currentDay + 1);
+                } else {
+                    startPeriodo = new Date(currentYear, currentMonth - 1, 1);
+                    endPeriodo = new Date(currentYear, currentMonth, 1);
+                }
+                const startPeriodoISO = startPeriodo.toISOString();
+                const endPeriodoISO = endPeriodo.toISOString();
+
+                const statusAbertosIds = mapStatusUUID
+                    .filter(s => [STATUS.CONTATO_INICIAL, STATUS.NEGOCIACAO, STATUS.EM_FECHAMENTO].includes(s.nome))
+                    .map(s => s.id_status);
+                const statusFinalizadosIds = mapStatusUUID
+                    .filter(s => [STATUS.FECHADO, STATUS.PERDIDO].includes(s.nome))
+                    .map(s => s.id_status);
+
+                const orParts = [];
+                if (statusAbertosIds.length) {
+                    orParts.push(`and(id_status.in.(${statusAbertosIds.join(',')}),data_criacao.gte.${startPeriodoISO},data_criacao.lt.${endPeriodoISO})`);
+                }
+                if (statusFinalizadosIds.length) {
+                    orParts.push(`and(id_status.in.(${statusFinalizadosIds.join(',')}),data_fechamento.gte.${startPeriodoISO},data_fechamento.lt.${endPeriodoISO})`);
+                }
+                if (orParts.length) query = query.or(orParts.join(','));
 
                 query = query.order('data_criacao', { ascending: false }).limit(300);
 
@@ -4512,7 +4542,7 @@ async function dropCardFechado(event) {
     showToast('Fechando negócio...', 'info');
     try {
         const { error } = await db.from('orcamentos')
-            .update({ id_status: statusObj.id_status })
+            .update({ id_status: statusObj.id_status, data_fechamento: new Date().toISOString() })
             .eq('id_orcamento', idOrcamento);
         if (error) throw error;
 
