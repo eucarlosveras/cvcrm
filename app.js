@@ -347,17 +347,37 @@ const SUPABASE_URL = 'https://blumqkxwasdbyozdvrsp.supabase.co';
 
         // --- NOVA BUSCA DETALHADA PARA GRÁFICOS E NOTIFICAÇÕES ---
                 let queryDetalhes = db.from('orcamentos')
-                    .select('id_orcamento, id_usuario, valor_orcado, modelo_colchao, data_criacao, data_contato, hora_contato, ligacao_confirmada, clientes(nome_cliente), status_orcamento(nome)');
+                    .select('id_orcamento, id_usuario, valor_orcado, modelo_colchao, data_criacao, data_fechamento, data_contato, hora_contato, ligacao_confirmada, clientes(nome_cliente), status_orcamento(nome)');
 
+                // Período (mês ou dia) selecionado
+                let startPeriodo, endPeriodo;
                 if (currentDay) {
-                    const startDia = new Date(currentYear, currentMonth - 1, currentDay).toISOString();
-                    const endDia = new Date(currentYear, currentMonth - 1, currentDay, 23, 59, 59).toISOString();
-                    queryDetalhes = queryDetalhes.gte('data_criacao', startDia).lte('data_criacao', endDia);
+                    startPeriodo = new Date(currentYear, currentMonth - 1, currentDay);
+                    endPeriodo = new Date(currentYear, currentMonth - 1, currentDay + 1);
                 } else {
-                    const start = new Date(currentYear, currentMonth - 1, 1).toISOString();
-                    const end = new Date(currentYear, currentMonth, 0, 23, 59, 59).toISOString();
-                    queryDetalhes = queryDetalhes.gte('data_criacao', start).lte('data_criacao', end);
+                    startPeriodo = new Date(currentYear, currentMonth - 1, 1);
+                    endPeriodo = new Date(currentYear, currentMonth, 1);
                 }
+                const startPeriodoISO = startPeriodo.toISOString();
+                const endPeriodoISO = endPeriodo.toISOString();
+
+                // Em aberto (Contato Inicial, Negociação, Em Fechamento) => conta pela data em que foi ABERTO (data_criacao).
+                // Finalizado (Fechado, Perdido) => conta pela data em que foi CONCLUÍDO (data_fechamento), e não pela abertura.
+                const statusAbertosIdsDash = mapStatusUUID
+                    .filter(s => [STATUS.CONTATO_INICIAL, STATUS.NEGOCIACAO, STATUS.EM_FECHAMENTO].includes(s.nome))
+                    .map(s => s.id_status);
+                const statusFinalizadosIdsDash = mapStatusUUID
+                    .filter(s => [STATUS.FECHADO, STATUS.PERDIDO].includes(s.nome))
+                    .map(s => s.id_status);
+
+                const orPartsDash = [];
+                if (statusAbertosIdsDash.length) {
+                    orPartsDash.push(`and(id_status.in.(${statusAbertosIdsDash.join(',')}),data_criacao.gte.${startPeriodoISO},data_criacao.lt.${endPeriodoISO})`);
+                }
+                if (statusFinalizadosIdsDash.length) {
+                    orPartsDash.push(`and(id_status.in.(${statusFinalizadosIdsDash.join(',')}),data_fechamento.gte.${startPeriodoISO},data_fechamento.lt.${endPeriodoISO})`);
+                }
+                if (orPartsDash.length) queryDetalhes = queryDetalhes.or(orPartsDash.join(','));
 
                 if (AppState.usuarioLogado.perfil === 'Gerente' || (AppState.usuarioLogado.perfil || '').toLowerCase() === 'terminal') {
                     const ids = todosVendedores.filter(v => v.id_loja === AppState.usuarioLogado.id_loja).map(v => v.id_usuario);
@@ -1813,20 +1833,10 @@ function selectFilter(filter) {
     const main = document.getElementById('mainContent');
     const isGerente = currentUser.perfil === 'Gerente' || currentUser.perfil === 'Administrador' || currentUser.perfil === 'Admin';
 
-    // 1. FILTRO CIRÚRGICO: Pega apenas o que é do mês/dia vigente
-    const dados = kpisMensais.filter(o => {
-        if (!o.data_criacao) return false;
-        
-        const dataOrc = o.data_criacao.split('T')[0]; 
-        const [ano, mes, dia] = dataOrc.split('-');
-        
-        const isMesAnoCorreto = (parseInt(mes) === parseInt(currentMonth)) && (parseInt(ano) === parseInt(currentYear));
-        
-        if (currentDay) {
-            return isMesAnoCorreto && (parseInt(dia) === parseInt(currentDay));
-        }
-        return isMesAnoCorreto;
-    });
+    // 1. kpisMensais já vem filtrado corretamente do banco:
+    //    abertos (Contato Inicial/Negociação/Em Fechamento) pela data de ABERTURA (data_criacao),
+    //    finalizados (Fechado/Perdido) pela data de CONCLUSÃO (data_fechamento).
+    const dados = kpisMensais;
 
     // 2. CÁLCULOS — pega os dados já calculados do nosso estado
     const resumo = AppState.kpisMensaisResumo || {};
