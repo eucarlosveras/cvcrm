@@ -4,7 +4,6 @@ const SUPABASE_URL = 'https://blumqkxwasdbyozdvrsp.supabase.co';
         
         const META_PADRAO = 50000;
         const ITEMS_PER_PAGE = 10;
-
         const STATUS = {
 	CONTATO_INICIAL: 'Contato Inicial',
   	NEGOCIACAO: 'Negociação',
@@ -58,6 +57,45 @@ const SUPABASE_URL = 'https://blumqkxwasdbyozdvrsp.supabase.co';
             AppState.filtros.mes = mes;
             AppState.filtros.ano = ano;
             AppState.filtros.dia = null; // Resetar o dia ao mudar o mês
+        }
+
+        // --- GERENTE MULTILOJA ---
+
+        // Busca as lojas associadas ao usuário na tabela usuario_lojas (N:N).
+        // Se não houver registros, lojasMultiplas fica vazio e o fallback (id_loja único) é usado.
+        async function carregarLojasMultiplas(usuarioId) {
+            try {
+                const { data, error } = await db
+                    .from('usuario_lojas')
+                    .select('id_loja')
+                    .eq('id_usuario', usuarioId);
+                if (error) throw error;
+                if (data && data.length > 0) {
+                    AppState.usuarioLogado.lojasMultiplas = data.map(item => item.id_loja);
+                } else {
+                    AppState.usuarioLogado.lojasMultiplas = []; // Vazio = usar fallback (id_loja único)
+                }
+            } catch (e) {
+                console.warn("Erro ao carregar lojas múltiplas, usando fallback:", e);
+                AppState.usuarioLogado.lojasMultiplas = [];
+            }
+        }
+
+        // Helper central: retorna as lojas que o usuário logado pode enxergar.
+        // null = sem restrição (vê todas). Array = lista de id_loja permitidos (pode ter 1 ou N).
+        function getLojasPermitidas() {
+            const user = AppState.usuarioLogado;
+            if (!user) return [];
+            if (user.perfil === 'Administrador' || user.perfil === 'Admin') {
+                return null; // Admin não tem restrição de loja
+            }
+            if (user.lojasMultiplas && user.lojasMultiplas.length > 0) {
+                return user.lojasMultiplas; // Gerente multiloja
+            }
+            if (user.id_loja) {
+                return [user.id_loja]; // Fallback: comportamento atual (loja única)
+            }
+            return [];
         }
 
         let mapStatusUUID = []; 
@@ -181,7 +219,7 @@ const SUPABASE_URL = 'https://blumqkxwasdbyozdvrsp.supabase.co';
                     // 3. Tudo em ordem: esconde o ecrã de login e arranca com a dashboard
                     setUsuarioLogado(userProfile);
                     document.getElementById('loginOverlay').classList.add('hidden');
-                    initAppAfterLogin();
+                    await initAppAfterLogin();
                 } else {
                     // Se não houver sessão, garante que o ecrã de login fica visível
                     document.getElementById('loginOverlay').classList.remove('hidden');
@@ -225,7 +263,7 @@ const SUPABASE_URL = 'https://blumqkxwasdbyozdvrsp.supabase.co';
                 // 4. Libera o acesso e inicia a dashboard
                 setUsuarioLogado(userProfile);
                 document.getElementById('loginOverlay').classList.add('hidden');
-                initAppAfterLogin();
+                await initAppAfterLogin();
             } catch (err) {
                 msg.innerHTML = `<span class="error-message">${escapeHtml(err.message)}</span>`;
             } finally {
@@ -236,9 +274,12 @@ const SUPABASE_URL = 'https://blumqkxwasdbyozdvrsp.supabase.co';
 
         let _notifChannel = null; // referência global para poder destruir no logout
 
-        function initAppAfterLogin() {
+        async function initAppAfterLogin() {
             document.getElementById('sidebar').style.display = 'flex';
             document.getElementById('mainContent').style.display = 'flex';
+            // Carrega as lojas do Gerente Multiloja (se houver) ANTES de configurar permissões e KPIs,
+            // pois getLojasPermitidas() depende desse dado já estar em AppState.usuarioLogado.
+            await carregarLojasMultiplas(currentUser.id_usuario);
             configurarPermissoes();
             carregarDadosIniciais();
             iniciarSubscriptionNotificacoes();
@@ -333,13 +374,19 @@ const SUPABASE_URL = 'https://blumqkxwasdbyozdvrsp.supabase.co';
             // NOVO CÓDIGO LEVE E ESCALÁVEL
             const isAdmin = AppState.usuarioLogado.perfil === 'Administrador' || AppState.usuarioLogado.perfil === 'Admin';
             try {
+                // Se for Gerente com mais de uma loja, manda a lista para a RPC agregar o resumo das 3.
+                // Terminal e Gerente de loja única continuam usando p_id_loja (comportamento antigo, intocado).
+                const lojasPermitidasRPC = getLojasPermitidas();
+                const isGerenteMultilojaRPC = AppState.usuarioLogado.perfil === 'Gerente' && lojasPermitidasRPC && lojasPermitidasRPC.length > 1;
+
                 // Chama a função direto no banco, passando apenas os filtros
                 const { data: kpisData, error: rpcError } = await db.rpc('calcular_kpis_dashboard', {
                     p_mes: currentMonth,
                     p_ano: currentYear,
                     p_id_usuario: AppState.usuarioLogado.id_usuario,
                     p_perfil: (AppState.usuarioLogado.perfil || '').toLowerCase() === 'terminal' ? 'Gerente' : AppState.usuarioLogado.perfil,
-                    p_id_loja: AppState.usuarioLogado.id_loja
+                    p_id_loja: AppState.usuarioLogado.id_loja,
+                    p_ids_loja: isGerenteMultilojaRPC ? lojasPermitidasRPC : null
                 });
                 if (rpcError) throw rpcError;
                 // Salvamos o resultado mastigado no objeto global
@@ -380,7 +427,10 @@ const SUPABASE_URL = 'https://blumqkxwasdbyozdvrsp.supabase.co';
                 if (orPartsDash.length) queryDetalhes = queryDetalhes.or(orPartsDash.join(','));
 
                 if (AppState.usuarioLogado.perfil === 'Gerente' || (AppState.usuarioLogado.perfil || '').toLowerCase() === 'terminal') {
-                    const ids = todosVendedores.filter(v => v.id_loja === AppState.usuarioLogado.id_loja).map(v => v.id_usuario);
+                    const lojasPermitidasDash = getLojasPermitidas();
+                    const ids = lojasPermitidasDash
+                        ? todosVendedores.filter(v => lojasPermitidasDash.includes(v.id_loja)).map(v => v.id_usuario)
+                        : todosVendedores.map(v => v.id_usuario);
                     if (ids.length > 0) queryDetalhes = queryDetalhes.in('id_usuario', ids);
                     if (selectedVendedor !== 'todos') queryDetalhes = queryDetalhes.eq('id_usuario', selectedVendedor);
                 } else if (AppState.usuarioLogado.perfil === 'Vendedor') {
@@ -436,9 +486,11 @@ const SUPABASE_URL = 'https://blumqkxwasdbyozdvrsp.supabase.co';
                 let query = db.from('orcamentos')
                     .select('*, clientes!inner(nome_cliente, whatsapp), usuarios!inner(nome, id_loja), status_orcamento(nome)', { count: 'exact' });
             
-                // Regra de Ferro: Se for Gerente, obriga a loja a ser a dele E o vendedor a existir
+                // Regra de Ferro: Se for Gerente, obriga a(s) loja(s) permitida(s) E o vendedor a existir
                 if (currentUser.perfil === 'Gerente') {
-                    query = query.eq('usuarios.id_loja', currentUser.id_loja);
+                    const lojasPermitidasTab = getLojasPermitidas();
+                    // Nunca pula o filtro: se não há lojas permitidas, força zero resultados (falha fechada).
+                    query = query.in('usuarios.id_loja', (lojasPermitidasTab && lojasPermitidasTab.length > 0) ? lojasPermitidasTab : ['00000000-0000-0000-0000-000000000000']);
                     if (selectedVendedor !== 'todos') query = query.eq('id_usuario', selectedVendedor);
                 } else if (currentUser.perfil === 'Vendedor') {
                     query = query.eq('id_usuario', currentUser.id_usuario);
@@ -631,8 +683,13 @@ const SUPABASE_URL = 'https://blumqkxwasdbyozdvrsp.supabase.co';
         async function exportarCSV() {
             showToast('Gerando relatório...', 'info');
             try {
-                let query = db.from('orcamentos').select('*, clientes!inner(nome_cliente, whatsapp), usuarios(nome), status_orcamento(nome)');
+                let query = db.from('orcamentos').select('*, clientes!inner(nome_cliente, whatsapp), usuarios!inner(nome, id_loja), status_orcamento(nome)');
                 if (currentUser.perfil === 'Vendedor') query = query.eq('id_usuario', currentUser.id_usuario);
+                else if (currentUser.perfil === 'Gerente') {
+                    const lojasPermitidasCSV = getLojasPermitidas();
+                    query = query.in('usuarios.id_loja', (lojasPermitidasCSV && lojasPermitidasCSV.length > 0) ? lojasPermitidasCSV : ['00000000-0000-0000-0000-000000000000']);
+                    if (selectedVendedor !== 'todos') query = query.eq('id_usuario', selectedVendedor);
+                }
                 else if ((currentUser.perfil || '').toLowerCase() === 'terminal') query = query.eq('usuarios.id_loja', currentUser.id_loja);
                 else if (selectedVendedor !== 'todos') query = query.eq('id_usuario', selectedVendedor);
                 
@@ -679,6 +736,12 @@ const SUPABASE_URL = 'https://blumqkxwasdbyozdvrsp.supabase.co';
             const status = document.getElementById('adminModStatus').value;
             const senha = document.getElementById('adminModSenha').value;
             const err = document.getElementById('errAdminUsuario');
+            const lojasMultiSel = document.getElementById('adminModLojasMultiplas');
+            // Lojas adicionais selecionadas (só relevante para perfil Gerente); a Loja Base sempre entra também.
+            const lojasSelecionadas = (perfil === 'Gerente' && lojasMultiSel)
+                ? Array.from(lojasMultiSel.selectedOptions).map(o => o.value)
+                : [];
+            if (loja && !lojasSelecionadas.includes(loja)) lojasSelecionadas.push(loja);
 
             if (!nome || !email) {
                 err.textContent = 'Preencha Nome e E-mail.';
@@ -696,24 +759,57 @@ const SUPABASE_URL = 'https://blumqkxwasdbyozdvrsp.supabase.co';
             const btn = document.getElementById('btnSalvarUsuarioAdmin');
             btn.classList.add('saving'); btn.disabled = true; err.textContent = '';
 
+            const idEmEdicaoNoMomentoDoSave = idUsuarioEmEdicao; // preserva antes de zerar mais abaixo
             try {
-                if (idUsuarioEmEdicao) {
+                let idUsuarioAlvo = idEmEdicaoNoMomentoDoSave;
+
+                if (idEmEdicaoNoMomentoDoSave) {
                     // EDICAO: atualiza direto na tabela usuarios
                     const updatePayload = { nome, email, id_loja: loja, perfil, status };
                     const { error: updateError } = await db.from('usuarios')
                         .update(updatePayload)
-                        .eq('id_usuario', idUsuarioEmEdicao);
+                        .eq('id_usuario', idEmEdicaoNoMomentoDoSave);
                     if (updateError) throw updateError;
                     showToast('Usuário atualizado com sucesso!', 'success');
                 } else {
                     // CRIACAO: chama Edge Function que cria no Auth + insere em usuarios
                     const payload = { nome, email, loja, perfil, status, senha };
                     console.log("Payload sendo enviado para a Edge Function:", JSON.stringify(payload));
-                    const { data, error } = await db.functions.invoke('criar-usuario', {
+                    const { error } = await db.functions.invoke('criar-usuario', {
                         body: payload
                     });
-                    if (error) throw new Error(error.message);
+                    if (error) {
+                        // Por padrão o supabase-js só diz "non-2xx status code"; aqui buscamos
+                        // a mensagem real que a Edge Function devolveu no corpo ({ error: '...' }).
+                        let mensagemDetalhada = error.message;
+                        try {
+                            if (error.context && typeof error.context.json === 'function') {
+                                const corpoErro = await error.context.json();
+                                if (corpoErro?.error) mensagemDetalhada = corpoErro.error;
+                            }
+                        } catch (_) { /* mantém a mensagem genérica se não der para ler o corpo */ }
+                        throw new Error(mensagemDetalhada);
+                    }
+                    // A Edge Function 'criar-usuario' só retorna { success: true }, sem o id_usuario.
+                    // Buscamos o registro recém-criado pelo e-mail (único) para poder sincronizar usuario_lojas.
+                    const { data: userRecemCriado } = await db.from('usuarios').select('id_usuario').eq('email', email).single();
+                    idUsuarioAlvo = userRecemCriado?.id_usuario || null;
                     showToast('Usuário criado com sucesso!', 'success');
+                }
+
+                // Sincroniza a tabela usuario_lojas (Gerente Multiloja): remove associações antigas e grava as atuais.
+                if (perfil === 'Gerente') {
+                    if (idUsuarioAlvo) {
+                        await db.from('usuario_lojas').delete().eq('id_usuario', idUsuarioAlvo);
+                        if (lojasSelecionadas.length > 0) {
+                            const inserts = lojasSelecionadas.map(lojaId => ({ id_usuario: idUsuarioAlvo, id_loja: lojaId }));
+                            const { error: syncError } = await db.from('usuario_lojas').insert(inserts);
+                            if (syncError) console.warn('Erro ao sincronizar lojas do gerente:', syncError);
+                        }
+                    }
+                } else if (idUsuarioAlvo) {
+                    // Se o perfil deixou de ser Gerente, limpa eventuais associações antigas.
+                    await db.from('usuario_lojas').delete().eq('id_usuario', idUsuarioAlvo);
                 }
 
                 idUsuarioEmEdicao = null;
@@ -724,12 +820,25 @@ const SUPABASE_URL = 'https://blumqkxwasdbyozdvrsp.supabase.co';
                 todosVendedores = todosUsuarios.filter(u => u.perfil === 'Vendedor');
                 renderAdminUsuarios(document.getElementById('mainContent'));
 
+                // Se o admin acabou de editar/criar o próprio gerente logado, recarrega as lojas permitidas em sessão.
+                if (currentUser && idUsuarioAlvo === currentUser.id_usuario) {
+                    await carregarLojasMultiplas(currentUser.id_usuario);
+                }
+
             } catch (e) {
                 err.textContent = 'Erro: ' + e.message;
             } finally {
                 btn.classList.remove('saving');
                 btn.disabled = false;
             }
+        }
+
+        // Mostra/oculta o campo de lojas adicionais conforme o perfil selecionado no modal
+        function toggleCampoLojasMultiplas() {
+            const perfilSel = document.getElementById('adminModPerfil');
+            const campo = document.getElementById('campoLojasMultiplas');
+            if (!perfilSel || !campo) return;
+            campo.style.display = (perfilSel.value === 'Gerente') ? 'block' : 'none';
         }
 
         function abrirModalUsuarioAdmin(id = null) {
@@ -742,9 +851,21 @@ const SUPABASE_URL = 'https://blumqkxwasdbyozdvrsp.supabase.co';
             const perfilSel = document.getElementById('adminModPerfil');
             const statusSel = document.getElementById('adminModStatus');
             const senhaInput = document.getElementById('adminModSenha');
+            const lojasMultiSel = document.getElementById('adminModLojasMultiplas');
 
             lojaSel.innerHTML = '<option value="">Selecione a loja...</option>';
             listaLojas.forEach(l => { lojaSel.innerHTML += `<option value="${l.id_loja}">${escapeHtml(l.nome_loja)}</option>`; });
+
+            // Popula o multiselect de lojas adicionais (usado só quando perfil = Gerente)
+            if (lojasMultiSel) {
+                lojasMultiSel.innerHTML = '';
+                listaLojas.slice().sort((a, b) => a.nome_loja.localeCompare(b.nome_loja)).forEach(l => {
+                    const opt = document.createElement('option');
+                    opt.value = l.id_loja;
+                    opt.textContent = l.nome_loja;
+                    lojasMultiSel.appendChild(opt);
+                });
+            }
 
             if (id) {
                 const user = todosUsuarios.find(u => u.id_usuario === id);
@@ -752,11 +873,24 @@ const SUPABASE_URL = 'https://blumqkxwasdbyozdvrsp.supabase.co';
                 nomeInput.value = user.nome || ''; emailInput.value = user.email || '';
                 lojaSel.value = user.id_loja || ''; perfilSel.value = user.perfil || 'Vendedor'; statusSel.value = user.status || 'Ativo';
                 senhaInput.value = '';
+
+                // Se for Gerente, busca as lojas já associadas (tabela usuario_lojas) e pré-seleciona
+                if (user.perfil === 'Gerente' && lojasMultiSel) {
+                    db.from('usuario_lojas').select('id_loja').eq('id_usuario', id).then(({ data, error }) => {
+                        if (error) { console.warn('Erro ao carregar lojas associadas:', error); return; }
+                        const idsAssociadas = (data || []).map(r => r.id_loja);
+                        Array.from(lojasMultiSel.options).forEach(opt => {
+                            opt.selected = idsAssociadas.includes(opt.value);
+                        });
+                    });
+                }
             } else {
                 title.textContent = 'Novo Usuário';
                 nomeInput.value = ''; emailInput.value = ''; lojaSel.value = ''; perfilSel.value = 'Vendedor'; statusSel.value = 'Ativo';
                 senhaInput.value = '';
+                if (lojasMultiSel) Array.from(lojasMultiSel.options).forEach(opt => { opt.selected = false; });
             }
+            toggleCampoLojasMultiplas();
             openModal('modalUsuarioAdmin');
         }
 
@@ -891,7 +1025,10 @@ const SUPABASE_URL = 'https://blumqkxwasdbyozdvrsp.supabase.co';
             
             let filtrados = todosVendedores;
             if (currentUser.perfil === 'Gerente') {
-                filtrados = todosVendedores.filter(v => v.id_loja === currentUser.id_loja);
+                const lojasPermitidasMeta = getLojasPermitidas();
+                filtrados = lojasPermitidasMeta
+                    ? todosVendedores.filter(v => lojasPermitidasMeta.includes(v.id_loja))
+                    : todosVendedores;
                 if (selectedVendedor !== 'todos') filtrados = filtrados.filter(v => v.id_usuario === selectedVendedor);
             } else {
                 if (selectedVendedor !== 'todos') {
@@ -1438,8 +1575,13 @@ const SUPABASE_URL = 'https://blumqkxwasdbyozdvrsp.supabase.co';
         // ─── FIM AJUSTAR PROPOSTA ─────────────────────────────────────────────
 
         function buildLojaOptions() {
+            // Para Gerente Multiloja/loja única, o seletor mostra só as lojas permitidas + "Todas" (que agrega essas lojas).
+            const lojasPermitidasSel = getLojasPermitidas();
+            const lojasParaExibir = lojasPermitidasSel
+                ? listaLojas.filter(l => lojasPermitidasSel.includes(l.id_loja))
+                : listaLojas;
             let opts = `<option value="todas">Todas as lojas</option>`;
-            listaLojas.slice().sort((a,b) => a.nome_loja.localeCompare(b.nome_loja)).forEach(l => {
+            lojasParaExibir.slice().sort((a,b) => a.nome_loja.localeCompare(b.nome_loja)).forEach(l => {
                 opts += `<option value="${l.id_loja}" ${selectedLoja === l.id_loja ? 'selected' : ''}>${escapeHtml(l.nome_loja)}</option>`;
             });
             return opts;
@@ -1448,7 +1590,11 @@ const SUPABASE_URL = 'https://blumqkxwasdbyozdvrsp.supabase.co';
         function buildVendedorOptions() {
             let filtrados = todosVendedores;
             if (currentUser.perfil === 'Gerente') {
-                filtrados = todosVendedores.filter(v => v.id_loja === currentUser.id_loja);
+                const lojasPermitidasVend = getLojasPermitidas();
+                filtrados = lojasPermitidasVend
+                    ? todosVendedores.filter(v => lojasPermitidasVend.includes(v.id_loja))
+                    : todosVendedores;
+                if (selectedLoja !== 'todas') filtrados = filtrados.filter(v => v.id_loja === selectedLoja);
             } else if (selectedLoja !== 'todas') {
                 filtrados = todosVendedores.filter(v => v.id_loja === selectedLoja);
             }
@@ -1478,8 +1624,12 @@ const SUPABASE_URL = 'https://blumqkxwasdbyozdvrsp.supabase.co';
 
         function renderFiltrosData(isGerente) {
             const isAdmin = currentUser.perfil === 'Administrador' || currentUser.perfil === 'Admin';
+            // Gerente de loja única nunca precisou escolher loja (só tem uma). Gerente Multiloja precisa,
+            // então o seletor também aparece pra ele, mostrando só as lojas permitidas (buildLojaOptions já filtra isso).
+            const lojasPermitidasFiltro = getLojasPermitidas();
+            const mostrarSeletorLoja = isAdmin || (lojasPermitidasFiltro && lojasPermitidasFiltro.length > 1);
             return `<div class="filter-group">
-                ${isAdmin ? `<div class="filter-wrapper"><span class="filter-icon"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span><select class="vendedor-select" id="lojaSelect" onchange="filtrarPorLoja(this.value)" aria-label="Filtrar por loja">${buildLojaOptions()}</select></div>` : ''}
+                ${mostrarSeletorLoja ? `<div class="filter-wrapper"><span class="filter-icon"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span><select class="vendedor-select" id="lojaSelect" onchange="filtrarPorLoja(this.value)" aria-label="Filtrar por loja">${buildLojaOptions()}</select></div>` : ''}
                 ${isGerente ? `<div class="filter-wrapper"><span class="filter-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></span><select class="vendedor-select" id="vendedorSelect" onchange="filtrarPorVendedor(this.value)" aria-label="Filtrar por vendedor">${buildVendedorOptions()}</select></div>` : ''}
                 <div class="filter-wrapper"><span class="filter-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/></svg></span><select class="month-select" id="monthSelect" onchange="changeMonth(this.value)" aria-label="Selecionar mês">${buildMonthOptions()}</select></div>
                 <div class="filter-wrapper"><span class="filter-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg></span><select class="day-select" id="daySelect" onchange="changeDay(this.value)" aria-label="Selecionar dia">${buildDayOptions()}</select></div>
@@ -1889,7 +2039,11 @@ function selectFilter(filter) {
                 if (isGerente) {
                     let vendedoresRanking = todosVendedores;
                     if (currentUser.perfil === 'Gerente') {
-                        vendedoresRanking = todosVendedores.filter(v => v.id_loja === currentUser.id_loja);
+                        const lojasPermitidasRanking = getLojasPermitidas();
+                        vendedoresRanking = lojasPermitidasRanking
+                            ? todosVendedores.filter(v => lojasPermitidasRanking.includes(v.id_loja))
+                            : todosVendedores;
+                        if (selectedLoja !== 'todas') vendedoresRanking = vendedoresRanking.filter(v => v.id_loja === selectedLoja);
                     } else if (selectedLoja !== 'todas') {
                         vendedoresRanking = todosVendedores.filter(v => v.id_loja === selectedLoja);
                     }
@@ -2028,6 +2182,29 @@ function selectFilter(filter) {
 			            </div>
 			        </header>
 			
+			        <div class="kpi-grid" id="carteiraMetricsGrid">
+			            <div class="kpi-card">
+			                <div class="kpi-label-row"><span class="kpi-dot blue"></span><span class="kpi-label">Total no Pipeline</span></div>
+			                <div class="kpi-value" id="carteiraTotalPipeline">R$ 0</div>
+			            </div>
+			            <div class="kpi-card">
+			                <div class="kpi-label-row"><span class="kpi-dot orange"></span><span class="kpi-label">Previsão de Faturamento</span></div>
+			                <div class="kpi-value" id="carteiraPrevisao">R$ 0</div>
+			            </div>
+			            <div class="kpi-card">
+			                <div class="kpi-label-row"><span class="kpi-dot green"></span><span class="kpi-label">Ticket Médio</span></div>
+			                <div class="kpi-value" id="carteiraTicketMedio">R$ 0</div>
+			            </div>
+			            <div class="kpi-card vendido-highlight">
+			                <div class="kpi-label-row"><span class="kpi-dot green"></span><span class="kpi-label">Meta do Mês</span></div>
+			                <div class="kpi-value" id="carteiraMetaValor">R$ 0</div>
+			                <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">Coberta em <strong id="carteiraMetaPercentual">0%</strong></div>
+			                <div style="margin-top:6px; width:100%; height:3px; background:var(--border-color, #e9edf2); border-radius:4px; overflow:hidden;">
+			                    <div id="carteiraMetaProgresso" style="width:0%; height:100%; background:#22c55e; border-radius:4px; transition:width .3s;"></div>
+			                </div>
+			            </div>
+			        </div>
+			
 			        <div style="margin-bottom: 16px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
 			            <div id="searchTagContainer"></div>
 			            <input type="text" class="search-input" placeholder="Buscar cliente..." id="searchInput" onchange="handleSearch()" onkeyup="if(event.key === 'Enter') handleSearch()" value="${escapeHtml(searchTerm)}">
@@ -2082,7 +2259,7 @@ function selectFilter(filter) {
             try {
                 // Query direta e independente — não depende mais de kpisMensais
                 let query = db.from('orcamentos')
-                    .select('id_orcamento, valor_orcado, id_usuario, data_contato, hora_contato, observacao_agendamento, modelo_colchao, ligacao_confirmada, clientes(nome_cliente, whatsapp), status_orcamento(nome), usuarios(nome, id_loja)')
+                    .select('id_orcamento, valor_orcado, id_usuario, data_contato, hora_contato, observacao_agendamento, modelo_colchao, ligacao_confirmada, clientes(nome_cliente, whatsapp), status_orcamento(nome), usuarios!inner(nome, id_loja)')
                     .not('data_contato', 'is', null)
                     .not('id_status', 'is', null);
 
@@ -2090,7 +2267,9 @@ function selectFilter(filter) {
                 if (currentUser.perfil === 'Vendedor') {
                     query = query.eq('id_usuario', currentUser.id_usuario);
                 } else if (currentUser.perfil === 'Gerente' || (currentUser.perfil || '').toLowerCase() === 'terminal') {
-                    query = query.eq('usuarios.id_loja', currentUser.id_loja);
+                    const lojasPermitidasAgenda = getLojasPermitidas();
+                    // Nunca pula o filtro: se não há lojas permitidas, força zero resultados (falha fechada).
+                    query = query.in('usuarios.id_loja', (lojasPermitidasAgenda && lojasPermitidasAgenda.length > 0) ? lojasPermitidasAgenda : ['00000000-0000-0000-0000-000000000000']);
                     if (selectedVendedor !== 'todos') query = query.eq('id_usuario', selectedVendedor);
                 } else {
                     // Administrador
@@ -2331,7 +2510,12 @@ function selectFilter(filter) {
                     const ids = [...new Set((orcsV || []).map(o => o.id_cliente).filter(Boolean))];
                     query = query.in(pk, ids.length ? ids : ['00000000-0000-0000-0000-000000000000']);
                 } else if (currentUser.perfil === 'Gerente') {
-                    const { data: usrs } = await db.from('usuarios').select('id_usuario').eq('id_loja', currentUser.id_loja);
+                    const lojasPermitidasCli = getLojasPermitidas();
+                    let queryUsrs = db.from('usuarios').select('id_usuario');
+                    queryUsrs = lojasPermitidasCli && lojasPermitidasCli.length > 0
+                        ? queryUsrs.in('id_loja', lojasPermitidasCli)
+                        : queryUsrs.eq('id_loja', currentUser.id_loja);
+                    const { data: usrs } = await queryUsrs;
                     const idsU = (usrs || []).map(u => u.id_usuario);
                     const { data: orcsL } = idsU.length
                         ? await db.from('orcamentos').select('id_cliente').in('id_usuario', idsU)
@@ -2658,12 +2842,14 @@ function selectFilter(filter) {
             if (isGerenteOuAdmin && campoTransferencia && selectVendedor) {
                 // Popula o dropdown com os vendedores disponíveis
                 let optsVendedor = '<option value="">— Manter vendedor atual —</option>';
+                const lojasPermitidasTransf = getLojasPermitidas();
                 const listaFiltrada = currentUser.perfil === 'Gerente'
-                    ? todosVendedores.filter(v => v.id_loja === currentUser.id_loja)
+                    ? (lojasPermitidasTransf ? todosVendedores.filter(v => lojasPermitidasTransf.includes(v.id_loja)) : todosVendedores)
                     : todosVendedores;
 
-                // Para Admin: agrupa por loja para facilitar identificação
-                if (currentUser.perfil !== 'Gerente') {
+                // Agrupa por loja quando fizer sentido: Admin (vê tudo) ou Gerente Multiloja (mais de uma loja)
+                const isGerenteMultiloja = currentUser.perfil === 'Gerente' && lojasPermitidasTransf && lojasPermitidasTransf.length > 1;
+                if (currentUser.perfil !== 'Gerente' || isGerenteMultiloja) {
                     const lojaMap = {};
                     listaLojas.forEach(l => { lojaMap[l.id_loja] = l.nome_loja; });
                     // Agrupa por loja
@@ -2872,7 +3058,10 @@ function selectFilter(filter) {
             });
 
             if (currentUser.perfil === 'Gerente') {
-                lojaIds = lojaIds.filter(idL => idL === currentUser.id_loja);
+                const lojasPermitidasMetas = getLojasPermitidas();
+                lojaIds = lojasPermitidasMetas
+                    ? lojaIds.filter(idL => lojasPermitidasMetas.includes(idL))
+                    : lojaIds.filter(idL => idL === currentUser.id_loja);
             }
 
             lojaIds.forEach(idL => {
@@ -4022,6 +4211,53 @@ function selectFilter(filter) {
             renderKanbanBoard();
         }
 
+        // Probabilidade de fechamento por etapa, usada só para a "Previsão de Faturamento".
+        // Não existe esse conceito salvo no banco hoje — são pesos padrão, ajustáveis se fizer sentido pro negócio.
+        const PROBABILIDADE_POR_ETAPA = {
+            [STATUS.CONTATO_INICIAL]: 0.20,
+            [STATUS.NEGOCIACAO]: 0.50,
+            [STATUS.EM_FECHAMENTO]: 0.80
+        };
+
+        function atualizarMetricasCarteira(data) {
+            const elPipeline = document.getElementById('carteiraTotalPipeline');
+            if (!elPipeline) return; // cards não estão na tela (ex: outra view foi aberta enquanto carregava)
+
+            const etapasAbertas = [STATUS.CONTATO_INICIAL, STATUS.NEGOCIACAO, STATUS.EM_FECHAMENTO];
+            const abertos = data.filter(o => etapasAbertas.includes(o.status_orcamento?.nome));
+
+            // Total no Pipeline: soma dos negócios ainda em aberto
+            const totalPipeline = abertos.reduce((s, o) => s + parseFloat(o.valor_orcado || 0), 0);
+
+            // Vendas já fechadas no mês (precisa vir antes da previsão, pois ela entra na conta)
+            const vendasFechadasValor = data
+                .filter(o => [STATUS.FECHADO, 'Vendido'].includes(o.status_orcamento?.nome))
+                .reduce((s, o) => s + parseFloat(o.valor_orcado || 0), 0);
+
+            // Previsão de Faturamento = o que já foi vendido + a parte ponderada do que ainda está em aberto.
+            // (Nunca pode ficar menor que o já vendido — senão não seria uma previsão do mês, e sim só do pipeline.)
+            const previsaoPipeline = abertos.reduce((s, o) => {
+                const peso = PROBABILIDADE_POR_ETAPA[o.status_orcamento?.nome] || 0;
+                return s + (parseFloat(o.valor_orcado || 0) * peso);
+            }, 0);
+            const previsao = vendasFechadasValor + previsaoPipeline;
+
+            // Ticket Médio: valor médio dos negócios em aberto
+            const ticketMedio = abertos.length > 0 ? totalPipeline / abertos.length : 0;
+
+            // Meta do Mês: meta somada dos vendedores visíveis vs. vendas já fechadas no período (ambas já filtradas por loja)
+            const metaTotal = calcularMetaTotal();
+            const metaPercentual = metaTotal > 0 ? Math.min(100, Math.round((vendasFechadasValor / metaTotal) * 100)) : 0;
+
+            const fmt = v => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            elPipeline.textContent = fmt(totalPipeline);
+            document.getElementById('carteiraPrevisao').textContent = fmt(previsao);
+            document.getElementById('carteiraTicketMedio').textContent = fmt(ticketMedio);
+            document.getElementById('carteiraMetaValor').textContent = fmt(metaTotal);
+            document.getElementById('carteiraMetaPercentual').textContent = `${metaPercentual}%`;
+            document.getElementById('carteiraMetaProgresso').style.width = `${metaPercentual}%`;
+        }
+
         async function renderKanbanBoard() {
             const board = document.getElementById('kanbanBoard');
             if (!board) return;
@@ -4032,11 +4268,13 @@ function selectFilter(filter) {
 
                 // Busca orçamentos do período selecionado (sem paginação — kanban precisa do total)
                 let query = db.from('orcamentos')
-                    .select('id_orcamento, protocolo, data_criacao, data_fechamento, valor_orcado, modelo_colchao, data_contato, hora_contato, usuarios(nome, id_loja), clientes(nome_cliente), status_orcamento(nome)')
+                    .select('id_orcamento, protocolo, data_criacao, data_fechamento, valor_orcado, modelo_colchao, data_contato, hora_contato, usuarios!inner(nome, id_loja), clientes(nome_cliente), status_orcamento(nome)')
                     .not('id_status', 'is', null);
 
                 if (currentUser.perfil === 'Gerente') {
-                    query = query.eq('usuarios.id_loja', currentUser.id_loja);
+                    const lojasPermitidasKanban = getLojasPermitidas();
+                    // Nunca pula o filtro: se não há lojas permitidas, força zero resultados (falha fechada).
+                    query = query.in('usuarios.id_loja', (lojasPermitidasKanban && lojasPermitidasKanban.length > 0) ? lojasPermitidasKanban : ['00000000-0000-0000-0000-000000000000']);
                 } else if (currentUser.perfil === 'Vendedor') {
                     query = query.eq('id_usuario', currentUser.id_usuario);
                 } else if ((currentUser.perfil || '').toLowerCase() === 'terminal') {
@@ -4098,6 +4336,8 @@ function selectFilter(filter) {
 
                 const { data, error } = await query;
                 if (error) throw error;
+
+                atualizarMetricasCarteira(data || []);
 
                 const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
 
@@ -4590,6 +4830,34 @@ function abrirModalNovoProduto() {
     
     // Carregar categorias dinamicamente
     carregarCategoriasEstoque();
+
+    // Popular o select de Loja: Admin escolhe entre todas; demais perfis só entre as lojas permitidas.
+    const selectLoja = document.getElementById('novoProdLoja');
+    const campoLoja = document.getElementById('campoNovoProdLoja');
+    if (selectLoja) {
+        const isAdminNovoProd = currentUser.perfil === 'Administrador' || currentUser.perfil === 'Admin';
+        const lojasPermitidasNovoProd = getLojasPermitidas();
+        const lojasParaEscolher = isAdminNovoProd
+            ? listaLojas
+            : listaLojas.filter(l => (lojasPermitidasNovoProd || []).includes(l.id_loja));
+
+        selectLoja.innerHTML = '<option value="" disabled selected>Selecione a loja...</option>';
+        lojasParaEscolher.slice().sort((a, b) => a.nome_loja.localeCompare(b.nome_loja)).forEach(l => {
+            const opt = document.createElement('option');
+            opt.value = l.id_loja;
+            opt.textContent = l.nome_loja;
+            selectLoja.appendChild(opt);
+        });
+
+        // Se só existe UMA loja para escolher (caso comum: Gerente/Vendedor de loja única),
+        // pré-seleciona e esconde o campo pra não pedir uma escolha óbvia.
+        if (lojasParaEscolher.length === 1) {
+            selectLoja.value = lojasParaEscolher[0].id_loja;
+            if (campoLoja) campoLoja.style.display = 'none';
+        } else if (campoLoja) {
+            campoLoja.style.display = 'block';
+        }
+    }
     
     // Popular o select de produtos base usando o array global todosProdutos
     const selectBase = document.getElementById('novoProdSelecaoBase');
@@ -4676,6 +4944,7 @@ async function salvarNovoProdutoEstoque(event) {
     const qualidade = qualidadeEl.value;
     
     const qtdInicial = parseInt(document.getElementById('novoProdQuantidade')?.value) || 0;
+    const lojaId = document.getElementById('novoProdLoja')?.value;
 
     if (!idProduto || !codigo || !nome) {
         showToast('Selecione um produto base válido.', 'warning');
@@ -4683,6 +4952,10 @@ async function salvarNovoProdutoEstoque(event) {
     }
     if (!categoriaId) {
         showToast('Selecione uma categoria válida.', 'warning');
+        return;
+    }
+    if (!lojaId) {
+        showToast('Selecione a loja do produto.', 'warning');
         return;
     }
 
@@ -4699,7 +4972,8 @@ async function salvarNovoProdutoEstoque(event) {
             categoria_id: parseInt(categoriaId),
             qualidade: qualidade,
             qtd_disponivel: qtdInicial,
-            status: 'Ativo'
+            status: 'Ativo',
+            id_loja: lojaId
         };
 
         const { error } = await db.from('estoque').insert(payload);
@@ -4795,9 +5069,16 @@ async function renderEstoque() {
 async function carregarEstoqueComProdutos() {
     try {
         // 1. Busca os dados do estoque com o relacionamento de categorias
-        const { data: estoqueData, error: estoqueError } = await db
-            .from('estoque')
-            .select('*, categorias(nome)');
+        let queryEstoque = db.from('estoque').select('*, categorias(nome)');
+
+        // Admin vê tudo. Gerente/Vendedor/Terminal só veem o estoque das lojas permitidas.
+        const isAdminEstoque = currentUser.perfil === 'Administrador' || currentUser.perfil === 'Admin';
+        if (!isAdminEstoque) {
+            const lojasPermitidasEstoque = getLojasPermitidas();
+            queryEstoque = queryEstoque.in('id_loja', (lojasPermitidasEstoque && lojasPermitidasEstoque.length > 0) ? lojasPermitidasEstoque : ['00000000-0000-0000-0000-000000000000']);
+        }
+
+        const { data: estoqueData, error: estoqueError } = await queryEstoque;
 
         if (estoqueError) throw estoqueError;
 
