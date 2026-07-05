@@ -187,8 +187,24 @@ const SUPABASE_URL = 'https://blumqkxwasdbyozdvrsp.supabase.co';
         function marcarTodasNotificacoesLidas(ids) { let altered = false; ids.forEach(id => { if (id && !notificacoesLidas.has(id)) { notificacoesLidas.add(id); altered = true; } }); if (altered) salvarNotificacoesLidas(); }
         function showLoader() { document.getElementById('globalLoader').classList.add('loading'); }
         function hideLoader() { document.getElementById('globalLoader').classList.remove('loading'); }
+        // Retorna a data de HOJE (YYYY-MM-DD) sempre no fuso de Brasília, independente do
+        // fuso do navegador/servidor. Evita o bug de "toISOString()" (que é sempre UTC) fazer
+        // a data virar o dia seguinte entre 21h e 23h59 no horário de Brasília.
+        function getHojeBrasilia() { return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }); }
+        // Soma/subtrai dias a partir do "hoje" de Brasília, retornando YYYY-MM-DD.
+        // Usa horário fixo em UTC (T00:00:00Z) apenas como âncora de cálculo de calendário,
+        // então a aritmética de dias não sofre interferência de fuso horário.
+        function addDiasBrasilia(dias) { const base = new Date(getHojeBrasilia() + 'T00:00:00Z'); base.setUTCDate(base.getUTCDate() + dias); return base.toISOString().split('T')[0]; }
         function escapeHtml(str) { if (!str) return ''; const div = document.createElement('div'); div.textContent = str; return div.innerHTML; }
-        function timeAgo(dateString) { const now = new Date(); const date = new Date(dateString); const diff = Math.floor((now - date) / (1000 * 60 * 60 * 24)); if (diff === 0) return 'Hoje'; if (diff === 1) return 'Ontem'; return 'há ' + diff + ' dias'; }
+        function timeAgo(dateString) {
+            if (!dateString) return '-';
+            const dataStr = new Date(dateString).toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
+            const hojeStr = getHojeBrasilia();
+            if (dataStr === hojeStr) return 'Hoje';
+            if (dataStr === addDiasBrasilia(-1)) return 'Ontem';
+            const diff = Math.round((new Date(hojeStr + 'T00:00:00Z') - new Date(dataStr + 'T00:00:00Z')) / (1000 * 60 * 60 * 24));
+            return 'há ' + diff + ' dias';
+        }
         function getDateLabel(dateStr) { const d = new Date(dateStr); const hoje = new Date(); const ontem = new Date(hoje); ontem.setDate(hoje.getDate() - 1); if (d.toDateString() === hoje.toDateString()) return 'Hoje'; if (d.toDateString() === ontem.toDateString()) return 'Ontem'; return d.toLocaleDateString('pt-BR'); }
         function getUltimaVisita(id) { const ts = localStorage.getItem('ultima_visita_' + id); return ts ? parseInt(ts) : 0; }
         function setUltimaVisita(id) { localStorage.setItem('ultima_visita_' + id, Date.now().toString()); }
@@ -1282,16 +1298,21 @@ const SUPABASE_URL = 'https://blumqkxwasdbyozdvrsp.supabase.co';
 
                 if (error) throw error;
 
-                // --- INÍCIO DA MELHORIA: NOTIFICAÇÃO DO GERENTE ---
-                if (currentUser.perfil === 'Gerente') {
+                // --- INÍCIO DA MELHORIA: NOTIFICAÇÃO DO GERENTE/ADMIN ---
+                // Antes só disparava para perfil 'Gerente'; Administrador/Admin comentando
+                // não gerava notificação nenhuma para o vendedor responsável.
+                if (['Gerente', 'Administrador', 'Admin'].includes(currentUser.perfil)) {
                     try {
                         const orcamento = AppState.contextoVenda.clienteAtual;
                         
-                        // Garante que o gerente não está disparando alerta para si mesmo
+                        // Garante que quem comentou não está disparando alerta para si mesmo
                         if (orcamento && orcamento.id_usuario !== currentUser.id_usuario) {
                             
                             // Grava o alerta na tabela 'notificacoes'
-                            await db.from('notificacoes').insert([{
+                            // IMPORTANTE: o cliente Supabase NÃO lança exceção em erro de insert,
+                            // ele retorna { error }. Sem checar isso, um bloqueio de RLS falha
+                            // em silêncio e o catch abaixo nunca é acionado.
+                            const { error: errNotif } = await db.from('notificacoes').insert([{
                                 id_usuario: orcamento.id_usuario, // Destinatário: Vendedor
                                 texto: `${currentUser.nome} fez um comentário`,
                                 tipo: 'comentario_gerente',
@@ -1299,6 +1320,10 @@ const SUPABASE_URL = 'https://blumqkxwasdbyozdvrsp.supabase.co';
                                 id_cliente: orcamento.id_cliente,
                                 lida: false
                             }]);
+                            if (errNotif) {
+                                console.error('Erro ao gravar notificação de comentário (possível bloqueio de RLS na tabela notificacoes):', errNotif);
+                                showToast('Comentário salvo, mas a notificação ao vendedor falhou.', 'error');
+                            }
                         }
                     } catch (e) {
                         console.error('Erro ao gerar notificação de comentário do gerente:', e);
@@ -1846,7 +1871,7 @@ function selectFilter(filter) {
         }
 
         function buildNotifications() {
-            const hoje = new Date().toISOString().split('T')[0];
+            const hoje = getHojeBrasilia();
             const notificacoes = [];
             const isEmAberto = (s) => ![STATUS.PERDIDO, STATUS.DECLINADO].includes(s);
             
@@ -1863,7 +1888,7 @@ function selectFilter(filter) {
                     texto: n.texto,
                     id: n.id_referencia, // ID do orçamento para redirecionar
                     id_notif: n.id,      // ID da notificação para marcar como lida
-                    data: 'Novo comentário do gerente'
+                    data: 'Novo comentário' // Genérico: pode vir de Gerente, Administrador ou Admin
                 });
             });
             // --- FIM DA MELHORIA ---
@@ -2246,8 +2271,8 @@ function selectFilter(filter) {
         async function renderAgendaDia() {
             showLoader();
             const { inicio, fim } = obterSemanaAtual();
-            const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
-            const hojeStr = hoje.toISOString().split('T')[0];
+            const hoje = new Date(`${getHojeBrasilia()}T00:00:00`);
+            const hojeStr = getHojeBrasilia();
             const inicioStr = inicio.toISOString().split('T')[0];
 
             // Estado do toggle (persistido na sessão)
@@ -3695,7 +3720,7 @@ function selectFilter(filter) {
         async function renderNovoOrcamentoPage() {
             const main = document.getElementById('mainContent');
             if (todosProdutos.length === 0) await carregarProdutos();
-            const hoje = new Date().toISOString().split('T')[0];
+            const hoje = getHojeBrasilia();
         
             main.innerHTML = `
                 <header class="dashboard-header" style="display:flex; align-items:center; gap:16px; margin-bottom:24px;">
@@ -3892,7 +3917,7 @@ function selectFilter(filter) {
                     idInteresse = nivel ? nivel.id_interesse : null;
                 }
                 let dataCriacaoFinal = dataOrcamento;
-                const hojeData = new Date().toISOString().split('T')[0];
+                const hojeData = getHojeBrasilia();
                 if (dataOrcamento === hojeData) {
                     dataCriacaoFinal = new Date().toISOString();
                 } else {
@@ -4158,9 +4183,7 @@ function selectFilter(filter) {
             navigateTo(currentView);
         }
         function setQuickDate(dias) {
-            const d = new Date();
-            d.setDate(d.getDate() + dias);
-            const iso = d.toISOString().split('T')[0];
+            const iso = addDiasBrasilia(dias);
             const input = document.getElementById('agendarData');
             if (input) input.value = iso;
         }
@@ -5288,9 +5311,8 @@ function addIgnoredRadarId(idOrcamento) {
 }
 
 async function carregarSinaisRadar() {
-    const hoje = new Date();
-    hoje.setHours(0, 0, 0, 0);
-    const hojeIso = hoje.toISOString().split('T')[0];
+    const hojeIso = getHojeBrasilia();
+    const hoje = new Date(`${hojeIso}T00:00:00`);
     
     radarSignalsData = [];
     const ignoredIds = getIgnoredRadarIds();
