@@ -3606,9 +3606,17 @@ function selectFilter(filter) {
             row.className = 'produto-row';
             row.innerHTML = `
                 <div class="produto-row-top">
-                    <select class="form-input prod-nome" required>
-                        ${buildProdutoSelectOptions()}
-                    </select>
+                    <div class="prod-nome-wrapper">
+                        <input type="text" class="form-input prod-nome" placeholder="Digite para buscar um produto..." autocomplete="off" required
+                            oninput="filtrarProdutoSugestoes(this)"
+                            onfocus="filtrarProdutoSugestoes(this)"
+                            onkeydown="prodNomeKeydown(event, this)"
+                            onblur="setTimeout(() => fecharProdutoSugestoes(this), 150)">
+                        <span class="prod-check" title="Produto reconhecido">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                        </span>
+                        <div class="prod-suggestions"></div>
+                    </div>
                     <button type="button" class="btn-remove-item" onclick="removerProdutoRow(this)" title="Remover item">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
                     </button>
@@ -3628,6 +3636,66 @@ function selectFilter(filter) {
             atualizarBotoesLixeira();
         }
 
+        // Monta e exibe a lista de sugestões de produto conforme o usuário digita.
+        // Busca por trecho do nome OU do código, em qualquer posição do texto.
+        function filtrarProdutoSugestoes(input) {
+            const wrapper = input.closest('.prod-nome-wrapper');
+            const box = wrapper.querySelector('.prod-suggestions');
+            const termo = input.value.trim().toLowerCase();
+
+            validarProdutoSelecionado(input); // atualiza o "check" verde de correspondência exata
+
+            if (!termo) { box.innerHTML = ''; box.classList.remove('show'); return; }
+
+            const matches = todosProdutos.filter(p => {
+                const nome = (p.nome || '').toLowerCase();
+                const cod = (p.codigo || '').toLowerCase();
+                return nome.includes(termo) || cod.includes(termo);
+            }).slice(0, 8);
+
+            if (matches.length === 0) {
+                box.innerHTML = '<div class="prod-suggestion-empty">Nenhum produto encontrado</div>';
+                box.classList.add('show');
+                return;
+            }
+
+            box.innerHTML = matches.map(p => {
+                const texto = p.codigo ? `${p.codigo} - ${p.nome}` : p.nome;
+                return `<div class="prod-suggestion-item" data-texto="${escapeHtml(texto)}" onmousedown="event.preventDefault(); selecionarProdutoSugestao(this)">
+                    <span class="psi-nome">${escapeHtml(p.nome)}</span>
+                </div>`;
+            }).join('');
+            box.classList.add('show');
+        }
+
+        function selecionarProdutoSugestao(el) {
+            const texto = el.dataset.texto;
+            const wrapper = el.closest('.prod-nome-wrapper');
+            const input = wrapper.querySelector('.prod-nome');
+            input.value = texto;
+            fecharProdutoSugestoes(input);
+            validarProdutoSelecionado(input);
+            input.focus();
+        }
+
+        function fecharProdutoSugestoes(input) {
+            const wrapper = input.closest('.prod-nome-wrapper');
+            const box = wrapper.querySelector('.prod-suggestions');
+            box.innerHTML = '';
+            box.classList.remove('show');
+        }
+
+        function prodNomeKeydown(e, input) {
+            const wrapper = input.closest('.prod-nome-wrapper');
+            const box = wrapper.querySelector('.prod-suggestions');
+            if (e.key === 'Escape') {
+                fecharProdutoSugestoes(input);
+            } else if (e.key === 'Enter' && box.classList.contains('show')) {
+                const first = box.querySelector('.prod-suggestion-item');
+                if (first) { e.preventDefault(); selecionarProdutoSugestao(first); }
+            }
+        }
+
         function validarProdutoSelecionado(input) {
             const checkSpan = input.parentElement.querySelector('.prod-check');
             const produtoDigitado = input.value.trim().toLowerCase();
@@ -3638,7 +3706,7 @@ function selectFilter(filter) {
             });
         
             if (produtoExiste && produtoDigitado !== '') {
-                checkSpan.style.display = 'inline';
+                checkSpan.style.display = 'inline-flex';
                 input.style.borderColor = '#10b981';
             } else {
                 checkSpan.style.display = 'none';
@@ -4396,9 +4464,13 @@ function selectFilter(filter) {
                     colDiv.className = 'kanban-col';
                     colDiv.dataset.status = statusDestino;
 
-                    // Header da coluna
+                    // Header da coluna (agora em duas linhas: título+contador, e logo abaixo o subtotal,
+                    // ambos dentro do mesmo bloco colorido para formar uma unidade visual só)
                     const header = document.createElement('div');
                     header.className = `kanban-col-header ${col.cls}`;
+
+                    const topRow = document.createElement('div');
+                    topRow.className = 'kcol-header-top';
                     const titleDiv = document.createElement('div');
                     titleDiv.className = 'kcol-title';
                     const dot = document.createElement('span');
@@ -4409,8 +4481,19 @@ function selectFilter(filter) {
                     countSpan.className = 'kcol-count';
                     countSpan.id = `count-${statusDestino.replace(/\s+/g, '-')}`;
                     countSpan.textContent = items.length;
-                    header.appendChild(titleDiv);
-                    header.appendChild(countSpan);
+                    topRow.appendChild(titleDiv);
+                    topRow.appendChild(countSpan);
+                    header.appendChild(topRow);
+
+                    // Subtotal da coluna (valor acumulado + qtd. de orçamentos), 2ª linha do mesmo bloco
+                    const totalFmt = total.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+                    const subtotalDiv = document.createElement('div');
+                    subtotalDiv.className = 'kcol-subtotal';
+                    const strongSubtotal = document.createElement('strong');
+                    strongSubtotal.textContent = `R$ ${totalFmt}`;
+                    subtotalDiv.appendChild(strongSubtotal);
+                    subtotalDiv.appendChild(document.createTextNode(` em ${items.length} orçamento${items.length !== 1 ? 's' : ''}`));
+                    header.appendChild(subtotalDiv);
                     colDiv.appendChild(header);
 
                     // Zona de drop (kanban-cards)
@@ -4549,18 +4632,7 @@ function selectFilter(filter) {
                         });
                     }
 
-                    const totalFmt = total.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-
-                    // Rodapé da coluna
-                    const footerDiv = document.createElement('div');
-                    footerDiv.className = 'kcol-total';
-                    const strong = document.createElement('strong');
-                    strong.textContent = `R$ ${totalFmt}`;
-                    footerDiv.appendChild(strong);
-                    footerDiv.appendChild(document.createTextNode(` em ${items.length} orçamento${items.length !== 1 ? 's' : ''}`));
-
                     colDiv.appendChild(cardsDiv);
-                    colDiv.appendChild(footerDiv);
                     boardDiv.appendChild(colDiv);
                 });
 
