@@ -999,8 +999,85 @@
         .client-name {
             font-weight: 600; color: var(--brand-blue); cursor: pointer;
             transition: color var(--transition);
+            display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
         .client-name:hover { color: var(--brand-blue-dark); text-decoration: underline; }
+
+        /* ===== Carteira de Negociações (tela inicial) — lista em grid ===== */
+        .search-unificado {
+            display: flex; align-items: center; gap: 8px; background: var(--surface-2);
+            border: 1.5px solid var(--border-light); border-radius: var(--radius-full);
+            padding: 8px 14px; min-width: 240px; transition: 0.18s;
+        }
+        .search-unificado:focus-within { border-color: var(--brand-blue); background: var(--card-bg); box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.08); }
+        .search-unificado svg { color: var(--text-muted); flex-shrink: 0; }
+        .search-unificado input { border: none; background: transparent; outline: none; font-size: var(--font-sm); width: 100%; color: var(--text-primary); font-family: 'Inter', sans-serif; }
+        .search-unificado input::placeholder { color: var(--text-muted); }
+
+        .negociacoes-col-head {
+            display: grid; align-items: center; gap: 14px; padding: 0 20px 10px;
+            font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted);
+        }
+        .negociacoes-list { display: flex; flex-direction: column; }
+        .negociacao-row {
+            display: grid; align-items: center; gap: 14px;
+            padding: 12px 20px; border-bottom: 1px solid var(--divider); cursor: pointer;
+            transition: background 0.12s;
+        }
+        .negociacao-row:hover { background: var(--surface-2); }
+        .negociacoes-list .accordion-row { display: none; }
+        .negociacoes-list .accordion-row.open { display: block; }
+        .negociacoes-empty { text-align: center; padding: 28px 20px; color: var(--text-muted); font-size: var(--font-sm); }
+        .negociacoes-empty.erro { color: var(--status-danger-text, #dc2626); }
+
+        .negociacao-avatar {
+            width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-size: 11px; font-weight: 700; color: #fff; flex-shrink: 0;
+        }
+        .cliente-cell { min-width: 0; }
+        .cliente-proto { font-size: 10px; color: var(--text-muted); font-family: 'SF Mono', monospace; margin-top: 1px; }
+
+        .produto-cell { min-width: 0; }
+        .produto-nome { font-size: var(--font-xs); color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        .vendedor-cell { display: flex; align-items: center; gap: 7px; min-width: 0; }
+        .vendedor-avatar { width: 20px; height: 20px; font-size: 8px; }
+        .vendedor-nome { font-size: var(--font-2xs); color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        .data-cell { font-size: var(--font-xs); color: var(--text-secondary); }
+        .data-cell .full { display: block; font-size: 10px; color: var(--text-muted); margin-top: 1px; }
+
+        .valor-cell { text-align: right; font-size: var(--font-sm); font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+        .valor-cell.v-fechado { color: #059669; }
+        .valor-cell.v-perdido { color: #dc2626; text-decoration: line-through; text-decoration-color: rgba(220,38,38,0.4); }
+
+        .chevron { color: var(--text-muted); transition: transform 0.15s; display: flex; }
+        .negociacao-row:hover .chevron { transform: translateX(2px); color: var(--brand-blue); }
+
+        .pagination-footer {
+            display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+            padding: 14px 20px; border-top: 1px solid var(--divider);
+        }
+        .footer-info { font-size: var(--font-xs); color: var(--text-muted); }
+        .pagination-pills { display: flex; gap: 4px; }
+        .pagination-pills .page-btn {
+            min-width: 28px; height: 28px; border-radius: var(--radius-sm); border: 1px solid var(--border-light);
+            background: var(--card-bg); color: var(--text-secondary); font-size: var(--font-xs); font-weight: 600; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; transition: 0.15s; padding: 0 6px;
+        }
+        .pagination-pills .page-btn:hover:not(:disabled) { border-color: var(--brand-blue); color: var(--brand-blue-dark); }
+        .pagination-pills .page-btn.active { background: var(--brand-blue); border-color: var(--brand-blue); color: #fff; }
+        .pagination-pills .page-btn:disabled { opacity: 0.4; cursor: default; }
+        .pagination-pills .page-ellipsis { border: none; background: none; cursor: default; color: var(--text-muted); }
+
+        body.dark .search-unificado { background: var(--surface-3); }
+        body.dark .negociacao-row:hover { background: var(--surface-3); }
+
+        @media (max-width: 880px) {
+            .negociacoes-col-head, .negociacao-row { grid-template-columns: 36px 1.4fr 1fr 90px 24px !important; }
+            .produto-cell, .vendedor-cell { display: none; }
+            .negociacoes-col-head span:nth-child(3), .negociacoes-col-head span:nth-child(4) { display: none; }
+        }
 
         .pagination {
             display: flex; align-items: center; gap: 6px; margin-top: 16px;
