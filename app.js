@@ -3,7 +3,7 @@ const SUPABASE_URL = 'https://blumqkxwasdbyozdvrsp.supabase.co';
         const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
         const META_PADRAO = 50000;
-        const ITEMS_PER_PAGE = 10;
+        const ITEMS_PER_PAGE = 7;
         const STATUS = {
 	CONTATO_INICIAL: 'Contato Inicial',
   	NEGOCIACAO: 'Negociação',
@@ -496,7 +496,8 @@ const SUPABASE_URL = 'https://blumqkxwasdbyozdvrsp.supabase.co';
             if (!tbody || !pagination) return;
             
             const isGerente = currentUser.perfil === 'Gerente' || currentUser.perfil === 'Administrador' || currentUser.perfil === 'Admin';
-            tbody.innerHTML = `<tr><td colspan="${isGerente ? '7' : '6'}" style="text-align:center; padding:24px;">Carregando dados...</td></tr>`;
+            const gridTemplate = getNegociacoesGridTemplate(isGerente);
+            tbody.innerHTML = `<div class="negociacoes-empty">Carregando dados...</div>`;
 
             try {
                 let query = db.from('orcamentos')
@@ -564,13 +565,7 @@ const SUPABASE_URL = 'https://blumqkxwasdbyozdvrsp.supabase.co';
 
                 tbody.innerHTML = '';
                 if (!pagina || pagina.length === 0) {
-                    const trVazio = document.createElement('tr');
-                    const tdVazio = document.createElement('td');
-                    tdVazio.colSpan = isGerente ? 7 : 6;
-                    tdVazio.style.cssText = 'text-align:center; padding:24px;';
-                    tdVazio.textContent = 'Nenhum registro encontrado.';
-                    trVazio.appendChild(tdVazio);
-                    tbody.appendChild(trVazio);
+                    tbody.innerHTML = `<div class="negociacoes-empty">Nenhum registro encontrado.</div>`;
                 } else {
                     const frag = document.createDocumentFragment();
                     pagina.forEach(o => {
@@ -580,77 +575,54 @@ const SUPABASE_URL = 'https://blumqkxwasdbyozdvrsp.supabase.co';
                         const statusTexto = o.status_orcamento ? o.status_orcamento.nome : STATUS.CONTATO_INICIAL;
                         const idNumerico = o.protocolo && o.protocolo.includes('-') ? o.protocolo.split('-')[1] : (o.protocolo || '');
                         const produtos = o.modelo_colchao ? o.modelo_colchao.split(',').map(p => p.trim()).filter(Boolean) : [];
+                        // Exibição sem o código do produto (ex: "5014077 - Colchão X" -> "Colchão X").
+                        // O código só aparece dentro do orçamento após a seleção do item, não nesta lista.
+                        const nomeProdutoSemCodigo = p => p.replace(/^\d+\s*-\s*/, '');
                         const qtdExtra = produtos.length - 1;
+                        const vendedorNome = o.usuarios?.nome || '-';
 
-                        const tr = document.createElement('tr');
-                        tr.className = 'clickable-row';
-                        tr.dataset.id = o.id_orcamento;
-                        tr.style.cursor = 'pointer';
-                        tr.addEventListener('click', () => abrirDetalhesCliente(o.id_orcamento));
+                        let valorClass = 'v-neutro';
+                        if ([STATUS.FECHADO, STATUS.VENDIDO].includes(statusTexto)) valorClass = 'v-fechado';
+                        else if ([STATUS.PERDIDO, STATUS.DECLINADO].includes(statusTexto)) valorClass = 'v-perdido';
 
-                        // td protocolo
-                        const tdProto = document.createElement('td');
-                        tdProto.style.cssText = 'text-align:center; font-family:monospace; font-weight:700; font-size:var(--font-sm); color:var(--brand-blue-dark); white-space:nowrap;';
-                        tdProto.textContent = idNumerico;
+                        const row = document.createElement('div');
+                        row.className = 'negociacao-row';
+                        row.style.gridTemplateColumns = gridTemplate;
+                        row.dataset.id = o.id_orcamento;
+                        row.addEventListener('click', () => abrirDetalhesCliente(o.id_orcamento));
 
-                        // td cliente
-                        const tdCliente = document.createElement('td');
-                        const spanCliente = document.createElement('span');
-                        spanCliente.className = 'client-name';
-                        spanCliente.textContent = nome;
-                        tdCliente.appendChild(spanCliente);
+                        row.innerHTML = `
+                            <div class="negociacao-avatar" style="background:${getAvatarColor(nome)};">${getIniciais(nome)}</div>
+                            <div class="cliente-cell">
+                                <div class="client-name">${escapeHtml(nome)}</div>
+                                <div class="cliente-proto">#${escapeHtml(idNumerico)}</div>
+                            </div>
+                            <div class="produto-cell">
+                                <div class="produto-nome">${escapeHtml(produtos.length > 0 ? nomeProdutoSemCodigo(produtos[0]) : '-')}</div>
+                                ${qtdExtra > 0 ? `<button type="button" class="btn-expand-produtos produto-extra-btn">+ ${qtdExtra} item${qtdExtra > 1 ? 'ns' : ''} <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="6 9 12 15 18 9"/></svg></button>` : ''}
+                            </div>
+                            ${isGerente ? `
+                            <div class="vendedor-cell">
+                                <div class="negociacao-avatar vendedor-avatar" style="background:${getAvatarColor(vendedorNome)};">${getIniciais(vendedorNome)}</div>
+                                <span class="vendedor-nome">${escapeHtml(vendedorNome)}</span>
+                            </div>` : ''}
+                            <div><span class="status-tag ${classToFormatStatus(statusTexto)}">${escapeHtml(statusTexto)}</span></div>
+                            <div class="data-cell">${escapeHtml(dataRelativa)}<span class="full">${escapeHtml(dataCompleta)}</span></div>
+                            <div class="valor-cell ${valorClass}">R$ ${parseFloat(o.valor_orcado || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                            <div class="chevron"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></div>
+                        `;
 
-                        // td produto (com accordion opcional)
-                        const tdProd = document.createElement('td');
-                        tdProd.style.cssText = 'line-height:1.4; font-size:var(--font-xs); color:var(--text-secondary); max-width:200px; white-space:normal;';
-                        tdProd.textContent = produtos.length > 0 ? produtos[0] : '-';
-                        if (qtdExtra > 0) {
-                            const btnExp = document.createElement('button');
-                            btnExp.className = 'btn-expand-produtos';
-                            btnExp.innerHTML = `+ ${qtdExtra} item${qtdExtra > 1 ? 'ns' : ''} <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="6 9 12 15 18 9"/></svg>`;
-                            btnExp.addEventListener('click', e => toggleAccordion(e, o.id_orcamento));
-                            tdProd.insertBefore(document.createElement('br'), null);
-                            tdProd.appendChild(btnExp);
-                        }
+                        // O botão de expandir produtos não deve abrir os detalhes do orçamento
+                        const btnExp = row.querySelector('.produto-extra-btn');
+                        if (btnExp) btnExp.addEventListener('click', e => toggleAccordion(e, o.id_orcamento));
 
-                        // td vendedor (só gerente)
-                        const tdVend = document.createElement('td');
-                        if (isGerente) tdVend.textContent = o.usuarios?.nome || '-';
-
-                        // td status
-                        const tdStatus = document.createElement('td');
-                        const spanStatus = document.createElement('span');
-                        spanStatus.className = `status-tag ${classToFormatStatus(statusTexto)}`;
-                        spanStatus.textContent = statusTexto;
-                        tdStatus.appendChild(spanStatus);
-
-                        // td data
-                        const tdData = document.createElement('td');
-                        tdData.title = dataCompleta;
-                        tdData.textContent = dataRelativa;
-
-                        // td valor
-                        const tdValor = document.createElement('td');
-                        tdValor.style.fontWeight = '700';
-                        tdValor.textContent = `R$ ${parseFloat(o.valor_orcado || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
-
-                        tr.appendChild(tdProto);
-                        tr.appendChild(tdCliente);
-                        tr.appendChild(tdProd);
-                        if (isGerente) tr.appendChild(tdVend);
-                        tr.appendChild(tdStatus);
-                        tr.appendChild(tdData);
-                        tr.appendChild(tdValor);
-                        frag.appendChild(tr);
+                        frag.appendChild(row);
 
                         // Linha accordion (só se tiver itens extras)
                         if (qtdExtra > 0) {
-                            const trAcc = document.createElement('tr');
-                            trAcc.id = `acc-${o.id_orcamento}`;
-                            trAcc.className = 'accordion-row';
-                            const tdAcc = document.createElement('td');
-                            tdAcc.colSpan = isGerente ? 7 : 6;
-                            tdAcc.style.cssText = 'padding:0; border-bottom:none;';
+                            const acc = document.createElement('div');
+                            acc.id = `acc-${o.id_orcamento}`;
+                            acc.className = 'accordion-row';
                             const divAcc = document.createElement('div');
                             divAcc.className = 'accordion-inner';
                             const strong = document.createElement('strong');
@@ -663,37 +635,65 @@ const SUPABASE_URL = 'https://blumqkxwasdbyozdvrsp.supabase.co';
                                 bullet.style.cssText = 'color:var(--brand-blue); font-weight:bold;';
                                 bullet.textContent = '•';
                                 li.appendChild(bullet);
-                                li.appendChild(document.createTextNode(' ' + p));
+                                li.appendChild(document.createTextNode(' ' + nomeProdutoSemCodigo(p)));
                                 ul.appendChild(li);
                             });
                             divAcc.appendChild(strong);
                             divAcc.appendChild(ul);
-                            tdAcc.appendChild(divAcc);
-                            trAcc.appendChild(tdAcc);
-                            frag.appendChild(trAcc);
+                            acc.appendChild(divAcc);
+                            frag.appendChild(acc);
                         }
                     });
                     tbody.appendChild(frag);
                 }
 
-                // Paginação
+                // Info de contagem
+                const infoEl = document.getElementById('paginationInfo');
+                if (infoEl) {
+                    if (!count) { infoEl.textContent = 'Nenhuma negociação encontrada'; }
+                    else {
+                        const fromDisplay = from + 1;
+                        const toDisplay = Math.min(from + ITEMS_PER_PAGE, count);
+                        infoEl.textContent = `Mostrando ${fromDisplay}–${toDisplay} de ${count} negociação${count !== 1 ? 'ões' : ''}`;
+                    }
+                }
+
+                // Paginação em pílulas
                 const fragPag = document.createDocumentFragment();
                 const btnAnterior = document.createElement('button');
-                btnAnterior.textContent = 'Anterior';
+                btnAnterior.className = 'page-btn';
+                btnAnterior.innerHTML = '‹';
                 btnAnterior.disabled = currentPage <= 1;
+                btnAnterior.setAttribute('aria-label', 'Página anterior');
                 btnAnterior.addEventListener('click', () => changePage(currentPage - 1));
-                const spanPag = document.createElement('span');
-                spanPag.textContent = `Página ${currentPage} de ${totalPages}`;
-                const btnProximo = document.createElement('button');
-                btnProximo.textContent = 'Próximo';
-                btnProximo.disabled = currentPage >= totalPages;
-                btnProximo.addEventListener('click', () => changePage(currentPage + 1));
                 fragPag.appendChild(btnAnterior);
-                fragPag.appendChild(spanPag);
+
+                getPaginaNumeros(currentPage, totalPages).forEach(p => {
+                    if (p === '...') {
+                        const span = document.createElement('span');
+                        span.className = 'page-btn page-ellipsis';
+                        span.textContent = '…';
+                        fragPag.appendChild(span);
+                    } else {
+                        const btn = document.createElement('button');
+                        btn.className = 'page-btn' + (p === currentPage ? ' active' : '');
+                        btn.textContent = p;
+                        btn.addEventListener('click', () => changePage(p));
+                        fragPag.appendChild(btn);
+                    }
+                });
+
+                const btnProximo = document.createElement('button');
+                btnProximo.className = 'page-btn';
+                btnProximo.innerHTML = '›';
+                btnProximo.disabled = currentPage >= totalPages;
+                btnProximo.setAttribute('aria-label', 'Próxima página');
+                btnProximo.addEventListener('click', () => changePage(currentPage + 1));
                 fragPag.appendChild(btnProximo);
+
                 pagination.innerHTML = '';
                 pagination.appendChild(fragPag);
-            } catch (error) { tbody.innerHTML = `<tr><td colspan="${isGerente ? '6' : '5'}" class="table-error-cell">Erro ao carregar dados da tabela.</td></tr>`; }
+            } catch (error) { tbody.innerHTML = `<div class="negociacoes-empty erro">Erro ao carregar dados da tabela.</div>`; }
         }
 
         async function exportarCSV() {
@@ -1737,6 +1737,27 @@ function handleSearchProtocolo() {
     }
 }
 
+// Campo de busca único da Carteira de Negociações (tela inicial): decide sozinho se o texto
+// digitado parece um protocolo (só números/hífen) ou um nome de cliente, e busca no campo certo.
+function handleSearchUnificado() {
+    const val = (document.getElementById('searchUnificado')?.value || '').trim();
+    const pareceProtocolo = val !== '' && /^[0-9-]+$/.test(val);
+    if (pareceProtocolo) { searchProtocolo = val; searchTerm = ''; }
+    else { searchTerm = val; searchProtocolo = ''; }
+    currentPage = 1;
+
+    const tagContainer = document.getElementById('searchTagContainer');
+    if (tagContainer) {
+        tagContainer.innerHTML = val ? `<span class="search-tag">🔍 "${escapeHtml(val)}" <span class="remove-search" onclick="clearSearch()" aria-label="Limpar busca">✕</span></span>` : '';
+    }
+
+    if (currentView === 'carteira') {
+        renderKanbanBoard();
+    } else if (currentView === 'inicio') {
+        atualizarTabelaPaginadaServer();
+    }
+}
+
 function clearSearch() {
     searchTerm = '';
     searchProtocolo = '';
@@ -1744,6 +1765,8 @@ function clearSearch() {
     if (inp) inp.value = '';
     const inpProt = document.getElementById('searchProtocoloInput');
     if (inpProt) inpProt.value = '';
+    const inpUnif = document.getElementById('searchUnificado');
+    if (inpUnif) inpUnif.value = '';
     currentPage = 1;
     const tagContainer = document.getElementById('searchTagContainer');
     if (tagContainer) tagContainer.innerHTML = '';
@@ -2004,6 +2027,41 @@ function selectFilter(filter) {
     return map[status] || 'em-atendimento';
   }
 
+        // Paleta fixa para os avatares de iniciais (cliente/vendedor) na Carteira de Negociações.
+        // A cor é determinística (baseada no nome) pra a mesma pessoa sempre aparecer com a mesma cor.
+        const AVATAR_COLORS = ['#0F766E', '#7c3aed', '#0369a1', '#c2410c', '#991b1b', '#065f46', '#854d0e', '#5b21b6'];
+        function getAvatarColor(nome) {
+            const str = nome || '?';
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+            return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+        }
+        function getIniciais(nome) {
+            const partes = (nome || '?').trim().split(/\s+/).filter(Boolean);
+            if (partes.length === 0) return '?';
+            if (partes.length === 1) return partes[0].substring(0, 2).toUpperCase();
+            return (partes[0][0] + partes[partes.length - 1][0]).toUpperCase();
+        }
+        // Colunas do grid da lista da Carteira de Negociações — usada tanto no cabeçalho
+        // quanto em cada linha, pra ambos ficarem sempre alinhados.
+        function getNegociacoesGridTemplate(isGerente) {
+            return isGerente
+                ? '40px 190px minmax(200px,1fr) 120px 130px 100px 120px 24px'
+                : '40px 210px minmax(220px,1fr) 130px 100px 120px 24px';
+        }
+        // Monta a lista de páginas exibidas na paginação, com "…" quando há muitas páginas.
+        function getPaginaNumeros(atual, total) {
+            if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+            const nums = [1];
+            if (atual > 3) nums.push('...');
+            const start = Math.max(2, atual - 1);
+            const end = Math.min(total - 1, atual + 1);
+            for (let i = start; i <= end; i++) nums.push(i);
+            if (atual < total - 2) nums.push('...');
+            nums.push(total);
+            return nums;
+        }
+
         function renderInicio() {
     const main = document.getElementById('mainContent');
     const isGerente = currentUser.perfil === 'Gerente' || currentUser.perfil === 'Administrador' || currentUser.perfil === 'Admin';
@@ -2142,16 +2200,18 @@ function selectFilter(filter) {
             </li>
         `}).join('') || '<li style="justify-content:center; color:var(--text-muted);">Nenhuma venda fechada</li>';
         
-        const colVendedor = isGerente ? '<th>Vendedor</th>' : '';
-        const searchTagHtml = searchTerm ? `<span class="search-tag">🔍 "${escapeHtml(searchTerm)}" <span class="remove-search" onclick="clearSearch()" aria-label="Limpar busca">✕</span></span>` : '';
+        const searchTagHtml = (searchTerm || searchProtocolo) ? `<span class="search-tag">🔍 "${escapeHtml(searchTerm || searchProtocolo)}" <span class="remove-search" onclick="clearSearch()" aria-label="Limpar busca">✕</span></span>` : '';
+        const gridTemplateInicio = getNegociacoesGridTemplate(isGerente);
             const tabelaHtml = `
             <div class="table-card">
               <div class="table-card-header">
                 <h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/></svg> Carteira de Negociações</h3>
-                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
                   <div id="searchTagContainer">${searchTagHtml}</div>
-                  <input type="text" class="search-input" placeholder="Buscar cliente..." id="searchInput" onchange="handleSearch()" onkeyup="if(event.key === 'Enter') handleSearch()" value="${escapeHtml(searchTerm)}" aria-label="Buscar cliente">
-                  <input type="text" class="search-input" placeholder="Buscar protocolo..." id="searchProtocoloInput" onchange="handleSearchProtocolo()" onkeyup="if(event.key === 'Enter') handleSearchProtocolo()" value="${escapeHtml(searchProtocolo)}" aria-label="Buscar por protocolo" style="width:160px;">
+                  <div class="search-unificado">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <input type="text" placeholder="Buscar por cliente ou protocolo..." id="searchUnificado" onchange="handleSearchUnificado()" onkeyup="if(event.key === 'Enter') handleSearchUnificado()" value="${escapeHtml(searchTerm || searchProtocolo)}" aria-label="Buscar por cliente ou protocolo">
+                  </div>
                   <select class="form-input" style="width:auto; padding:8px 16px; border-radius:20px; font-size:var(--font-sm);" id="listFilterSelect" onchange="selectFilter(this.value)" aria-label="Filtrar por status">
                      <option value="todos" ${currentFilter === 'todos' ? 'selected' : ''}>Todos</option>
                      <option value="Contato Inicial" ${currentFilter === STATUS.CONTATO_INICIAL ? 'selected' : ''}>Contato Inicial</option>
@@ -2164,8 +2224,14 @@ function selectFilter(filter) {
                 </div>
               </div>
               <div id="tabelaCarteiraWrapper">
-                <table><thead><tr><th style="width:90px;">Protocolo</th><th>Cliente</th><th>Produto</th>${colVendedor}<th>Status</th><th>Data</th><th>Valor</th></tr></thead><tbody id="tableBody"></tbody></table>
-                <div class="pagination" id="paginationContainer"></div>
+                <div class="negociacoes-col-head" style="grid-template-columns:${gridTemplateInicio};">
+                    <span></span><span>Cliente</span><span>Produto</span>${isGerente ? '<span>Vendedor</span>' : ''}<span>Status</span><span>Data</span><span style="text-align:right;">Valor</span><span></span>
+                </div>
+                <div id="tableBody" class="negociacoes-list"></div>
+                <div class="pagination-footer">
+                    <span class="footer-info" id="paginationInfo"></span>
+                    <div class="pagination-pills" id="paginationContainer"></div>
+                </div>
               </div>
             </div>`;
 
