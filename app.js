@@ -110,6 +110,7 @@ const SUPABASE_URL = 'https://blumqkxwasdbyozdvrsp.supabase.co';
         let currentFilter = 'todos';
         let kanbanAtivo = false;
         let searchTerm = '';
+        let kpiPeriodoVendedor = 'hoje'; // 'hoje' | 'semana' | 'mes' — período selecionado nos cards de KPI do vendedor
         let searchProtocolo = '';
         
         let clienteSelecionadoParaAcao = null;
@@ -485,9 +486,201 @@ const SUPABASE_URL = 'https://blumqkxwasdbyozdvrsp.supabase.co';
                 notificacoesBanco = []; 
             }
 
+            // KPIs diários do vendedor (Vendas Hoje, Ticket Médio, Novos Clientes, Produtos Vendidos)
+            // com comparação hoje x ontem — só se aplica a quem loga como Vendedor.
+            if (AppState.usuarioLogado.perfil === 'Vendedor') {
+                await carregarKpisDiariosVendedor();
+            }
+
             atualizarBadge();
             const notificacoes = buildNotifications();
             renderNotificationBadge(notificacoes.length);
+        }
+
+        // Regra de variação percentual combinada com o pedido: se o período anterior foi 0 e o
+        // atual > 0, a variação é +100%. Se os dois forem 0, não há variação (0%). Caso
+        // contrário, fórmula padrão.
+        function calcularVariacaoPercentual(atual, anterior) {
+            if (anterior === 0) return atual > 0 ? 100 : 0;
+            return ((atual - anterior) / anterior) * 100;
+        }
+
+        // Ícones (estilo Lucide/Feather, 18x18, mesmo padrão visual usado no resto do sistema)
+        // usados nos cards de KPI do vendedor, um por métrica.
+        const KPI_ICONES = {
+            vendas: '<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>',
+            ticket: '<path d="M21 12V7H5a2 2 0 010-4h14v4"/><path d="M3 5v14a2 2 0 002 2h16v-5"/><path d="M18 12a2 2 0 000 4h4v-4z"/>',
+            clientes: '<path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/>',
+            produtos: '<path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.29 7 12 12 20.71 7"/><line x1="12" y1="22" x2="12" y2="12"/>'
+        };
+
+        // Monta um card de KPI "rico": ícone com badge colorido, rótulo, valor e (opcionalmente)
+        // a variação percentual em relação ao período anterior.
+        function buildKpiCard({ icone, cor, label, valor, variacao, comparacaoLabel, destaque = false }) {
+            const temVariacao = variacao !== undefined && variacao !== null;
+            const positivo = temVariacao && variacao >= 0;
+            const rodape = temVariacao
+                ? `<div class="kpi-footer"><span class="kpi-variacao ${positivo ? 'kpi-var-up' : 'kpi-var-down'}">${positivo ? '▲' : '▼'} ${Math.abs(Math.round(variacao))}%</span>${comparacaoLabel ? `<span class="kpi-comparacao-label">${comparacaoLabel}</span>` : ''}</div>`
+                : '';
+            return `<div class="kpi-card${destaque ? ' vendido-highlight' : ''}">
+                <div class="kpi-icon-badge kpi-badge-${cor}"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icone}</svg></div>
+                <div class="kpi-label-row"><span class="kpi-dot ${cor}"></span><span class="kpi-label">${label}</span></div>
+                <div class="kpi-value">${valor}</div>
+                ${rodape}
+            </div>`;
+        }
+
+        // Soma "dias" (podendo ser negativo) a uma data (YYYY-MM-DD) qualquer, não só "hoje".
+        // Faz a aritmética inteiramente em UTC, usando a data como âncora — mesma lógica seica
+        // usada em addDiasBrasilia, só que genérica para qualquer data de partida.
+        function addDiasADataStr(dataStr, dias) {
+            const d = new Date(dataStr + 'T00:00:00Z');
+            d.setUTCDate(d.getUTCDate() + dias);
+            return d.toISOString().split('T')[0];
+        }
+
+        // Data (YYYY-MM-DD) da segunda-feira da semana atual em Brasília, com deslocamento em
+        // semanas (ex: -1 = segunda da semana passada).
+        function getInicioSemanaBrasilia(deslocamentoSemanas = 0) {
+            const hoje = new Date(getHojeBrasilia() + 'T00:00:00Z');
+            const diaSemana = hoje.getUTCDay(); // 0=domingo...6=sábado
+            const diasDesdeSegunda = (diaSemana + 6) % 7; // segunda=0
+            return addDiasBrasilia(-diasDesdeSegunda + deslocamentoSemanas * 7);
+        }
+
+        // Primeiro dia (YYYY-MM-DD) do mês de uma data qualquer.
+        function getPrimeiroDiaMes(dataStr) {
+            const d = new Date(dataStr + 'T00:00:00Z');
+            return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1)).toISOString().split('T')[0];
+        }
+
+        // Desloca uma data em N meses, ajustando o dia se o mês de destino for mais curto
+        // (ex: 31/01 - 1 mês = 28/02, não "03/03"). JS normaliza ano automaticamente.
+        function deslocarDataEmMeses(dataStr, deslocamentoMeses) {
+            const d = new Date(dataStr + 'T00:00:00Z');
+            const ano = d.getUTCFullYear(), mes = d.getUTCMonth(), dia = d.getUTCDate();
+            const novoMesIndex = mes + deslocamentoMeses;
+            const ultimoDiaDoMesDestino = new Date(Date.UTC(ano, novoMesIndex + 1, 0)).getUTCDate();
+            return new Date(Date.UTC(ano, novoMesIndex, Math.min(dia, ultimoDiaDoMesDestino))).toISOString().split('T')[0];
+        }
+
+        // Monta o intervalo [inícioAtual, fimAtualExclusivo, inícioAnterior, fimAnteriorExclusivo]
+        // e o texto de comparação, de acordo com o período escolhido (hoje/semana/mes).
+        function getIntervalosPeriodoKpi(periodo) {
+            const hojeStr = getHojeBrasilia();
+            const amanhaStr = addDiasBrasilia(1);
+
+            if (periodo === 'semana') {
+                const inicioAtual = getInicioSemanaBrasilia(0);
+                return {
+                    inicioAtual, fimAtualExclusivo: amanhaStr,
+                    inicioAnterior: addDiasADataStr(inicioAtual, -7),
+                    fimAnteriorExclusivo: addDiasADataStr(amanhaStr, -7),
+                    labelComparacao: 'vs. semana passada'
+                };
+            }
+            if (periodo === 'mes') {
+                const inicioAtual = getPrimeiroDiaMes(hojeStr);
+                const diaEquivalenteMesPassado = deslocarDataEmMeses(hojeStr, -1);
+                return {
+                    inicioAtual, fimAtualExclusivo: amanhaStr,
+                    inicioAnterior: getPrimeiroDiaMes(diaEquivalenteMesPassado),
+                    fimAnteriorExclusivo: addDiasADataStr(diaEquivalenteMesPassado, 1),
+                    labelComparacao: 'vs. mês passado'
+                };
+            }
+            // 'hoje' (padrão)
+            return {
+                inicioAtual: hojeStr, fimAtualExclusivo: amanhaStr,
+                inicioAnterior: addDiasBrasilia(-1), fimAnteriorExclusivo: hojeStr,
+                labelComparacao: 'vs. ontem'
+            };
+        }
+
+        // Busca as 4 métricas do vendedor logado no período escolhido (hoje/semana/mês), com
+        // comparação ao período anterior equivalente. Vendas Hoje / Ticket Médio / Produtos
+        // Vendidos vêm da tabela 'orcamentos', filtrando por id_usuario (vendedor), status
+        // 'Fechado' e data_fechamento (data em que o pedido foi de fato concluído). Novos
+        // Clientes também vem de 'orcamentos': conta clientes cujo orçamento criado pelo
+        // vendedor no período é o PRIMEIRO orçamento que esse cliente já teve no sistema
+        // (não depende de nenhuma coluna extra em 'clientes').
+        async function carregarKpisDiariosVendedor(periodo = kpiPeriodoVendedor) {
+            const idVendedor = AppState.usuarioLogado.id_usuario;
+            const { inicioAtual, fimAtualExclusivo, inicioAnterior, fimAnteriorExclusivo, labelComparacao } = getIntervalosPeriodoKpi(periodo);
+
+            const idsFechado = mapStatusUUID.filter(s => s.nome === STATUS.FECHADO).map(s => s.id_status);
+            const idsFechadoSafe = idsFechado.length ? idsFechado : ['00000000-0000-0000-0000-000000000000'];
+
+            const buscarVendasDoPeriodo = async (inicioStr, fimStr) => {
+                const { data, error } = await db.from('orcamentos')
+                    .select('valor_orcado, modelo_colchao')
+                    .eq('id_usuario', idVendedor)
+                    .in('id_status', idsFechadoSafe)
+                    .gte('data_fechamento', `${inicioStr}T00:00:00`)
+                    .lt('data_fechamento', `${fimStr}T00:00:00`);
+                if (error) { console.error('Erro ao buscar vendas do período (KPI vendedor):', error); return []; }
+                return data || [];
+            };
+
+            // "Novo cliente" = o vendedor criou um orçamento no período para um cliente que
+            // NUNCA teve nenhum orçamento antes do início desse período (em todo o sistema,
+            // não só com esse vendedor). Não depende de nenhuma coluna extra em 'clientes' —
+            // usa só o histórico da própria tabela 'orcamentos'.
+            const buscarClientesCadastradosNoPeriodo = async (inicioStr, fimStr) => {
+                // 1. Clientes para quem o vendedor criou orçamento dentro do período (qualquer status).
+                const { data: orcsPeriodo, error: errPeriodo } = await db.from('orcamentos')
+                    .select('id_cliente')
+                    .eq('id_usuario', idVendedor)
+                    .gte('data_criacao', `${inicioStr}T00:00:00`)
+                    .lt('data_criacao', `${fimStr}T00:00:00`);
+                if (errPeriodo) { console.error('Erro ao buscar orçamentos do período (KPI novos clientes):', errPeriodo); return 0; }
+                const candidatos = [...new Set((orcsPeriodo || []).map(o => o.id_cliente).filter(Boolean))];
+                if (candidatos.length === 0) return 0;
+
+                // 2. Desses, quais já tinham QUALQUER orçamento (de qualquer vendedor) antes do
+                // início do período? Esses não são "novos" — já existiam antes.
+                const { data: orcsAnteriores, error: errAnteriores } = await db.from('orcamentos')
+                    .select('id_cliente')
+                    .in('id_cliente', candidatos)
+                    .lt('data_criacao', `${inicioStr}T00:00:00`);
+                if (errAnteriores) { console.error('Erro ao checar histórico de clientes (KPI novos clientes):', errAnteriores); return 0; }
+                const clientesComHistorico = new Set((orcsAnteriores || []).map(o => o.id_cliente));
+
+                return candidatos.filter(id => !clientesComHistorico.has(id)).length;
+            };
+
+            const [vendasAtual, vendasAnterior, clientesAtual, clientesAnterior] = await Promise.all([
+                buscarVendasDoPeriodo(inicioAtual, fimAtualExclusivo),
+                buscarVendasDoPeriodo(inicioAnterior, fimAnteriorExclusivo),
+                buscarClientesCadastradosNoPeriodo(inicioAtual, fimAtualExclusivo),
+                buscarClientesCadastradosNoPeriodo(inicioAnterior, fimAnteriorExclusivo)
+            ]);
+
+            const somarValor = arr => arr.reduce((acc, o) => acc + parseFloat(o.valor_orcado || 0), 0);
+            const contarProdutos = arr => arr.reduce((acc, o) => acc + (o.modelo_colchao ? o.modelo_colchao.split(',').map(p => p.trim()).filter(Boolean).length : 0), 0);
+
+            const valorAtual = somarValor(vendasAtual);
+            const valorAnterior = somarValor(vendasAnterior);
+
+            AppState.kpisDiariosVendedor = {
+                labelComparacao,
+                vendas: { hoje: valorAtual, ontem: valorAnterior },
+                ticket: {
+                    hoje: vendasAtual.length ? valorAtual / vendasAtual.length : 0,
+                    ontem: vendasAnterior.length ? valorAnterior / vendasAnterior.length : 0
+                },
+                clientes: { hoje: clientesAtual, ontem: clientesAnterior },
+                produtos: { hoje: contarProdutos(vendasAtual), ontem: contarProdutos(vendasAnterior) }
+            };
+        }
+
+        // Troca o período (hoje/semana/mes) dos cards de KPI do vendedor e recarrega só eles,
+        // sem precisar re-executar toda a carregarKpisEDashboard nem redesenhar a página inteira.
+        async function selecionarPeriodoKpiVendedor(periodo) {
+            if (periodo === kpiPeriodoVendedor) return;
+            kpiPeriodoVendedor = periodo;
+            await carregarKpisDiariosVendedor(periodo);
+            if (currentView === 'inicio') renderInicio();
         }
 
         async function atualizarTabelaPaginadaServer() {
@@ -1546,29 +1739,6 @@ const SUPABASE_URL = 'https://blumqkxwasdbyozdvrsp.supabase.co';
                     .eq('id_orcamento', orc.id_orcamento);
                 if (errUpdate) throw errUpdate;
 
-                // 2. INSERT auditoria na timeline (formato rico com timestamp)
-                const dataHoraAtual = new Date().toLocaleString('pt-BR', {
-                    day: '2-digit', month: '2-digit', year: 'numeric',
-                    hour: '2-digit', minute: '2-digit'
-                });
-                const linhaMotivo = motivo ? `📝 Motivo: ${motivo}` : '';
-                const textoAuditoria = [
-                    `🔄 Proposta Atualizada na Mesa`,
-                    `💰 Valor: de R$ ${valorAntigoFmt} para R$ ${valorNovoFmt}`,
-                    `🛏️ Itens: ${novosProdutos}`,
-                    linhaMotivo,
-                    ``,
-                    `🕐 Ajuste realizado em ${dataHoraAtual}`
-                ].filter(l => l !== undefined && !(l === '' && !linhaMotivo)).join('\n').replace(/\n\n+$/, '');
-
-                const { error: errLog } = await db.from('comentarios').insert([{
-                    id_orcamento: orc.id_orcamento,
-                    texto: textoAuditoria,
-                    tipo: 'Sistema',
-                    autor: currentUser.nome
-                }]);
-                if (errLog) console.warn('Auditoria falhou (proposta já salva):', errLog);
-
                 // 3. Atualiza estado local
                 AppState.contextoVenda.clienteAtual.modelo_colchao = novosProdutos;
                 AppState.contextoVenda.clienteAtual.valor_orcado   = valorTotal;
@@ -2108,7 +2278,30 @@ function selectFilter(filter) {
     // 5. CARDS E GRÁFICOS
     const progressHtml = `<div class="gamified-progress-card"><div class="progress-icon" style="background:${gamified.iconBg}; box-shadow:${gamified.shadow};">${gamified.iconSvg}</div><div class="progress-info"><h3>Atingimento de Meta</h3><p class="progress-subtitle">R$ ${valorVendido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} / R$ ${metaAtual.toLocaleString('pt-BR')}</p></div><div class="progress-bar-wrap"><div class="progress-bar-outer"><div class="progress-bar-inner-gamified" style="width:${Math.min(100, percMetaExato)}%; background:${gamified.bg}; box-shadow:${gamified.shadow};"></div></div><span class="progress-percent" style="color:${gamified.motiveColor};">${percMetaExato > 100 ? '100+' : percMetaExato}%</span></div><div class="progress-motive-text" style="color:${gamified.motiveColor};">${gamified.motive}</div></div>`;
     
-    const kpiHtml = `<div class="kpi-card"><div class="kpi-label-row"><span class="kpi-dot blue"></span><span class="kpi-label">Oportunidades Geradas</span></div><div class="kpi-value">${total}</div></div><div class="kpi-card"><div class="kpi-label-row"><span class="kpi-dot orange"></span><span class="kpi-label">Em Tratativa</span></div><div class="kpi-value">${negociacao}</div></div><div class="kpi-card"><div class="kpi-label-row"><span class="kpi-dot green"></span><span class="kpi-label">Taxa de Conversão</span></div><div class="kpi-value">${conversao}%</div></div><div class="kpi-card vendido-highlight"><div class="kpi-label-row"><span class="kpi-dot green"></span><span class="kpi-label">Vendas Fechadas</span></div><div class="kpi-value">R$ ${valorVendido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div></div>`;
+    let kpiHtml;
+    let kpiToggleHtml = '';
+    if (!isGerente && currentUser.perfil === 'Vendedor') {
+        const k = AppState.kpisDiariosVendedor || { labelComparacao: 'vs. ontem', vendas: { hoje: 0, ontem: 0 }, ticket: { hoje: 0, ontem: 0 }, clientes: { hoje: 0, ontem: 0 }, produtos: { hoje: 0, ontem: 0 } };
+        // Sufixo do nome do card muda junto com o período selecionado (Vendas Hoje / Vendas Semana / Vendas Mês...)
+        const sufixoPeriodo = { hoje: 'Hoje', semana: 'Semana', mes: 'Mês' }[kpiPeriodoVendedor];
+        const fmtMoeda = n => n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const periodos = [['hoje', 'Hoje'], ['semana', 'Semana'], ['mes', 'Mês']];
+        kpiToggleHtml = `<div class="kpi-section-header">
+            <h3 class="kpi-section-title">Meu Desempenho</h3>
+            <div class="kpi-periodo-toggle">${periodos.map(([valor, rotulo]) =>
+                `<button type="button" class="kpi-periodo-btn ${kpiPeriodoVendedor === valor ? 'active' : ''}" onclick="selecionarPeriodoKpiVendedor('${valor}')">${rotulo}</button>`
+            ).join('')}</div>
+        </div>`;
+        kpiHtml = [
+            buildKpiCard({ icone: KPI_ICONES.vendas, cor: 'green', label: `Vendas ${sufixoPeriodo}`, valor: `R$ ${fmtMoeda(k.vendas.hoje)}`, variacao: calcularVariacaoPercentual(k.vendas.hoje, k.vendas.ontem), comparacaoLabel: k.labelComparacao }),
+            buildKpiCard({ icone: KPI_ICONES.ticket, cor: 'blue', label: `Ticket Médio ${sufixoPeriodo}`, valor: `R$ ${fmtMoeda(k.ticket.hoje)}`, variacao: calcularVariacaoPercentual(k.ticket.hoje, k.ticket.ontem), comparacaoLabel: k.labelComparacao }),
+            buildKpiCard({ icone: KPI_ICONES.clientes, cor: 'orange', label: `Novos Clientes ${sufixoPeriodo}`, valor: k.clientes.hoje, variacao: calcularVariacaoPercentual(k.clientes.hoje, k.clientes.ontem), comparacaoLabel: k.labelComparacao }),
+            buildKpiCard({ icone: KPI_ICONES.produtos, cor: 'green', label: `Produtos Vendidos ${sufixoPeriodo}`, valor: k.produtos.hoje, variacao: calcularVariacaoPercentual(k.produtos.hoje, k.produtos.ontem), comparacaoLabel: k.labelComparacao, destaque: true })
+        ].join('');
+    } else {
+        kpiHtml = `<div class="kpi-card"><div class="kpi-label-row"><span class="kpi-dot blue"></span><span class="kpi-label">Oportunidades Geradas</span></div><div class="kpi-value">${total}</div></div><div class="kpi-card"><div class="kpi-label-row"><span class="kpi-dot orange"></span><span class="kpi-label">Em Tratativa</span></div><div class="kpi-value">${negociacao}</div></div><div class="kpi-card"><div class="kpi-label-row"><span class="kpi-dot green"></span><span class="kpi-label">Taxa de Conversão</span></div><div class="kpi-value">${conversao}%</div></div><div class="kpi-card vendido-highlight"><div class="kpi-label-row"><span class="kpi-dot green"></span><span class="kpi-label">Vendas Fechadas</span></div><div class="kpi-value">R$ ${valorVendido.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div></div>`;
+    }
+    
     
     const donutHtml = `<div class="chart-card"><h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Aproveitamento</h3><div class="donut-wrapper"><canvas id="donutCanvas" width="200" height="200"></canvas></div><div class="donut-legend"><div style="display:flex; align-items:center; gap:8px;"><span class="legend-color orcados"></span> Orçados <strong>${total}</strong></div><div style="display:flex; align-items:center; gap:8px;"><span class="legend-color fechados"></span> Fechados <strong>${fechados}</strong></div></div></div>`;
 
@@ -2236,6 +2429,7 @@ function selectFilter(filter) {
             </div>`;
 
             let chartsRowHtml = '';
+            let secaoInferiorHtml = tabelaHtml;
             if (isGerente) {
                 chartsRowHtml = `<section class="charts-row">${donutHtml}${rankingHtml}<div class="chart-card"><h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg> Mais Vendidos</h3><ul class="top5-list">${top5Html}</ul></div></section>`;
             } else {
@@ -2243,11 +2437,11 @@ function selectFilter(filter) {
                 chartsRowHtml = `<section class="charts-row-triplo">${donutHtml}${barrasOuVazio}<div class="chart-card"><h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg> Mais Vendidos</h3><ul class="top5-list">${top5Html}</ul></div></section>`;
             }
 
-            main.innerHTML = `${headerHtml}${progressHtml}<section class="kpi-row">${kpiHtml}</section>${chartsRowHtml}${tabelaHtml}`;
+            main.innerHTML = `${headerHtml}${progressHtml}${kpiToggleHtml}<section class="kpi-row">${kpiHtml}</section>${chartsRowHtml}${secaoInferiorHtml}`;
 
             requestAnimationFrame(() => { tentarRenderizarGraficos(total, fechados); });
-           
-                atualizarTabelaPaginadaServer();
+
+            atualizarTabelaPaginadaServer();
             renderNotificationBadge(buildNotifications().length);
 
         }
@@ -2508,14 +2702,6 @@ function selectFilter(filter) {
                 // Atualiza estado local
                 const idx = kpisMensais.findIndex(o => o.id_orcamento === orcamentoId);
                 if (idx !== -1) kpisMensais[idx].ligacao_confirmada = true;
-
-                // Histórico
-                await db.from('comentarios').insert([{
-                    id_orcamento: orcamentoId,
-                    texto: '✅ Contato confirmado como realizado via agenda.',
-                    tipo: 'Sistema',
-                    autor: currentUser.nome
-                }]);
 
                 // Animação de saída e remoção da linha
                 const row = btnElement.closest('tr');
@@ -4027,7 +4213,7 @@ function selectFilter(filter) {
                     const emailOrc = document.getElementById('modEmail') ? document.getElementById('modEmail').value.trim() : '';
                     const pkIns = await detectClientePK();
                     const { data: newCliente, error: errClient } = await db.from('clientes')
-                    .insert([{ nome_cliente: nome, whatsapp: whats, cpf: cpf || null, email: emailOrc || null, id_cliente_codigo: nextCodigo }])                        .select(pkIns)
+                    .insert([{ nome_cliente: nome, whatsapp: whats, cpf: cpf || null, email: emailOrc || null, id_cliente_codigo: nextCodigo, id_usuario_cadastro: currentUser.id_usuario }])                        .select(pkIns)
                         .single();
                     if (errClient) throw new Error('Erro ao criar cliente: ' + errClient.message);
                     idCliente = newCliente[pkIns];
@@ -4078,13 +4264,6 @@ function selectFilter(filter) {
                     .select('id_orcamento, protocolo')
                     .single();
                 if (errOrc) throw errOrc;
-                
-                await db.from('comentarios').insert([{
-                    id_orcamento: newOrc.id_orcamento,
-                    texto: `Orçamento criado via sistema. Produtos: ${produtosList.map(p => p.nome).join(', ')}. Valor total: R$ ${valorTotal.toFixed(2)}. Próximo contato agendado para ${dataContato} às ${horaContato}.`,
-                    tipo: 'Sistema',
-                    autor: currentUser.nome
-                }]);
                 
                 showToast(`Orçamento ${newOrc.protocolo} salvo com sucesso!`, 'success');
                 navigateTo(previousView);
@@ -4224,15 +4403,6 @@ function selectFilter(filter) {
                 if (modoFechamentoSelecionado === 'entrega') {
                     const dataEntregaObj = new Date(dataEntrega + 'T00:00:00');
                     const dataEntregaFormatada = dataEntregaObj.toLocaleDateString('pt-BR');
-                    const valorFechadoFmt = parseFloat(AppState.contextoVenda.clienteAtual?.valor_orcado || 0)
-                        .toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-                    await db.from('comentarios').insert([{
-                        id_orcamento: id,
-                        texto: `🏆 Venda Fechada! (R$ ${valorFechadoFmt})\n📦 Modalidade: Entrega\n📅 Previsão de Entrega: ${dataEntregaFormatada}`,
-                        tipo: 'Sistema',
-                        autor: currentUser.nome
-                    }]);
 
                     // Criar agendamento automático de confirmação de recebimento
                     await db.from('orcamentos').update({
@@ -4241,6 +4411,7 @@ function selectFilter(filter) {
                         observacao_agendamento: `Confirmação de recebimento - ${dataEntregaFormatada}`
                     }).eq('id_orcamento', id);
 
+                    // Única mensagem automática mantida no Histórico de Contatos: o agendamento da entrega.
                     await db.from('comentarios').insert([{
                         id_orcamento: id,
                         texto: `Agendamento automático criado: Confirmação de recebimento para ${dataEntregaFormatada} às 09:00.`,
@@ -4254,16 +4425,6 @@ function selectFilter(filter) {
 
                 } else {
                     // Retirada na loja
-                    const valorFechadoFmt = parseFloat(AppState.contextoVenda.clienteAtual?.valor_orcado || 0)
-                        .toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-                    await db.from('comentarios').insert([{
-                        id_orcamento: id,
-                        texto: `🏆 Venda Fechada! (R$ ${valorFechadoFmt})\n📦 Modalidade: Retirada na Loja`,
-                        tipo: 'Sistema',
-                        autor: currentUser.nome
-                    }]);
-
                     closeModal('modalConfirmaFechamento');
 
                     // Exibir parabéns antes de redirecionar
@@ -4297,13 +4458,6 @@ function selectFilter(filter) {
                 const obsAgendamento = obs ? `${tipo}\n${obs}` : tipo;
                 const { error: err1 } = await db.from('orcamentos').update({ data_contato: data, hora_contato: hora, observacao_agendamento: obsAgendamento }).eq('id_orcamento', AppState.contextoVenda.clienteAtual.id_orcamento);
                 if (err1) throw new Error(err1.message);
-                
-                const dataFormatada = new Date(data + 'T00:00:00').toLocaleDateString('pt-BR');
-                let texto = `Retorno agendado para ${dataFormatada}${hora ? ' às ' + hora : ''} • ${tipo}`;
-                if (obs) texto += `\nLembrete: ${obs}`;
-                
-                const { error: err2 } = await db.from('comentarios').insert([{ id_orcamento: AppState.contextoVenda.clienteAtual.id_orcamento, texto: texto, tipo: 'Sistema', autor: currentUser.nome }]);
-                if (err2) throw new Error(err2.message);
                 
                 showToast('Agendamento confirmado!', 'success'); await abrirDetalhesCliente(AppState.contextoVenda.clienteAtual.id_orcamento);
             } catch (e) { showToast('Erro ao agendar: ' + e.message, 'error'); } 
@@ -5448,12 +5602,28 @@ function addIgnoredRadarId(idOrcamento) {
     }
 }
 
+// Tarefas marcadas como concluídas (botão de check) — usa localStorage (não sessionStorage) pra
+// continuar marcada mesmo depois de fechar o navegador, já que agora o Radar funciona como uma
+// lista de tarefas do dia a dia, não só alertas descartáveis da sessão atual.
+function getConcludedRadarIds() {
+    const stored = localStorage.getItem('radar_concluidos');
+    return stored ? JSON.parse(stored) : [];
+}
+
+function addConcludedRadarId(idOrcamento) {
+    const concluidos = getConcludedRadarIds();
+    if (!concluidos.includes(idOrcamento)) {
+        concluidos.push(idOrcamento);
+        localStorage.setItem('radar_concluidos', JSON.stringify(concluidos));
+    }
+}
+
 async function carregarSinaisRadar() {
     const hojeIso = getHojeBrasilia();
     const hoje = new Date(`${hojeIso}T00:00:00`);
     
     radarSignalsData = [];
-    const ignoredIds = getIgnoredRadarIds();
+    const ignoredIds = [...getIgnoredRadarIds(), ...getConcludedRadarIds()];
 
     try {
         // 1. Busca Orçamentos
@@ -5633,11 +5803,14 @@ function renderRadarSignals(sellerFilter) {
     const emptyState = document.getElementById('emptyState');
     if(!container) return;
 
-    const filtered = radarSignalsData.filter(s => {
-        if (s.ignored) return false;
-        if (sellerFilter === 'Todos') return true;
-        return s.seller === sellerFilter;
-    });
+    const ordemPrioridade = { high: 0, medium: 1, low: 2 };
+    const filtered = radarSignalsData
+        .filter(s => {
+            if (s.ignored) return false;
+            if (sellerFilter === 'Todos') return true;
+            return s.seller === sellerFilter;
+        })
+        .sort((a, b) => (ordemPrioridade[a.priority] ?? 3) - (ordemPrioridade[b.priority] ?? 3));
 
     // Atualiza contadores
     const elAlerts = document.getElementById('count-alerts');
@@ -5655,9 +5828,9 @@ function renderRadarSignals(sellerFilter) {
         container.innerHTML = '';
         
         const configMap = {
-            alert: { bg: '#fee2e2', color: '#b91c1c', label: 'Alerta' },
-            tip: { bg: '#dbeafe', color: '#1d4ed8', label: 'Dica' },
-            suggestion: { bg: '#dcfce7', color: '#15803d', label: 'Sugestão' }
+            alert:      { label: 'Alerta',    icone: '<path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>' },
+            tip:        { label: 'Dica',       icone: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>' },
+            suggestion: { label: 'Sugestão',   icone: '<path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 00-4 12.75c.44.37.7.86.7 1.42V17h6.6v-.83c0-.56.26-1.05.7-1.42A7 7 0 0012 2z"/>' }
         };
 
         filtered.forEach(signal => {
@@ -5672,36 +5845,27 @@ function renderRadarSignals(sellerFilter) {
                 ? `<strong>${signal.leadName}</strong>`
                 : `<strong style="color:var(--brand-blue);cursor:pointer;" onclick="abrirDetalhesCliente('${orcId}')">${signal.leadName}</strong>`;
 
-            const justHtml = signal.justification
-                ? `<div class="justification-block"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-top:2px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><span>${signal.justification}</span></div>`
-                : '';
-
-            const execClass = signal.executed ? 'btn-exec executed' : 'btn-exec';
-            const execLabel = signal.executed
-                ? '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Executado'
-                : signal.actionText;
-
             const cardHtml = `
-                <div class="signal-card" id="radar-card-${signal.id}">
-                    <div style="display:flex;justify-content:space-between;align-items:center;">
-                        <span class="badge badge-${signal.type}">${conf.label}</span>
-                        <span style="font-size:var(--font-xs);color:var(--text-muted);">${signal.time}</span>
-                    </div>
-                    <div>
-                        <p class="signal-message">${signal.message}</p>
-                        <div class="signal-meta">
+                <div class="radar-task" id="radar-card-${signal.id}" data-tipo="${signal.type}" data-prioridade="${signal.priority || 'low'}">
+                    <button class="radar-check-btn" onclick="handleRadarCheck('${signal.id}')" title="Marcar tarefa como concluída" aria-label="Marcar tarefa como concluída">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    </button>
+                    <div class="radar-task-icon badge-${signal.type}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${conf.icone}</svg></div>
+                    <div class="radar-task-body" onclick="handleRadarAction('${signal.id}')" title="${signal.justification ? signal.justification.replace(/"/g, '&quot;') : signal.actionText}">
+                        <div class="radar-task-top">
+                            <span class="badge badge-${signal.type}">${conf.label}</span>
+                            <p class="radar-task-message">${signal.message}</p>
+                            <span class="radar-task-time">${signal.time}</span>
+                        </div>
+                        <div class="radar-task-meta">
                             <span>Lead: ${leadLink}</span>
-                            <span style="color:var(--border-medium);">|</span>
+                            <span class="radar-dot-sep">•</span>
                             <span>Vendedor: ${signal.seller}</span>
                         </div>
                     </div>
-                    ${justHtml}
-                    <div class="card-actions">
-                        <button id="btn-exec-${signal.id}" onclick="handleRadarAction('${signal.id}')" ${signal.executed ? 'disabled' : ''} class="${execClass}" style="display:flex;align-items:center;gap:6px;">
-                            ${execLabel}
-                        </button>
-                        <button onclick="handleRadarIgnore('${signal.id}')" class="btn-ignore">Ignorar</button>
-                    </div>
+                    <button onclick="handleRadarIgnore('${signal.id}')" class="radar-ignore-btn" title="Ignorar" aria-label="Ignorar">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
                 </div>
             `;
             container.insertAdjacentHTML('beforeend', cardHtml);
@@ -5724,6 +5888,21 @@ window.handleRadarAction = function(id) {
             if (id.endsWith(s)) { orcamentoId = id.slice(0, -s.length); break; }
         }
         abrirDetalhesCliente(orcamentoId);
+    }
+};
+
+window.handleRadarCheck = function(id) {
+    const card = document.getElementById(`radar-card-${id}`);
+    if (card) {
+        card.classList.add('radar-task-checked');
+        setTimeout(() => {
+            addConcludedRadarId(id);
+            const index = radarSignalsData.findIndex(s => s.id === id);
+            if (index > -1) radarSignalsData[index].ignored = true; // some da lista igual ao "ignorar"
+
+            const select = document.getElementById('sellerFilter');
+            renderRadarSignals(select ? select.value : 'Todos');
+        }, 450);
     }
 };
 
