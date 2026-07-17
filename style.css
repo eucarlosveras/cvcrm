@@ -776,17 +776,17 @@
            KPI CARDS
         ──────────────────────────────────────────────────────── */
         .kpi-row {
-            display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
         }
         .kpi-card {
             background: var(--card-bg); border-radius: var(--radius-md);
-            padding: 22px 22px 20px;
+            padding: 24px 24px 22px;
             box-shadow: var(--shadow-sm); border: 1px solid var(--border-light);
             display: flex; flex-direction: column; justify-content: center;
-            transition: box-shadow var(--transition), transform var(--transition);
-            position: relative; overflow: hidden;
+            transition: box-shadow var(--transition), transform var(--transition), border-color var(--transition);
+            position: relative; overflow: hidden; min-height: 140px;
         }
-        .kpi-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+        .kpi-card:hover { box-shadow: var(--shadow-md); transform: translateY(-3px); border-color: var(--border-medium); }
         .kpi-card.vendido-highlight {
             border-top: 3px solid var(--accent-orange);
         }
@@ -796,7 +796,21 @@
             background: linear-gradient(90deg, var(--brand-blue), var(--accent-orange));
         }
 
-        .kpi-label-row { display: flex; align-items: center; gap: 7px; margin-bottom: 10px; }
+        .kpi-icon-badge {
+            position: absolute; top: 20px; right: 20px;
+            width: 34px; height: 34px; border-radius: var(--radius-sm);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .kpi-badge-green  { background: rgba(16, 185, 129, 0.12); color: #059669; }
+        .kpi-badge-blue   { background: rgba(15, 118, 110, 0.12); color: var(--brand-blue-dark); }
+        .kpi-badge-orange { background: rgba(217, 119, 6, 0.12); color: #b45309; }
+        .kpi-badge-red    { background: rgba(220, 38, 38, 0.12); color: #b91c1c; }
+        body.dark .kpi-badge-green  { background: rgba(16, 185, 129, 0.16); color: #34d399; }
+        body.dark .kpi-badge-blue   { background: rgba(45, 212, 191, 0.16); color: #5eead4; }
+        body.dark .kpi-badge-orange { background: rgba(251, 146, 60, 0.16); color: #fdba74; }
+        body.dark .kpi-badge-red    { background: rgba(248, 113, 113, 0.16); color: #fca5a5; }
+
+        .kpi-label-row { display: flex; align-items: center; gap: 7px; margin-bottom: 12px; padding-right: 40px; }
         .kpi-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
         .kpi-dot.blue   { background: var(--brand-blue); }
         .kpi-dot.green  { background: var(--accent-green); }
@@ -808,9 +822,38 @@
         }
         .kpi-value {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 1.875rem; font-weight: 800;
-            line-height: 1; color: var(--text-primary); letter-spacing: -0.04em;
+            font-size: 1.75rem; font-weight: 800;
+            line-height: 1.15; color: var(--text-primary); letter-spacing: -0.03em;
         }
+        .kpi-footer { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+        .kpi-variacao {
+            display: inline-flex; align-items: center; gap: 3px;
+            font-size: var(--font-2xs); font-weight: 700; letter-spacing: 0.02em;
+            padding: 3px 8px; border-radius: var(--radius-full);
+        }
+        .kpi-var-up { color: #059669; background: rgba(5, 150, 105, 0.1); }
+        .kpi-var-down { color: #dc2626; background: rgba(220, 38, 38, 0.1); }
+        body.dark .kpi-var-up { color: #34d399; background: rgba(52, 211, 153, 0.14); }
+        body.dark .kpi-var-down { color: #f87171; background: rgba(248, 113, 113, 0.14); }
+        .kpi-comparacao-label { font-size: var(--font-2xs); font-weight: 500; color: var(--text-muted); }
+
+        .kpi-section-header {
+            display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+            margin: 4px 0 14px;
+        }
+        .kpi-section-title { margin: 0; font-size: var(--font-sm); font-weight: 700; color: var(--text-secondary); }
+        .kpi-periodo-toggle {
+            display: inline-flex; gap: 3px; background: var(--surface-2); padding: 3px;
+            border-radius: var(--radius-sm); width: fit-content;
+        }
+        .kpi-periodo-btn {
+            border: none; background: transparent; padding: 6px 16px; border-radius: calc(var(--radius-sm) - 2px);
+            font-size: var(--font-xs); font-weight: 600; color: var(--text-secondary); cursor: pointer;
+            transition: all 0.15s ease; font-family: 'Inter', sans-serif;
+        }
+        .kpi-periodo-btn:hover:not(.active) { color: var(--text-primary); }
+        .kpi-periodo-btn.active { background: var(--card-bg); color: var(--brand-blue-dark); box-shadow: var(--shadow-xs); }
+        body.dark .kpi-periodo-btn.active { color: var(--brand-blue); }
 
         /* ────────────────────────────────────────────────────────
            PROGRESS / GAMIFICATION CARD
@@ -861,6 +904,7 @@
         .charts-row       { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; }
         .charts-row-duplo { display: grid; grid-template-columns: 1fr 1.1fr; gap: 18px; }
         .charts-row-triplo{ display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; }
+        .charts-row-unico { display: grid; grid-template-columns: minmax(280px, 380px); gap: 18px; }
 
         .chart-card {
             background: var(--card-bg); border-radius: var(--radius-md);
@@ -1902,104 +1946,122 @@
         .signal-list {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 6px;
         }
-        .signal-card {
+        .radar-task {
             background: var(--card-bg);
             border: 1px solid var(--border-light);
-            border-radius: var(--radius-md);
-            box-shadow: var(--shadow-sm);
-            padding: 20px 22px;
+            border-radius: var(--radius-sm);
+            padding: 10px 12px;
             display: flex;
-            flex-direction: column;
-            gap: 14px;
-            transition: box-shadow var(--transition), transform var(--transition), border-color var(--transition);
+            align-items: flex-start;
+            gap: 10px;
+            transition: box-shadow var(--transition), border-color var(--transition), opacity 0.3s ease, transform 0.3s ease;
         }
-        .signal-card:hover {
-            box-shadow: var(--shadow-md);
+        .radar-task:hover {
+            box-shadow: var(--shadow-sm);
             border-color: var(--border-medium);
-            transform: translateY(-1px);
         }
+        .radar-task[data-tipo="alert"] { border-left: 3px solid #dc2626; }
+        .radar-task[data-tipo="tip"] { border-left: 3px solid var(--brand-blue); }
+        .radar-task[data-tipo="suggestion"] { border-left: 3px solid #16a34a; }
+        /* Prioridade alta ganha um fundo levemente tingido, pra se destacar das demais tarefas */
+        .radar-task[data-prioridade="high"] { background: rgba(220, 38, 38, 0.035); }
+        body.dark .radar-task[data-prioridade="high"] { background: rgba(248, 113, 113, 0.06); }
+
+        /* Ícone por tipo de sinal (mesma linguagem visual dos badges dos cards de KPI) */
+        .radar-task-icon {
+            flex-shrink: 0; width: 26px; height: 26px; border-radius: var(--radius-sm);
+            display: flex; align-items: center; justify-content: center; margin-top: 1px;
+        }
+
+        /* Botão circular de check — clique confirma a conclusão da tarefa */
+        .radar-check-btn {
+            flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%;
+            border: 1.5px solid var(--border-medium); background: var(--card-bg);
+            display: flex; align-items: center; justify-content: center;
+            color: transparent; cursor: pointer; margin-top: 1px;
+            transition: all 0.15s ease;
+        }
+        .radar-check-btn:hover { border-color: var(--accent-green); color: var(--accent-green); background: rgba(16,185,129,0.08); transform: scale(1.08); }
+        .radar-task-checked { opacity: 0; transform: scale(0.97); }
+        .radar-task-checked .radar-check-btn { border-color: var(--accent-green); background: var(--accent-green); color: #fff; }
+
+        .radar-task-body { flex: 1; min-width: 0; cursor: pointer; }
+        .radar-task-top { display: flex; align-items: baseline; gap: 8px; flex-wrap: nowrap; }
+        .radar-task-message {
+            font-size: var(--font-sm);
+            font-weight: 600;
+            color: var(--text-primary);
+            letter-spacing: -0.01em;
+            margin: 0;
+            flex: 1; min-width: 0;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .radar-task-time { font-size: var(--font-2xs); color: var(--text-muted); flex-shrink: 0; }
+        .radar-task-meta {
+            font-size: var(--font-2xs);
+            color: var(--text-muted);
+            display: flex; gap: 6px; flex-wrap: wrap; align-items: center;
+            margin-top: 2px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .radar-task-meta strong { color: var(--text-secondary); font-weight: 600; }
+        .radar-dot-sep { color: var(--border-medium); }
+
+        .radar-ignore-btn {
+            flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%;
+            border: none; background: transparent; color: var(--text-muted);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; margin-top: 1px; transition: all 0.15s ease;
+        }
+        .radar-ignore-btn:hover { background: var(--surface-2); color: var(--danger-text); }
 
         .badge {
             display: inline-flex;
             align-items: center;
             gap: 5px;
-            padding: 2px 9px;
+            padding: 1px 7px;
             border-radius: var(--radius-full);
-            font-size: var(--font-2xs);
+            font-size: 9px;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.06em;
+            flex-shrink: 0;
         }
         .badge-alert      { background: #fee2e2; color: #b91c1c; }
         .badge-tip        { background: var(--brand-blue-subtle); color: var(--brand-blue-dark); }
         .badge-suggestion { background: #dcfce7; color: #15803d; }
 
-        .signal-message {
-            font-size: var(--font-base);
-            font-weight: 700;
-            color: var(--text-primary);
-            letter-spacing: -0.02em;
-            margin: 0;
+        /* Card "Meu Radar" embutido na tela inicial: mesma linguagem de identidade dos cards
+           de KPI (faixa colorida no topo), pra reforçar que é uma seção com peso próprio. */
+        .radar-embed-card {
+            position: relative; overflow: hidden;
         }
-        .signal-meta {
-            font-size: var(--font-sm);
-            color: var(--text-secondary);
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            align-items: center;
+        .radar-embed-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+            background: linear-gradient(90deg, var(--brand-blue), #16a34a);
         }
-        .justification-block {
-            background: var(--bg-body);
-            border: 1px solid var(--border-light);
-            border-radius: var(--radius-sm);
-            padding: 10px 14px;
-            font-size: var(--font-sm);
-            color: var(--text-secondary);
-            display: flex;
-            gap: 8px;
-            align-items: flex-start;
+        .radar-header-badge {
+            width: 26px; height: 26px; border-radius: var(--radius-sm);
+            background: var(--brand-blue-subtle); color: var(--brand-blue-dark);
+            display: inline-flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
         }
+        body.dark .radar-header-badge { background: rgba(45, 212, 191, 0.16); color: #5eead4; }
 
-        .card-actions { display: flex; gap: 8px; }
-
-        .btn-exec {
-            background: linear-gradient(135deg, var(--brand-blue), var(--accent-orange));
-            color: #fff;
-            padding: 6px 14px;
-            border-radius: var(--radius-sm);
-            font-size: var(--font-sm);
-            font-weight: 600;
-            border: none;
-            cursor: pointer;
-            transition: background 0.18s ease, box-shadow 0.18s ease;
+        /* Empty state renovado: mais acolhedor, com selo de check ao invés de ícone solto */
+        .empty-state {
+            text-align: center; padding: 40px 24px 32px; color: var(--text-muted);
         }
-        .btn-exec:hover:not(:disabled) {
-            background: linear-gradient(135deg, var(--brand-blue-dark), #B45309);
-            box-shadow: 0 0 0 3px var(--brand-blue-subtle);
+        .empty-state-icon {
+            width: 52px; height: 52px; border-radius: 50%; margin: 0 auto 16px;
+            background: linear-gradient(135deg, var(--accent-green), #16a34a);
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 8px 20px rgba(16, 185, 129, 0.25);
         }
-        .btn-exec.executed {
-            background: var(--accent-green);
-            cursor: default;
-        }
-        .btn-ignore {
-            background: transparent;
-            color: var(--text-muted);
-            border: 1px solid var(--border-light);
-            padding: 6px 14px;
-            border-radius: var(--radius-sm);
-            font-size: var(--font-sm);
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
-        }
-        .btn-ignore:hover {
-            background: var(--bg-body);
-            border-color: var(--border-medium);
-            color: var(--text-secondary);
-        }
+        .empty-state h3 { font-weight: 700; margin-bottom: 6px; font-size: var(--font-md); color: var(--text-primary); }
+        .empty-state p { font-size: var(--font-sm); max-width: 320px; margin: 0 auto; line-height: 1.5; }
 
         /* ────────────────────────────────────────────────────────
            MODAL CHAT IA
@@ -2070,7 +2132,7 @@
             .sidebar { width: 220px; min-width: 220px; }
             .main-content { margin-left: 180px; }
             .kpi-row { grid-template-columns: 1fr 1fr; }
-            .charts-row, .charts-row-duplo, .charts-row-triplo,
+            .charts-row, .charts-row-duplo, .charts-row-triplo, .charts-row-unico,
             .action-grid, .health-grid { grid-template-columns: 1fr; }
             .detalhes-page-grid { grid-template-columns: 1fr; }
             .novo-orcamento-wrapper { grid-template-columns: 1fr; height: auto; min-height: auto; }
@@ -2090,7 +2152,7 @@
             .sidebar-overlay.open { display: block; }
             .main-content { margin-left: 0 !important; padding: 18px 16px; }
             .kpi-row { grid-template-columns: 1fr 1fr; }
-            .charts-row, .charts-row-duplo, .charts-row-triplo,
+            .charts-row, .charts-row-duplo, .charts-row-triplo, .charts-row-unico,
             .detalhes-page-grid, .novo-orcamento-wrapper { grid-template-columns: 1fr; }
             .modal-card { width: 95%; padding: 22px 18px; }
             .btn-voltar { font-size: var(--font-xs); padding: 7px 11px; }
